@@ -2,12 +2,25 @@
 #define LEXICALTOKEN_H
 
 #include <string>
+#include <map>
 
 namespace Lexical {
 
 /*
  * FIXME: estou confundindo a definição de um token com sua instância :-(
 */
+
+/* mapa com uma expressão que gera um token
+ * 
+ * FIXME: isto não é um mapa de string para string
+ * 
+ * por exemplo:
+ * ([_[:alpha:]])([_[:alnum:]])* => TokenIdentifier
+*/
+class TokenMap: public std::map<std::string,std::string> {
+public:
+  /* TODO: Definir aqui os métodos que possam ser úteis */
+};
 
 class Token {
 public:
@@ -18,7 +31,7 @@ public:
     SYMBOL, // símbolo
     CONSTANT, // constante
     STRING, // constante de texto?
-    COMMENT // comentário: quem disse que comentários não são úteis? :-)
+    COMMENT // comentário: quem disse que comentários são inúteis? :-)
   };
 
 private:

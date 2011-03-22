@@ -1,0 +1,24 @@
+-- erro: - falta "id" na declaracao do procedimento
+module search
+private
+    const size = 10;
+    typedef integer range [1..size] sizer;
+    typedef integer array [sizer] elements;
+    sizer j;
+    elements A;
+    integer x;
+    [Boolean, integer] result;
+    proc search (val integer target; ref [Boolean, integer] )
+    integer m;
+    integer i
+    Boolean found;
+    integer where;
+    begin
+        i:= 1;
+        m := size;
+        found := false;
+        result := [found, where];
+    end;
+
+begin
+ end.

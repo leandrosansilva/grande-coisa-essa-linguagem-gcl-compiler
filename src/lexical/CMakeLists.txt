@@ -1,4 +1,5 @@
 add_library(
-  gcl-lexical
+  gcl-lexical 
+  filereader.cpp
   token.cpp
 )
