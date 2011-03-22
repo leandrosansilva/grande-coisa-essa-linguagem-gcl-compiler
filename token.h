@@ -17,6 +17,7 @@ public:
   };
 
 private:
+  /* O que um token tem? */
   std::tring _name;
   std::string _lexema;
   std::string _pattern; 
