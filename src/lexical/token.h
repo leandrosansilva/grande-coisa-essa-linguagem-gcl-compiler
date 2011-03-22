@@ -1,4 +1,5 @@
-#pragma once
+#ifndef LEXICALTOKEN_H
+#define LEXICALTOKEN_H
 
 #include <string>
 
@@ -7,7 +8,7 @@ namespace Lexical {
 /*
  * FIXME: estou confundindo a definição de um token com sua instância :-(
 */
-  
+
 class Token {
 public:
   /* Quais as classes de token? */
@@ -32,3 +33,5 @@ private:
 };
 
 }
+
+#endif
