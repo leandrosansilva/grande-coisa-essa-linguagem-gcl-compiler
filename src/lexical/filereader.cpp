@@ -21,33 +21,64 @@
 
 #include <fstream>
 
+#include <iostream>
+
 using namespace Lexical;
 
 FileReader::FileReader(const std::string& filename):
 std::ifstream(filename.c_str()),
-_lineNumber(1)
+_lineNumber(1),
+_columnNumber(0),
+_ignoreBlank(true)
 {
 }
 
 FileReader::FileReader(const char* filename): 
 std::ifstream(filename),
-_lineNumber(1)
+_lineNumber(1),
+_columnNumber(0),
+_ignoreBlank(true)
 {
 }
 
+/* FIXME: não está indicando colunas corretamente! */
 char FileReader::getChar()
 {
   /* TODO: melhorar isso lendo grandes buffers por vez */
-  /* FIXME: ignorar espaços repetidos? */
-  /* TODO: por esta abordagem, como saber linha-coluna? */
-  /* TODO: ignorar quebras de linha? */
-  char c;
-  do {
-    read(&c,sizeof(char));
+  
+  /* inicializo o caractere com uma quebra de 
+   * linha para executar o laço ao menos uma vez 
+   */
+  char c('\n');
+  
+  /* contador de colunas */
+  int columnCounter(0);
+  
+  while (c == '\n' && canRead()) {
+    /* contador de caracteres em branco */
+    int ic(0);
+    
+    /* laço que consome os espaços em branco */
+    do {
+      read(&c,sizeof(char));
+      ic++;
+    } while ((c == '\t' || c == ' ') && ignoreBlank());
+    
+    /* incrementa o tanto de colunas que deslocou */
+    columnCounter += ic;
+    
     _lineNumber++;
-  } while (c == '\n' && canRead());
+  }
+  
+  /* se o contador maior que um, 
+   * significa que li mais de um caractere, ou seja, 
+   * li um quebra de linha
+   * Caso contrário, li um caractere comum, 
+   * logo devo somente incrementar a coluna
+  */
+  _columnNumber = columnCounter > 1 ? columnCounter + 1 : _columnNumber + 1;
  
-  /* Como tenho um incremento a mais, decremento */
+  /* Como tenho um incremento a mais da primeira execução do do..while, decremento */
   _lineNumber--;
   
   return c;
@@ -66,4 +97,9 @@ uint16_t FileReader::getLineNumber() const
 uint16_t FileReader::getColumnNumber() const
 {
   return _columnNumber;
+}
+
+bool FileReader::ignoreBlank() const
+{
+  return _ignoreBlank;
 }

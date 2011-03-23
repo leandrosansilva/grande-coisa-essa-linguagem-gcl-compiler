@@ -53,9 +53,13 @@ public:
   /* Pega a coluna da linha que está sendo analizada */
   uint16_t getColumnNumber() const;
   
+  /* devo ignorar caracteres em branco? (tab e space) */
+  bool ignoreBlank() const;
+  
 private:
   uint64_t _lineNumber;
   uint8_t _columnNumber;
+  bool _ignoreBlank;
 };
 
 }
