@@ -5,6 +5,7 @@
 int main(int argc, char **argv)
 {
   Lexical::FileReader file(argv[1]);
+  //file.disableIgnoreBlank();
   
   while (file.canRead()) {
     const char c(file.getChar());

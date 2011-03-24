@@ -45,12 +45,12 @@ public:
   /* true se não chegou no fim */
   bool canRead() const;
   
-  FileReader(const std::string &filename);
+  FileReader(const std::string &filename,bool iBlank = true);
   
-  FileReader(const char *filename);
+  FileReader(const char *filename,bool iBlank = true);
   
   /* pega o número de linha do arquivo que está sendo analizada */
-  uint16_t getLineNumber() const;
+  uint64_t getLineNumber() const;
   
   /* Pega a coluna da linha que está sendo analizada */
   uint16_t getColumnNumber() const;
@@ -58,13 +58,16 @@ public:
   /* devo ignorar caracteres em branco? (tab e space) */
   bool ignoreBlank() const;
   
+  bool enableIgnoreBlank();
+  bool disableIgnoreBlank();
+  
 private:
   uint64_t _lineNumber;
-  uint8_t _columnNumber;
+  uint32_t _columnNumber;
   bool _ignoreBlank;
  
   /* Leio sempre linha a linha */
-  wchar_t _currentLineContent[LINESIZE];
+  char _currentLineContent[LINESIZE];
 };
 
 }

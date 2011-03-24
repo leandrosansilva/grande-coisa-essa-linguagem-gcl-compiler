@@ -25,19 +25,19 @@
 
 using namespace Lexical;
 
-FileReader::FileReader(const std::string& filename):
+FileReader::FileReader(const std::string& filename, bool iBlank):
 std::ifstream(filename.c_str()),
 _lineNumber(1),
 _columnNumber(0),
-_ignoreBlank(true)
+_ignoreBlank(iBlank)
 {
 }
 
-FileReader::FileReader(const char* filename): 
+FileReader::FileReader(const char* filename, bool iBlank): 
 std::ifstream(filename),
 _lineNumber(1),
 _columnNumber(0),
-_ignoreBlank(true)
+_ignoreBlank(iBlank)
 {
 }
 
@@ -54,15 +54,28 @@ char FileReader::getChar()
   /* contador de colunas */
   int columnCounter(0);
   
+  /* conta quantas linhas serão andadas pra ler um char */
+  uint64_t origLineNumber(_lineNumber);
+  
   while (c == '\n' && canRead()) {
     /* contador de caracteres em branco */
     int blankCounter(0);
-
+    
+    /* se estou a partir da segunda iteração,
+     * ou seja, andei mais de uma linha pra pegar um char
+     * coluna volta pra zero
+    */
+    if (origLineNumber < _lineNumber) {
+      _columnNumber = 0;
+      columnCounter = 0;
+    }
+      
     /* laço que consome os espaços em branco */
-    do {
+    read(&c,sizeof(char));
+    while ((c == '\t' || c == ' ') && ignoreBlank()) {
       read(&c,sizeof(char));
       blankCounter++;
-    } while ((c == '\t' || c == ' ') && ignoreBlank());
+    }
     
     /* incrementa o tanto de colunas que deslocou.
      * é, no mínimo, 1, pois leu um caractere
@@ -72,19 +85,11 @@ char FileReader::getChar()
     _lineNumber++;
   }
   
-  std::cout << "column: " << (int)_columnNumber << ", andei " << columnCounter << " brancos antes de " << c << std::endl; 
-  
-  /* se o contador maior que um,
-   * significa que li mais de um caractere, ou seja, 
-   * li um quebra de linha
-   * Caso contrário, li um caractere comum, 
-   * logo devo somente incrementar a coluna
-  */
-  
-  _columnNumber = (columnCounter >= 2) ? columnCounter: _columnNumber + 1;
- 
   /* como tenho um incremento de linhas a mais, decremento */
-  _lineNumber--;
+  _lineNumber--; 
+
+  /* incrementa o número de colunas com o que eu li */
+  _columnNumber += columnCounter + 1;
  
   return c;
 }
@@ -94,7 +99,7 @@ bool FileReader::canRead() const
   return !eof();
 }
 
-uint16_t FileReader::getLineNumber() const
+uint64_t FileReader::getLineNumber() const
 {
   return _lineNumber;
 }
@@ -107,4 +112,14 @@ uint16_t FileReader::getColumnNumber() const
 bool FileReader::ignoreBlank() const
 {
   return _ignoreBlank;
+}
+
+bool FileReader::disableIgnoreBlank()
+{
+  _ignoreBlank = false;
+}
+
+bool FileReader::enableIgnoreBlank()
+{
+  _ignoreBlank = true;
 }
