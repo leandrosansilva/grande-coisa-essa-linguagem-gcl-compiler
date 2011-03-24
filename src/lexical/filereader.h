@@ -25,6 +25,8 @@
 
 #include <stdint.h>
 
+#define LINESIZE 1024
+
 namespace Lexical {
 
 /* TODO: este cara poderia ter outro nome e ser mais genérico, não só para arquivo */
@@ -60,6 +62,9 @@ private:
   uint64_t _lineNumber;
   uint8_t _columnNumber;
   bool _ignoreBlank;
+ 
+  /* Leio sempre linha a linha */
+  wchar_t _currentLineContent[LINESIZE];
 };
 
 }

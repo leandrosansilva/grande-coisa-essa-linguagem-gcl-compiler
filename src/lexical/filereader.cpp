@@ -56,31 +56,36 @@ char FileReader::getChar()
   
   while (c == '\n' && canRead()) {
     /* contador de caracteres em branco */
-    int ic(0);
-    
+    int blankCounter(0);
+
     /* laço que consome os espaços em branco */
     do {
       read(&c,sizeof(char));
-      ic++;
+      blankCounter++;
     } while ((c == '\t' || c == ' ') && ignoreBlank());
     
-    /* incrementa o tanto de colunas que deslocou */
-    columnCounter += ic;
-    
+    /* incrementa o tanto de colunas que deslocou.
+     * é, no mínimo, 1, pois leu um caractere
+    */
+    columnCounter += blankCounter;
+
     _lineNumber++;
   }
   
-  /* se o contador maior que um, 
+  std::cout << "column: " << (int)_columnNumber << ", andei " << columnCounter << " brancos antes de " << c << std::endl; 
+  
+  /* se o contador maior que um,
    * significa que li mais de um caractere, ou seja, 
    * li um quebra de linha
    * Caso contrário, li um caractere comum, 
    * logo devo somente incrementar a coluna
   */
-  _columnNumber = columnCounter > 1 ? columnCounter + 1 : _columnNumber + 1;
- 
-  /* Como tenho um incremento a mais da primeira execução do do..while, decremento */
-  _lineNumber--;
   
+  _columnNumber = (columnCounter >= 2) ? columnCounter: _columnNumber + 1;
+ 
+  /* como tenho um incremento de linhas a mais, decremento */
+  _lineNumber--;
+ 
   return c;
 }
 
