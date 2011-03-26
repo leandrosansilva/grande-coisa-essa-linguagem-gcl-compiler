@@ -31,6 +31,10 @@ namespace Lexical {
 
 /* TODO: este cara poderia ter outro nome e ser mais genérico, não só para arquivo */
 
+/* TODO: reimplementar este leitor para ler código unicode (utf-x) também.
+ * Use std::wifstream e wchar_t
+ */
+
 /**
  * Interface com o arquivo de código-fonte
  * 

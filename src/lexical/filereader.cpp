@@ -41,7 +41,6 @@ _ignoreBlank(iBlank)
 {
 }
 
-/* FIXME: não está indicando colunas corretamente! */
 char FileReader::getChar()
 {
   /* TODO: melhorar isso lendo grandes buffers por vez */

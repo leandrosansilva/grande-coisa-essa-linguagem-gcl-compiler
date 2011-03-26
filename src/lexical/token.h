@@ -4,6 +4,8 @@
 #include <string>
 #include <map>
 
+#include <stdint.h>
+
 namespace Lexical {
 
 /*
@@ -12,11 +14,13 @@ namespace Lexical {
 
 /* mapa com uma expressão que gera um token
  * 
- * FIXME: isto não é um mapa de string para string
+ * FIXME: isto não deve um mapa de string para string!
  * 
  * por exemplo:
  * ([_[:alpha:]])([_[:alnum:]])* => TokenIdentifier
+ * := => TokenAttribuition
 */
+
 class TokenMap: public std::map<std::string,std::string> {
 public:
   /* TODO: Definir aqui os métodos que possam ser úteis */
@@ -25,7 +29,7 @@ public:
 class Token {
 public:
   /* Quais as classes de token? */
-  enum type {
+  enum tokenClass {
     IDENTIFIER, // identificador
     RESERVED, // palavra reservada
     SYMBOL, // símbolo
@@ -33,16 +37,29 @@ public:
     STRING, // constante de texto?
     COMMENT // comentário: quem disse que comentários são inúteis? :-)
   };
-
+  
+  /* TODO: especificar qual token é, se é if, for, while, +,-,:=...
+   * Cada um destes tipos de token tem uma expressão regular associada
+   * Depois coloca isso no mapa
+   * O problema é que cada tipo deve ficar numa especialização de token doferente.
+   * Logo, mesmo o enum tokenClass deve sumir
+  */
+  
+  /* o token é válido? */
+  bool isValid();
+  
 private:
-  /* O token de um identificador */
-  type _type;
+  /* A classe de um token */
+  tokenClass _class;
   
   /* O lexema, ou string achada */
   std::string _lexema;
   
-  /* Qual padrão que casa o token */
-  std::string _pattern; 
+  /* em que linha o token foi encontrado */
+  uint64_t _line;
+  
+  /* e em que coluna inicia */
+  uint64_t _column;
 };
 
 }
