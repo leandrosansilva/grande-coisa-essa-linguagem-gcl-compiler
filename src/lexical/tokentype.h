@@ -103,7 +103,7 @@ public:
   /* construtor que preenche todos identificadores */
   TokenHash();
   
-  TokenType findReservedWord(const std::string pattern) const;
+  TokenType findReservedWord(const std::string &pattern) const;
 };
 
 }

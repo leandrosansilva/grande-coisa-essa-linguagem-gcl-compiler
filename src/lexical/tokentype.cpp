@@ -21,14 +21,14 @@
 
 using namespace Lexical;
 
-TokenType TokenHash::findReservedWord(const std::string pattern) const
+TokenType TokenHash::findReservedWord(const std::string &pattern) const
 {
-  iterator it(find(pattern));
+  const_iterator it(find(pattern));
   return (it != end()) ? it->second : None;
 }
 
 TokenHash::TokenHash()
 {
-  
+  /* TODO: Adicionar as palavras reservadas aqui */
 }
 
