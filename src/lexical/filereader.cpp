@@ -25,7 +25,7 @@
 
 using namespace Lexical;
 
-FileReader::FileReader(const std::string& filename, bool iBlank):
+FileReader::FileReader(const std::string &filename, bool iBlank):
 std::ifstream(filename.c_str()),
 _lineNumber(1),
 _columnNumber(0),
@@ -44,6 +44,7 @@ _ignoreBlank(iBlank)
 char FileReader::getChar()
 {
   /* TODO: melhorar isso lendo grandes buffers por vez */
+  /* TODO: quando há varios espaços, retornar um só */
   
   /* inicializo o caractere com uma quebra de 
    * linha para executar o laço ao menos uma vez 
@@ -54,11 +55,10 @@ char FileReader::getChar()
   int columnCounter(0);
   
   /* conta quantas linhas serão andadas pra ler um char */
-  uint64_t origLineNumber(_lineNumber);
+  int origLineNumber(_lineNumber);
   
   while (c == '\n' && canRead()) {
-    /* contador de caracteres em branco */
-    int blankCounter(0);
+    
     
     /* se estou a partir da segunda iteração,
      * ou seja, andei mais de uma linha pra pegar um char
@@ -69,12 +69,17 @@ char FileReader::getChar()
       columnCounter = 0;
     }
       
+    /* contador de caracteres em branco */
+    int blankCounter(0);
+      
     /* laço que consome os espaços em branco */
     read(&c,sizeof(char));
     while ((c == '\t' || c == ' ') && ignoreBlank()) {
       read(&c,sizeof(char));
       blankCounter++;
     }
+    
+    /*if (blankCounter > 0 && c == 
     
     /* incrementa o tanto de colunas que deslocou.
      * é, no mínimo, 1, pois leu um caractere
@@ -98,12 +103,12 @@ bool FileReader::canRead() const
   return !eof();
 }
 
-uint64_t FileReader::getLineNumber() const
+int FileReader::getLineNumber() const
 {
   return _lineNumber;
 }
 
-uint16_t FileReader::getColumnNumber() const
+int FileReader::getColumnNumber() const
 {
   return _columnNumber;
 }

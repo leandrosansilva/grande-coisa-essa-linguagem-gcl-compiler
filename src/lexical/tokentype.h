@@ -76,14 +76,14 @@ typedef enum {
   Skip,
   
   /* Símbolos */
-  Dot,
-  Equal,
-  Attribution,
-  Comment,
-  Comma,
-  Semicolon,
-  LParentesis,
-  RParentesis,
+  Dot, // .
+  Equal, // =
+  Assign, // :=
+  Comment, // --
+  Comma, // ,
+  Semicolon, // ;
+  LParentesis, // (
+  RParentesis, // )
   LBracket, // [
   RBracket, // ]
   DoubleBracket, // []

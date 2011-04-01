@@ -35,10 +35,12 @@ namespace Lexical {
  * Use std::wifstream e wchar_t
  */
 
+/* TODO: implementar o buffer */
+
 /**
  * Interface com o arquivo de código-fonte
  * 
- * Já elimina linhas em branco e (TODO) espaços em branco sequenciais
+ * Já elimina linhas em branco e espaços em branco sequenciais
 */
 class FileReader: public std::ifstream
 {
@@ -54,10 +56,10 @@ public:
   FileReader(const char *filename,bool iBlank = true);
   
   /* pega o número de linha do arquivo que está sendo analizada */
-  uint64_t getLineNumber() const;
+  int getLineNumber() const;
   
   /* Pega a coluna da linha que está sendo analizada */
-  uint16_t getColumnNumber() const;
+  int getColumnNumber() const;
   
   /* devo ignorar caracteres em branco? (tab e space) */
   bool ignoreBlank() const;
@@ -66,12 +68,11 @@ public:
   bool disableIgnoreBlank();
   
 private:
-  uint64_t _lineNumber;
-  uint32_t _columnNumber;
+  int _lineNumber;
+  int _columnNumber;
   bool _ignoreBlank;
  
-  /* Leio sempre linha a linha */
-  char _currentLineContent[LINESIZE];
+ 
 };
 
 }

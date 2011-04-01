@@ -4,6 +4,8 @@
 
 int main(int argc, char **argv)
 {
+  std::string a("b.gcl");
+  
   Lexical::FileReader file(argv[1]);
   //file.disableIgnoreBlank();
   
@@ -12,5 +14,5 @@ int main(int argc, char **argv)
     std::cout << c << " => " << file.getLineNumber() << "x" << file.getColumnNumber() << std::endl;
   }
   
-  return 1;
+  return 0;
 }
