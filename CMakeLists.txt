@@ -9,3 +9,4 @@ include_directories(
 add_subdirectory(src)
 add_subdirectory(1pass-red-dragon)
 add_subdirectory(tests)
+add_subdirectory(sandbox)
