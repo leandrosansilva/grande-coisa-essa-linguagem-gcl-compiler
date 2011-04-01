@@ -1,39 +1,36 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
-# define A 100
-# define B 101
-# define C 102
+/* Automato que trata uma string do tipo [0-9]+[Ll] */
 
-static char *cadeia;
+typedef enum {A, B, Final} states;
+
+static char *inputtext;
+static char matchedtext[256];
 static int pos = 0;
-
-/*int isdigit(char c)
-{
-  printf("%c\n",c);
-  return c >= 30 && c <= 39;
-}*/
+static int matchpos = 0;
 
 int canread()
 {
-  return pos <= strlen(cadeia);
+  return pos <= strlen(inputtext);
 }
 
 char getnewchar()
 {
-  return cadeia[pos++];
+  return inputtext[pos++];
 }
 
-int fail()
+int fail(int pos)
 {
-  printf("falhei\n");
+  printf("casei só %s e falhei na posição %d\n",matchedtext,pos);
   exit(1);
 }
 
 int accept_token()
 {
-  printf("Ok!\n");
+  printf("Ok: %s\n",matchedtext);
   exit(0);
 }
 
@@ -41,56 +38,48 @@ int retract()
 {
 }
 
-static int state;
-
+static states state;
 
 int main(int argc, char **argv)
 {
-  cadeia = argv[1];
+  inputtext = argv[1];
 
-  char ch;
+  state = A;
 
-  ch = getnewchar();
-
-  if (ch == '+' || ch == '-' || isdigit(ch)) 
-    state = A;
-
-  int c = 1;
-
-  while (canread() && c ) {
+  while (canread()) {
+    char ch = getnewchar();
+    
     switch (state) {
-      case A: 
-        printf("está no estado A\n");
-        ch = getnewchar();
-        if (ch == '.')
+      case A:
+        /* [0-9] */
+        if (isdigit(ch)) {
+          matchedtext[matchpos++] = ch;
           state = B;
-        else {
-          if (isdigit(ch)); 
-          else 
-            fail();
-        }
+        } else
+          fail(pos);
       break;
 
       case B:
-        printf("está no estado B\n");
-        ch = getnewchar();
-        if (isdigit(ch)) 
-          state = C;
-        else
-          fail();
+        /* [0-9] */
+        if (isdigit(ch)) {
+          /* permanece no mesmo estado */
+          matchedtext[matchpos++] = ch;
+          state = B;
+        
+        } else if (ch == 'L' || ch == 'l') {
+          state = Final;
+          matchedtext[matchpos++] = ch;
+        } else
+          fail(pos);
       break;
 
-      case C:
-        printf("está no estado C\n");
-        ch = getnewchar();
-        if (!isdigit(ch)) {
-          retract();
+      /* Estado final, tudo ok! */
+      case Final:
           accept_token();
-        }
       break;
+      
       default:
-        printf("está no estado Lixo\n");
-        c = 0;
+        printf("Entrei no estado default\n");
     }
     
   }
