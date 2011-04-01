@@ -31,7 +31,6 @@ int fail(int pos)
 int accept_token()
 {
   printf("Ok: %s\n",matchedtext);
-  exit(0);
 }
 
 int retract()
@@ -76,6 +75,11 @@ int main(int argc, char **argv)
       /* Estado final, tudo ok! */
       case Final:
           accept_token();
+          matchpos = 0;
+          state = A;
+          
+          /* volta uma posição na stream de entrada */
+          pos--;
       break;
       
       default:
