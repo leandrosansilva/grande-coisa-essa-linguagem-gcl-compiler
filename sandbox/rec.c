@@ -37,6 +37,16 @@ int retract()
 {
 }
 
+inline int issymbol(char c)
+{
+  return c == '.' || c == '=' || c == '-' || c == ',' ||
+         c == ';' || c == '(' || c == ')' || c == '[' ||
+         c == ']' || c == '#' || c == '<' || c == '>' ||
+         c == '&' || c == '|' || c == '~' || c == '+' ||
+         c == '-' || c == '*' || c == '/' || c == '\\' ||
+         c == '.';
+}
+
 static states state;
 
 int main(int argc, char **argv)
@@ -63,7 +73,6 @@ int main(int argc, char **argv)
         if (isdigit(ch)) {
           /* permanece no mesmo estado */
           matchedtext[matchpos++] = ch;
-          state = B;
         
         } else if (ch == 'L' || ch == 'l') {
           state = Final;
@@ -74,12 +83,14 @@ int main(int argc, char **argv)
 
       /* Estado final, tudo ok! */
       case Final:
+        if (isblank(ch)) {
           accept_token();
           matchpos = 0;
           state = A;
-          
           /* volta uma posição na stream de entrada */
           pos--;
+        } else
+          fail(pos);
       break;
       
       default:
