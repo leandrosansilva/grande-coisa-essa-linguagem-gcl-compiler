@@ -88,7 +88,20 @@ typedef enum {
   RBracket, // ]
   DoubleBracket, // []
   Pointer, // ->
-  Sharp // #
+  Sharp, // #
+  Lesser, // <
+  Greater, // >
+  LessEqual, // <=
+  GreaterEqual, // >=
+  And, // &
+  Or, // |
+  Til, // ~
+  Plus, // +
+  Minus, // -
+  Asterisk, // *
+  Slash, // /
+  BackSlash // \        
+  TwoDot // ..
   
 } TokenType;
 
