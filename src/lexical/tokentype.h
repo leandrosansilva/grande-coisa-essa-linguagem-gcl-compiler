@@ -45,7 +45,7 @@ namespace Lexical {
   * <block> .
 */
 typedef enum {
-  /* Nenhum Token, útil como resultado de busca */
+  /* Nenhum Token, útil como resultado de busca? */
   None = 0,
   
   /* Palavras reservadas */

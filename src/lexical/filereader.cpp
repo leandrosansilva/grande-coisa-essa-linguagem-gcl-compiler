@@ -23,6 +23,8 @@
 
 #include <iostream>
 
+#include <ctype.h>
+
 using namespace Lexical;
 
 FileReader::FileReader(const std::string &filename, bool iBlank):
@@ -74,12 +76,10 @@ char FileReader::getChar()
       
     /* laço que consome os espaços em branco */
     read(&c,sizeof(char));
-    while ((c == '\t' || c == ' ') && ignoreBlank()) {
+    while ((isblank(c)) && ignoreBlank()) {
       read(&c,sizeof(char));
       blankCounter++;
     }
-    
-    /*if (blankCounter > 0 && c == 
     
     /* incrementa o tanto de colunas que deslocou.
      * é, no mínimo, 1, pois leu um caractere
