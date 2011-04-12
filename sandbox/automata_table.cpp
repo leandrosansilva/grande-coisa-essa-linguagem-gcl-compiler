@@ -50,6 +50,7 @@ public:
 const String digits("0123456789");
 const String letters("abcdefghijklmnopqrstuvxwyzABCDEFGHIJKLMNOPQRSTUVXWYZ");
 const String symbols(".=-,;()[]#<>&|~+-*/\\.\'\"");
+const String separators(".=-,;()[]#<>&|~+-*/\\.\'\"\n \t");
 
 class Transition
 {
@@ -100,8 +101,8 @@ int main(int argc, char **argv)
   table.registerTransition(b2,digits,b3);
   table.registerTransition(b3,digits,b3);
   
-  table.registerTransition(b2,symbols,final_real);
-  table.registerTransition(b1,symbols,final_number);
+  table.registerTransition(b3,separators,final_real);
+  table.registerTransition(b1,separators,final_number);
   
   String input(argv[1]);
   String match;
