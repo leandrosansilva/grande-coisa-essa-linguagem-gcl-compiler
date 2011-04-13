@@ -1,10 +1,5 @@
-/*
- * tabela
-*/
-#include <ctype.h>
-#include <string>
-#include <vector>
-#include <iostream>
+#include <src/lexical/transitiontable.h>
+#include <src/lexical/tokentype.h>
 
 typedef enum {
   /* Estado inválido */
@@ -29,109 +24,16 @@ typedef enum {
   final_number,
   final_real,
   final_string,
-  final_assign
+  final_assign,
+  
+  /* Final genérico */
+  final
 } State;
-
-typedef enum {
-  Invalido = 0,
-  Inicial,
-  Estado1,
-  EstadoFinal
-} State2;
-
-class String: public std::string
-{
-public:
-  String(const char *str): std::string(str)
-  {
-  }
-  
-  String(const String &other): std::string(other)
-  {
-  }
-  
-  String(std::basic_string<char,std::char_traits<char>,std::allocator<char> > other): std::string(other)
-  {
-  }
-  
-  String(): std::string() 
-  {
-  }
-  
-  const String operator+(const String &o1)
-  {
-  }
-  
-  bool hasChar(char c)
-  {
-    return find(c) != npos;
-  }
-};
-
-template<typename T>
-class Transition
-{
-public:
-  T _from;
-  T _to;
-  String _pattern;
-  
-  Transition(T from, T to, const String &s):
-  _from(from),
-  _to(to),
-  _pattern(s)
-  {
-  }
-};
-
-/* FIXME: implementação com array porca.
- * TODO: reimplementar de forma mais eficiente
- * 
-*/
-template<typename T>
-class TransitionTable
-{
-  typedef std::vector< Transition<T> > vector;
-  
-  T _start;
-  T _invalid;
-  vector _table;
-  
-public:
-  /* Please tell me the initial state! */
-  TransitionTable(T start, T invalid): 
-  _start(start),
-  _invalid(invalid)
-  {
-  }
-  
-  void addTransition(T from, const String &s, T to)
-  {
-    _table.push_back(Transition<T>(from,to,s));
-  }
-  
-  T doTransition(T from, char symbol)
-  {
-    /* Acha o elemento */
-    typename vector::iterator i(_table.begin());
-    for (; i != _table.end(); i++) {
-      if (i->_from == from && i->_pattern.hasChar(symbol))
-        break;
-    }
-    
-    return i != _table.end() ? i->_to : _invalid;
-  }
-  
-  void reset(T &s, String &match, int &i)
-  {
-    s = _start;
-    match = "";
-    //i--;
-  }
-};
 
 int main(int argc, char **argv)
 {
+  using namespace Lexical;
+  
   const String digits("0123456789");
   const String letters("abcdefghijklmnopqrstuvxwyzABCDEFGHIJKLMNOPQRSTUVXWYZ");
   const String symbols(".=-,;()[]#<>&|~+-*/\\.");
@@ -139,11 +41,15 @@ int main(int argc, char **argv)
   /* aspas (quotes) e apóstrofos (apostrophes) */
   const String quotes("\'\"");
   
-  const String blanks("\t\b ");
+  const String blanks("\t ");
   const String breakline("\n");
-  const String separators(symbols + blanks + breakline);
+  const String separators(symbols + blanks);
   
-  TransitionTable<State> table(start,invalid);
+  /* Estrutura com as palavras reservadas */
+  TokenHash reservedHash;
+  reservedHash["if"] = If;
+  
+  TransitionTable<State,TokenType> table(start,invalid,final);
   
   /* Para inteiros e reais */
   table.addTransition(start,digits,b1);
@@ -154,6 +60,9 @@ int main(int argc, char **argv)
   table.addTransition(b3,separators + quotes,final_real);
   table.addTransition(b1,separators + quotes,final_number);
   
+  table.addMatched(final_number,None);
+  table.addMatched(final_real,None);
+  
   /* Para identificador */
   table.addTransition(start,letters,a1);
   table.addTransition(a1,letters + digits, a1);
@@ -161,6 +70,8 @@ int main(int argc, char **argv)
   table.addTransition(a2,letters + digits, a1);
   table.addTransition(a1,separators + quotes,final_id);
   table.addTransition(a2,separators + quotes,final_id);
+  
+  table.addMatched(final_id,None);
   
   /* string com aspas simples*/
   table.addTransition(start,"\'",c1);
@@ -173,46 +84,37 @@ int main(int argc, char **argv)
   table.addTransition(c2,letters + digits + blanks,c2);
   table.addTransition(c2,"\"",c3);
   
+  table.addMatched(final_string,None);
+  
   /* Para atribuição */
   table.addTransition(start,":",e1);
   table.addTransition(e1,"=",e2);
   table.addTransition(e2,digits + letters + separators + quotes,final_assign);
   
-  String input(argv[1]);
+  table.addMatched(final_assign,None);
+  
+  String input(argv[1] + String(" "));
   String match;
   
   State s(start);
-  for (int i = 0; i<input.size();) {
+  
+  for (int i = 0; i<input.size();i++) {
     s = table.doTransition(s,input[i]);
     
-    if (s) {
-      switch (s) {
-        case final_number:
-          std::cout << "Casou número " << match << std::endl;
-          table.reset(s,match,i);
-        break;
-        case final_real:
-          std::cout << "Casou real " << match << std::endl;
-          table.reset(s,match,i);
-        break;
-        case final_id:
-          std::cout << "Casou id " << match << std::endl;
-          table.reset(s,match,i);
-        break;
-        case final_string:
-          std::cout << "Casou string " << match << std::endl;
-          table.reset(s,match,i);
-        break;
-        case final_assign:
-          std::cout << "Casou assign " << match << std::endl;
-          table.reset(s,match,i);
-        break;
+    if (table.hasStateAsValid(s)) {
+      if (table.isMatchedState(s)) {
+        std::cout << "Casou " << match << std::endl;
+        table.reset(s,match,i);
+        continue;
+      } else {
+        //std::cout << "Em " << input[i] << ": " << i << std::endl;
       }
       
       match += input[i];
-      i++;
-    } else
+    } else {
+      std::cout << "Deu pau em (" << (int)s <<  ")" << input[i] << ": " << i << std::endl;
       break;
+    }
   }
   
   return 0;

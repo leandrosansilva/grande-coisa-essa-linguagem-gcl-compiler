@@ -20,7 +20,7 @@
 #define LEXICAL_TOKENTYPE_H
 
 #include <map>
-#include <string>
+#include "string.h"
 
 namespace Lexical {
 /*
@@ -31,7 +31,7 @@ namespace Lexical {
   * 
   * Símbolos:
   * 
-  * .   =   :=  --  ,   ;   (   ) []  [   ]   ->  #   
+  * .   =   :=  --  ,   ;   (   ) []  [   ]   ->  #
   * < > <=  >=  &   |   ~   +   -   *   /   \  ..
   * 
   * Comentários:
@@ -100,7 +100,7 @@ typedef enum {
   Minus, // -
   Asterisk, // *
   Slash, // /
-  BackSlash // \        
+  BackSlash, // \\ 
   TwoDot // ..
   
 } TokenType;
@@ -108,15 +108,12 @@ typedef enum {
 /* 
   * TODO: Tabela hash com todos as palavras reservadas
   * ela terá a seguinte "cara":
-  * class TokenMap: public std::map<std::string,TokenType>
+  * class TokenMap: public std::map<String,TokenType>
 */
-class TokenHash: public std::map<const std::string,TokenType>
+class TokenHash: public std::map<const String,TokenType>
 {
 public:
-  /* construtor que preenche todos identificadores */
-  TokenHash();
-  
-  TokenType findReservedWord(const std::string &pattern) const;
+  TokenType findReservedWord(const String &pattern) const;
 };
 
 }
