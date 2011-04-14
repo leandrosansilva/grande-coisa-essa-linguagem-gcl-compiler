@@ -86,8 +86,8 @@ typedef enum {
   RParentesis, // )
   LBracket, // [
   RBracket, // ]
-  DoubleBracket, // []
-  Pointer, // ->
+  Else, // [] // else
+  Then, // -> // then
   Sharp, // #
   Lesser, // <
   Greater, // >
@@ -114,26 +114,34 @@ typedef enum {
 } TokenType;
 
 /* 
-  * TODO: Tabela hash com todos as palavras reservadas
-  * ela terá a seguinte "cara":
-  * class TokenMap: public std::map<String,TokenType>
+  * Tabela hash com todos as palavras reservadas
+  * 
+  * TODO: como GCL não é case-sensitive,
+  * devo fazer todas as operações com lowercase
 */
-/*template<typename T>
-class TokenHash: public std::map<const String,T>
+template<typename T>
+class TokenHash
 {
   T _none;
+  typedef std::map<const String,T> rMap;
+  rMap _reservedMap;
   
 public:
   TokenHash(T none):
   _none(none)
   {
   }
-  
-  T findReservedWord(const String &pattern) const {
-    typename const_iterator it(find(pattern));
-    return (it != end()) ? it->second : _none;
+ 
+  virtual void add(const String &pattern,T token)
+  {
+    _reservedMap[pattern] = token;
   }
-};*/
+  
+  virtual T findReservedWord(const String &pattern) const {
+    typename rMap::const_iterator it(_reservedMap.find(pattern));
+    return (it != _reservedMap.end()) ? it->second : _none;
+  }
+};
 
 }
 

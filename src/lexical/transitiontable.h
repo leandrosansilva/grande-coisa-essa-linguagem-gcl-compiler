@@ -114,7 +114,7 @@ public:
     
     _currentState = i != _table.end() ? i->_to : _invalidState;
     
-    if (_currentState != _invalidState && _currentState != _finalState)
+    if (isInAValidState() && !isInAMatchedState())
       _matchedString += symbol;
     
     //std::cout << "read '" << symbol << "' and changed to state " << _currentState << std::endl;

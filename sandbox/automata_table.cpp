@@ -28,7 +28,7 @@ String
   final("final");
   
   /* Tokens de teste */
-  String 
+  String
   TkId("Id"),
   TkString("String"),
   TkInteger("Integer"),
@@ -36,8 +36,8 @@ String
   TkComment("Comment"),
   TkSpaces("Spaces"),
   TkAssign("Assign"),
-  TkSymbol("Symbol")
-  ;
+  TkSymbol("Symbol"),
+  TkNone("None");
   
 int main(int argc, char **argv)
 {
@@ -56,8 +56,10 @@ int main(int argc, char **argv)
   const String separators(symbols + spaces);
   
   /* Estrutura com as palavras reservadas */
-  //TokenHash reservedWords<TokenType>;
-  //reservedWords["if"] = If;
+  /* FIXME: adicionar todas as formas possíveis */
+  TokenHash<String> reservedWords(TkNone);
+  reservedWords.add("if",TkId);
+  
   
   TransitionTable<String,String> automata(start,invalid,final);
   
