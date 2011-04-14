@@ -37,15 +37,19 @@ class TransitionTable
   T _start;
   T _invalid;
   T _final;
+  T _currentState;
+  T _previousState;
   transitionVector _table;
   stateVector _matchedStates;
+  String _matchedString;
   
 public:
   /* Please tell me the initial, invalid and final states! */
   TransitionTable(T start, T invalid, T final):
   _start(start),
   _invalid(invalid),
-  _final(final)
+  _final(final),
+  _currentState(start)
   {
   }
   
@@ -57,14 +61,14 @@ public:
   
   /* retorna true se o estado atual é um dos finais positivamente,
    * onde não tem mais pra onde ir */
-  bool isMatchedState(T state)
+  bool isInAMatchedState()
   {
-    return std::find(_matchedStates.begin(),_matchedStates.end(),state) != _matchedStates.end();
+    return std::find(_matchedStates.begin(),_matchedStates.end(),_currentState) != _matchedStates.end();
   }
   
-  bool hasStateAsValid(T state)
+  bool isInAValidState()
   {
-    return state != _invalid;
+    return _currentState != _invalid;
   }
   
   void addTransition(T from, const String &s, T to)
@@ -72,30 +76,54 @@ public:
     _table.push_back(Transition<T>(from,to,s));
   }
   
-  void addFinalTransition(T from, const String &s,Ttoken final)
+  void addFinalTransition(T from, const String &s,Ttoken token)
   {
-    _matchedStates.push_back(final);
+    addTransition(from,s,_final);
+    addMatched(_final,token);
   }
   
-  T doTransition(T from, char symbol)
+  T doTransition(char symbol)
   {
+    _previousState = _currentState;
     /* Acha o elemento */
     typename transitionVector::iterator i(_table.begin());
     for (; i != _table.end(); i++) {
-      if (i->_from == from && i->_pattern.hasChar(symbol))
+      if (i->_from == _currentState && i->_pattern.hasChar(symbol))
         break;
     }
     
-    return i != _table.end() ? i->_to : _invalid;
+    _currentState = i != _table.end() ? i->_to : _invalid;
+    
+    if (_currentState != _invalid && _currentState != _final)
+      _matchedString += symbol;
+    
+    //std::cout << "read '" << symbol << "' and changed to state " << _currentState << std::endl;
+      
+    return _currentState;
   }
   
   /* reseta estado ao inicial e limpa o buffer do lexema  */
-  void reset(T &s, String &match, int &i)
+  void reset()
   {
-    s = _start;
-    match = "";
-    i--;
+    _currentState = _start;
+    _matchedString = "";
   }
+  
+  T getCurrentState() const 
+  {
+    return _currentState;
+  }
+  
+  T getPreviousState() const 
+  {
+    return _previousState;
+  }
+  
+  String getMatchedString() const 
+  {
+    return _matchedString;
+  }
+  
 };
 }
 #endif

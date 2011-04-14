@@ -2,6 +2,7 @@
 #define LEXICALSTRING
 
 #include <string>
+#include <iostream>
 
 namespace Lexical {
 class String: public std::string
@@ -29,6 +30,7 @@ public:
   
   bool hasChar(char c)
   {
+    //std::cout << "Buscando '" << c << "' em '" << *this << "'" << std::endl;
     return find(c) != npos;
   }
 };

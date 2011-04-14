@@ -101,7 +101,15 @@ typedef enum {
   Asterisk, // *
   Slash, // /
   BackSlash, // \\ 
-  TwoDot // ..
+  TwoDot, // ..
+ 
+  /* Tipos constantes, números, etc. */
+  ClassInteger,
+  ClassReal,
+  ClassString,
+  ClassId,
+  ClassComment,
+  ClassSpaces
   
 } TokenType;
 

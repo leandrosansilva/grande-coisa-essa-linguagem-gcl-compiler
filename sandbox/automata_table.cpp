@@ -1,55 +1,57 @@
 #include <src/lexical/transitiontable.h>
 #include <src/lexical/tokentype.h>
 
-typedef enum {
+using namespace Lexical;
+String
   /* Estado inválido */
-  invalid = 0,
+  invalid("invalid"),
   
   /* Estado inicial */
-  start,
+  start("start"),
   
-  a1, a2,
-  b1, b2, b3,
-  c1, c2, c3,
-  d1, d2, d3,
-  e1, e2,
-  f1, f2,
-  g1, g2,
-  h1, h2,
-  i1, i2,
-  j1,
+  a1("a1"), a2("a2"),
+  b1("b1"), b2("b2"), b3("b3"),
+  c1("c1"), c2("c2"), c3("c3"),
+  d1("d1"), d2("d2"), d3("d3"),
+  e1("e1"), e2("e2"),
+  f1("f1"), f2("f2"),
+  g1("g1"), g2("g2"),
+  h1("h1"), h2("h2"),
+  i1("i1"), i2("i2"),
+  j1("j1"),
   
-  /* Estados finais */
-  final_id,
-  final_number,
-  final_real,
-  final_string,
-  final_assign,
+  /* Para espaço */
+  sp1("sp1"),
   
   /* Final genérico */
-  final
-} State;
-
+  final("final");
+  
 int main(int argc, char **argv)
 {
-  using namespace Lexical;
-  
   const String digits("0123456789");
   const String letters("abcdefghijklmnopqrstuvxwyzABCDEFGHIJKLMNOPQRSTUVXWYZ");
-  const String symbols(".=-,;()[]#<>&|~+-*/\\.");
+  const String symbols(":.=-,;()[]#<>&|~+-*/\\.");
   
   /* aspas (quotes) e apóstrofos (apostrophes) */
   const String quotes("\'\"");
   
   const String blanks("\t ");
   const String breakline("\n");
-  const String separators(symbols + blanks);
+  
+  const String spaces(blanks + breakline);
+  
+  const String separators(symbols + spaces);
   
   /* Estrutura com as palavras reservadas */
-  TokenHash reservedHash;
-  reservedHash["if"] = If;
+  TokenHash reservedWords;
+  reservedWords["if"] = If;
   
-  TransitionTable<State,TokenType> table(start,invalid,final);
+  TransitionTable<String,TokenType> table(start,invalid,final);
+  
+  /* Consome espaços */
+  table.addTransition(start,spaces,sp1);
+  table.addTransition(sp1,spaces,sp1);
+  table.addFinalTransition(sp1,letters + digits + quotes + symbols,ClassSpaces);
   
   /* Para inteiros e reais */
   table.addTransition(start,digits,b1);
@@ -57,62 +59,55 @@ int main(int argc, char **argv)
   table.addTransition(b1,digits,b1);
   table.addTransition(b2,digits,b3);
   table.addTransition(b3,digits,b3);
-  table.addTransition(b3,separators + quotes,final_real);
-  table.addTransition(b1,separators + quotes,final_number);
-  
-  table.addMatched(final_number,None);
-  table.addMatched(final_real,None);
+  table.addFinalTransition(b3,separators + quotes,ClassReal);
+  table.addFinalTransition(b1,separators + quotes,ClassInteger);
   
   /* Para identificador */
   table.addTransition(start,letters,a1);
   table.addTransition(a1,letters + digits, a1);
   table.addTransition(a1,"_",a2);
   table.addTransition(a2,letters + digits, a1);
-  table.addTransition(a1,separators + quotes,final_id);
-  table.addTransition(a2,separators + quotes,final_id);
-  
-  table.addMatched(final_id,None);
+  table.addFinalTransition(a1,separators + quotes,ClassId);
+  table.addFinalTransition(a2,separators + quotes,ClassId);
   
   /* string com aspas simples*/
   table.addTransition(start,"\'",c1);
   table.addTransition(c1,letters + digits + blanks,c1);
   table.addTransition(c1,"\'",c3);
-  table.addTransition(c3,separators + digits + letters,final_string);
-  
+
   /* string com aspas duplas */
   table.addTransition(start,"\"",c2);
   table.addTransition(c2,letters + digits + blanks,c2);
   table.addTransition(c2,"\"",c3);
-  
-  table.addMatched(final_string,None);
+  table.addFinalTransition(c3,separators + digits + letters,ClassString);
   
   /* Para atribuição */
   table.addTransition(start,":",e1);
   table.addTransition(e1,"=",e2);
-  table.addTransition(e2,digits + letters + separators + quotes,final_assign);
+  table.addFinalTransition(e2,digits + letters + separators + quotes,Assign);
   
-  table.addMatched(final_assign,None);
+  /* pego a string de entrada dos parametros 
+   * e adiciono um espaço no final para ter 
+   * algo para comparar no fim */
+  //String input(argv[1] + String(" "));
+  String input("a_123abc_ := 123.44 :=876   := ");
   
-  String input(argv[1] + String(" "));
-  String match;
-  
-  State s(start);
+  std::cout << "using '" << input << "'" << std::endl;
   
   for (int i = 0; i<input.size();i++) {
-    s = table.doTransition(s,input[i]);
+    table.doTransition(input[i]);
     
-    if (table.hasStateAsValid(s)) {
-      if (table.isMatchedState(s)) {
-        std::cout << "Casou " << match << std::endl;
-        table.reset(s,match,i);
+    if (table.isInAValidState()) {
+      if (table.isInAMatchedState()) {
+        std::cout << "Casou '" << table.getMatchedString() << "'" << std::endl;
+        table.reset();
+        /* Volta uma posição na entrada */
+        i--;
         continue;
       } else {
-        //std::cout << "Em " << input[i] << ": " << i << std::endl;
       }
-      
-      match += input[i];
     } else {
-      std::cout << "Deu pau em (" << (int)s <<  ")" << input[i] << ": " << i << std::endl;
+      std::cout << "Deu pau com estado (" << table.getCurrentState() <<  ") em '" << input[i] << "': " << i << std::endl;
       break;
     }
   }
