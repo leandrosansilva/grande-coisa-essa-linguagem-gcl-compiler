@@ -31,7 +31,7 @@ bool Analyser::canReadToken() const
   return true;
 }
 
-Token Analyser::getToken()
+Common::Token Analyser::getToken()
 {
   /* doMagic() */
   /* saveTheWorld(Country::USA) */

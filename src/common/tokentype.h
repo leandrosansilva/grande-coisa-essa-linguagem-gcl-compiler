@@ -16,13 +16,13 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef LEXICAL_TOKENTYPE_H
-#define LEXICAL_TOKENTYPE_H
+#ifndef COMMON_TOKENTYPE_H
+#define COMMON_TOKENTYPE_H
 
 #include <map>
 #include "string.h"
 
-namespace Lexical {
+namespace Common {
 /*
   * Palavras reservadas da GCL:
   * 
@@ -145,4 +145,4 @@ public:
 
 }
 
-#endif // LEXICAL_TOKENTYPE_H
+#endif // COMMON_TOKENTYPE_H

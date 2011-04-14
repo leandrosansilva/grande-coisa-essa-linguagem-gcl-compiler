@@ -22,7 +22,7 @@
 
 #include "filereader.h"
 
-#include "token.h"
+#include <common/token.h>
 
 namespace Lexical {
 
@@ -36,7 +36,7 @@ public:
   bool canReadToken() const;
   
   /* Pega o próximo token */
-  Token getToken();
+  Common::Token getToken();
   
 private:
   FileReader &_file;

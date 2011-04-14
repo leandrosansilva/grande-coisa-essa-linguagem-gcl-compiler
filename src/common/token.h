@@ -1,12 +1,12 @@
-#ifndef LEXICALTOKEN_H
-#define LEXICALTOKEN_H
+#ifndef COMMONTOKEN_H
+#define COMMONTOKEN_H
 
-#include <string>
+#include "string.h"
 #include <map>
 
 #include <stdint.h>
 
-namespace Lexical {
+namespace Common {
 
 /*
  * FIXME: estou confundindo a definição de um token com sua instância :-(

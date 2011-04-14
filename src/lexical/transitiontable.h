@@ -19,13 +19,15 @@
 #ifndef LEXIXALTRANSITIONTABLE
 #define LEXIXALTRANSITIONTABLE
 
-#include "string.h"
+#include <common/string.h>
 #include <vector>
 #include <iostream>
 #include <algorithm>
 #include <map>
 
 namespace Lexical {
+
+using namespace Common;
   
 template<typename T>
 class Transition

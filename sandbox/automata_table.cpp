@@ -1,5 +1,5 @@
-#include <src/lexical/transitiontable.h>
-#include <src/lexical/tokentype.h>
+#include <lexical/transitiontable.h>
+#include <common/tokentype.h>
 
 using namespace Lexical;
 

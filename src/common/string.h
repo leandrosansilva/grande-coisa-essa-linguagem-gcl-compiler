@@ -1,10 +1,10 @@
-#ifndef LEXICALSTRING
-#define LEXICALSTRING
+#ifndef COMMONSTRING
+#define COMMONSTRING
 
 #include <string>
 #include <iostream>
 
-namespace Lexical {
+namespace Common {
 class String: public std::string
 {
 public:
