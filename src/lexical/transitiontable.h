@@ -73,35 +73,35 @@ public:
   }
   
   /* Adiciona um estado que casa um padrão */
-  void addMatched(T state, Ttoken tokenType)
+  virtual void addMatched(T state, Ttoken tokenType)
   {
     _matchedStates[state] = tokenType;
   }
   
   /* retorna true se o estado atual é um dos finais positivamente,
    * onde não tem mais pra onde ir */
-  bool isInAMatchedState()
+  virtual bool isInAMatchedState() const
   {
     return _currentState == _finalState;
   }
   
-  bool isInAValidState()
+  virtual bool isInAValidState() const
   {
     return _currentState != _invalidState;
   }
   
-  void addTransition(T from, const String &s, T to)
+  virtual void addTransition(T from, const String &s, T to)
   {
     _table.push_back(Transition<T>(from,to,s));
   }
   
-  void addFinalTransition(T from, const String &s,Ttoken token)
+  virtual void addFinalTransition(T from, const String &s,Ttoken token)
   {
     addTransition(from,s,_finalState);
     addMatched(from,token);
   }
   
-  T doTransition(char symbol)
+  virtual T doTransition(char symbol)
   {
     _previousState = _currentState;
     
@@ -123,28 +123,28 @@ public:
   }
   
   /* reseta estado ao inicial e limpa o buffer do lexema  */
-  void reset()
+  virtual void reset()
   {
     _currentState = _startState;
     _matchedString = "";
   }
   
-  T getCurrentState() const 
+  virtual T getCurrentState() const
   {
     return _currentState;
   }
   
-  T getPreviousState() const 
+  virtual T getPreviousState() const 
   {
     return _previousState;
   }
   
-  String getMatchedString() const 
+  virtual String getMatchedString() const 
   {
     return _matchedString;
   }
   
-  Ttoken getMatchedToken() const 
+  virtual Ttoken getMatchedToken() const 
   {
     /* Casei. meu estado final não me diz nada 
      * Mas _previousState aponta para o último estado que eu estava.

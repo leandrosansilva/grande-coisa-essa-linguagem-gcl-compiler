@@ -118,11 +118,22 @@ typedef enum {
   * ela terá a seguinte "cara":
   * class TokenMap: public std::map<String,TokenType>
 */
-class TokenHash: public std::map<const String,TokenType>
+/*template<typename T>
+class TokenHash: public std::map<const String,T>
 {
+  T _none;
+  
 public:
-  TokenType findReservedWord(const String &pattern) const;
-};
+  TokenHash(T none):
+  _none(none)
+  {
+  }
+  
+  T findReservedWord(const String &pattern) const {
+    typename const_iterator it(find(pattern));
+    return (it != end()) ? it->second : _none;
+  }
+};*/
 
 }
 

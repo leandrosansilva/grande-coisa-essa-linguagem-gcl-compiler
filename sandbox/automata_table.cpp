@@ -2,6 +2,7 @@
 #include <src/lexical/tokentype.h>
 
 using namespace Lexical;
+
 String
   /* Estado inválido */
   invalid("invalid"),
@@ -34,7 +35,8 @@ String
   TkReal("Real"),
   TkComment("Comment"),
   TkSpaces("Spaces"),
-  TkAssign("Assign")
+  TkAssign("Assign"),
+  TkSymbol("Symbol")
   ;
   
 int main(int argc, char **argv)
@@ -46,7 +48,7 @@ int main(int argc, char **argv)
   /* aspas (quotes) e apóstrofos (apostrophes) */
   const String quotes("\'\"");
   
-  const String blanks("\t ");
+  const String blanks(" "); // tem tbm \t
   const String breakline("\n");
   
   const String spaces(blanks + breakline);
@@ -54,71 +56,85 @@ int main(int argc, char **argv)
   const String separators(symbols + spaces);
   
   /* Estrutura com as palavras reservadas */
-  TokenHash reservedWords;
-  reservedWords["if"] = If;
+  //TokenHash reservedWords<TokenType>;
+  //reservedWords["if"] = If;
   
-  TransitionTable<String,String> table(start,invalid,final);
+  TransitionTable<String,String> automata(start,invalid,final);
   
-  /* Consome espaços */
-  table.addTransition(start,spaces,sp1);
-  table.addTransition(sp1,spaces,sp1);
-  table.addFinalTransition(sp1,letters + digits + quotes + symbols,TkSpaces);
+  /* Consome espaços em branco */
+  automata.addTransition(start,spaces,sp1);
+  automata.addTransition(sp1,spaces,sp1);
+  automata.addFinalTransition(sp1,letters + digits + quotes + symbols,TkSpaces);
   
   /* Para inteiros e reais */
-  table.addTransition(start,digits,b1);
-  table.addTransition(b1,".",b2);
-  table.addTransition(b1,digits,b1);
-  table.addTransition(b2,digits,b3);
-  table.addTransition(b3,digits,b3);
-  table.addFinalTransition(b3,separators + quotes,TkReal);
-  table.addFinalTransition(b1,separators + quotes,TkInteger);
+  automata.addTransition(start,digits,b1);
+  automata.addTransition(b1,".",b2);
+  automata.addTransition(b1,digits,b1);
+  automata.addTransition(b2,digits,b3);
+  automata.addTransition(b3,digits,b3);
+  automata.addFinalTransition(b3,separators + quotes,TkReal);
+  automata.addFinalTransition(b1,separators + quotes,TkInteger);
   
   /* Para identificador */
-  table.addTransition(start,letters,a1);
-  table.addTransition(a1,letters + digits, a1);
-  table.addTransition(a1,"_",a2);
-  table.addTransition(a2,letters + digits, a1);
-  table.addFinalTransition(a1,separators + quotes,TkId);
-  table.addFinalTransition(a2,separators + quotes,TkId);
+  automata.addTransition(start,letters,a1);
+  automata.addTransition(a1,letters + digits, a1);
+  automata.addTransition(a1,"_",a2);
+  automata.addTransition(a2,letters + digits, a1);
+  automata.addFinalTransition(a1,separators + quotes,TkId);
+  automata.addFinalTransition(a2,separators + quotes,TkId);
   
   /* string com aspas simples*/
-  table.addTransition(start,"\'",c1);
-  table.addTransition(c1,letters + digits + blanks,c1);
-  table.addTransition(c1,"\'",c3);
+  automata.addTransition(start,"\'",c1);
+  automata.addTransition(c1,letters + digits + blanks + symbols,c1);
+  automata.addTransition(c1,"\'",c3);
 
   /* string com aspas duplas */
-  table.addTransition(start,"\"",c2);
-  table.addTransition(c2,letters + digits + blanks,c2);
-  table.addTransition(c2,"\"",c3);
-  table.addFinalTransition(c3,separators + digits + letters,TkString);
+  automata.addTransition(start,"\"",c2);
+  automata.addTransition(c2,letters + digits + blanks + symbols,c2);
+  automata.addTransition(c2,"\"",c3);
+  automata.addFinalTransition(c3,separators + digits + letters,TkString);
   
   /* Para atribuição */
-  table.addTransition(start,":",e1);
-  table.addTransition(e1,"=",e2);
-  table.addFinalTransition(e2,digits + letters + separators + quotes,TkAssign);
+  automata.addTransition(start,":",e1);
+  automata.addTransition(e1,"=",e2);
+  automata.addFinalTransition(e2,digits + letters + separators + quotes,TkAssign);
   
-  /* pego a string de entrada dos parametros
-   * e adiciono um espaço no final para ter 
-   * algo para comparar no fim */
-  //String input(argv[1] + String(" "));
-  String input("a_123abc_ := 123.44 :=876   := ");
+  /* Para comentário */
+  automata.addTransition(start,"-",d1);
+  automata.addTransition(d1,"-",d3);
+  automata.addTransition(d3,digits + letters + symbols + blanks,d3);
+  automata.addFinalTransition(d3,breakline,TkComment);
   
-  std::cout << "using '" << input << "'" << std::endl;
+  /* para símbolo - (minus) */
+  automata.addFinalTransition(d1,letters + digits + spaces,TkSymbol);
+  
+  /* para símbolo -> */
+  automata.addTransition(d1,">",d2);
+  automata.addFinalTransition(d2,letters + digits + spaces,TkSymbol);
+  
+  String input(argv[1] + breakline);
+  
+  //String input("a_123abc_ := 123.44 :=876 -- comentario \n < := ");
   
   for (int i = 0; i<input.size();i++) {
-    table.doTransition(input[i]);
+    automata.doTransition(input[i]);
     
-    if (table.isInAValidState()) {
-      if (table.isInAMatchedState()) {
-        std::cout << "Casou '" << table.getMatchedString() << "' como '" << table.getMatchedToken() << "'" << std::endl;
-        table.reset();
+    if (automata.isInAValidState()) {
+      if (automata.isInAMatchedState()) {
+        
+        /* Casou!!!! */
+        std::cout << "Casou '" << automata.getMatchedString() 
+                  << "' como '" << automata.getMatchedToken() 
+                  << "'" << std::endl;
+                  
+        automata.reset();
         /* Volta uma posição na entrada */
         i--;
         continue;
-      } else {
-      }
+        
+      } 
     } else {
-      std::cout << "Deu pau com estado (" << table.getCurrentState() <<  ") em '" << input[i] << "': " << i << std::endl;
+      std::cout << "Deu pau com estado (" << automata.getCurrentState() <<  ") em '" << input[i] << "': " << i << std::endl;
       break;
     }
   }
