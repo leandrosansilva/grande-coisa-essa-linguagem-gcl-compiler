@@ -52,16 +52,16 @@ public:
 template<typename T, typename Ttoken>
 class TransitionTable
 {
-  typedef std::vector< Transition<T> > transitionVector;
-  typedef std::map<T,Ttoken> stateTokenMap;
+  typedef std::vector< Transition<T> > TransitionVector;
+  typedef std::map<T,Ttoken> StateTokenMap;
   
   T _startState;
   T _invalidState;
   T _finalState;
   T _currentState;
   T _previousState;
-  transitionVector _table;
-  stateTokenMap _matchedStates;
+  TransitionVector _table;
+  StateTokenMap _matchedStates;
   String _matchedString;
   
 public:
@@ -108,7 +108,7 @@ public:
     _previousState = _currentState;
     
     /* Acha o elemento */
-    typename transitionVector::iterator i(_table.begin());
+    typename TransitionVector::iterator i(_table.begin());
     for (; i != _table.end(); i++) {
       if (i->_from == _currentState && i->_pattern.hasChar(symbol))
         break;
