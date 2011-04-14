@@ -24,11 +24,7 @@ public:
   {
   }
   
-  const String operator+(const String &o1)
-  {
-  }
-  
-  bool hasChar(char c)
+  bool hasChar(char c) const
   {
     //std::cout << "Buscando '" << c << "' em '" << *this << "'" << std::endl;
     return find(c) != npos;

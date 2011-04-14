@@ -26,6 +26,17 @@ String
   /* Final genérico */
   final("final");
   
+  /* Tokens de teste */
+  String 
+  TkId("Id"),
+  TkString("String"),
+  TkInteger("Integer"),
+  TkReal("Real"),
+  TkComment("Comment"),
+  TkSpaces("Spaces"),
+  TkAssign("Assign")
+  ;
+  
 int main(int argc, char **argv)
 {
   const String digits("0123456789");
@@ -46,12 +57,12 @@ int main(int argc, char **argv)
   TokenHash reservedWords;
   reservedWords["if"] = If;
   
-  TransitionTable<String,TokenType> table(start,invalid,final);
+  TransitionTable<String,String> table(start,invalid,final);
   
   /* Consome espaços */
   table.addTransition(start,spaces,sp1);
   table.addTransition(sp1,spaces,sp1);
-  table.addFinalTransition(sp1,letters + digits + quotes + symbols,ClassSpaces);
+  table.addFinalTransition(sp1,letters + digits + quotes + symbols,TkSpaces);
   
   /* Para inteiros e reais */
   table.addTransition(start,digits,b1);
@@ -59,16 +70,16 @@ int main(int argc, char **argv)
   table.addTransition(b1,digits,b1);
   table.addTransition(b2,digits,b3);
   table.addTransition(b3,digits,b3);
-  table.addFinalTransition(b3,separators + quotes,ClassReal);
-  table.addFinalTransition(b1,separators + quotes,ClassInteger);
+  table.addFinalTransition(b3,separators + quotes,TkReal);
+  table.addFinalTransition(b1,separators + quotes,TkInteger);
   
   /* Para identificador */
   table.addTransition(start,letters,a1);
   table.addTransition(a1,letters + digits, a1);
   table.addTransition(a1,"_",a2);
   table.addTransition(a2,letters + digits, a1);
-  table.addFinalTransition(a1,separators + quotes,ClassId);
-  table.addFinalTransition(a2,separators + quotes,ClassId);
+  table.addFinalTransition(a1,separators + quotes,TkId);
+  table.addFinalTransition(a2,separators + quotes,TkId);
   
   /* string com aspas simples*/
   table.addTransition(start,"\'",c1);
@@ -79,14 +90,14 @@ int main(int argc, char **argv)
   table.addTransition(start,"\"",c2);
   table.addTransition(c2,letters + digits + blanks,c2);
   table.addTransition(c2,"\"",c3);
-  table.addFinalTransition(c3,separators + digits + letters,ClassString);
+  table.addFinalTransition(c3,separators + digits + letters,TkString);
   
   /* Para atribuição */
   table.addTransition(start,":",e1);
   table.addTransition(e1,"=",e2);
-  table.addFinalTransition(e2,digits + letters + separators + quotes,Assign);
+  table.addFinalTransition(e2,digits + letters + separators + quotes,TkAssign);
   
-  /* pego a string de entrada dos parametros 
+  /* pego a string de entrada dos parametros
    * e adiciono um espaço no final para ter 
    * algo para comparar no fim */
   //String input(argv[1] + String(" "));
@@ -99,7 +110,7 @@ int main(int argc, char **argv)
     
     if (table.isInAValidState()) {
       if (table.isInAMatchedState()) {
-        std::cout << "Casou '" << table.getMatchedString() << "'" << std::endl;
+        std::cout << "Casou '" << table.getMatchedString() << "' como '" << table.getMatchedToken() << "'" << std::endl;
         table.reset();
         /* Volta uma posição na entrada */
         i--;

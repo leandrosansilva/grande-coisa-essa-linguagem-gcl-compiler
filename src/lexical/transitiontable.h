@@ -5,6 +5,7 @@
 #include <vector>
 #include <iostream>
 #include <algorithm>
+#include <map>
 
 namespace Lexical {
   
@@ -32,43 +33,43 @@ template<typename T, typename Ttoken>
 class TransitionTable
 {
   typedef std::vector< Transition<T> > transitionVector;
-  typedef std::vector<T> stateVector;
+  typedef std::map<T,Ttoken> stateTokenMap;
   
-  T _start;
-  T _invalid;
-  T _final;
+  T _startState;
+  T _invalidState;
+  T _finalState;
   T _currentState;
   T _previousState;
   transitionVector _table;
-  stateVector _matchedStates;
+  stateTokenMap _matchedStates;
   String _matchedString;
   
 public:
   /* Please tell me the initial, invalid and final states! */
   TransitionTable(T start, T invalid, T final):
-  _start(start),
-  _invalid(invalid),
-  _final(final),
+  _startState(start),
+  _invalidState(invalid),
+  _finalState(final),
   _currentState(start)
   {
   }
   
-  /* Adiciona um estado de casa um padrão */
+  /* Adiciona um estado que casa um padrão */
   void addMatched(T state, Ttoken tokenType)
   {
-    _matchedStates.push_back(state);
+    _matchedStates[state] = tokenType;
   }
   
   /* retorna true se o estado atual é um dos finais positivamente,
    * onde não tem mais pra onde ir */
   bool isInAMatchedState()
   {
-    return std::find(_matchedStates.begin(),_matchedStates.end(),_currentState) != _matchedStates.end();
+    return _currentState == _finalState;
   }
   
   bool isInAValidState()
   {
-    return _currentState != _invalid;
+    return _currentState != _invalidState;
   }
   
   void addTransition(T from, const String &s, T to)
@@ -78,13 +79,14 @@ public:
   
   void addFinalTransition(T from, const String &s,Ttoken token)
   {
-    addTransition(from,s,_final);
-    addMatched(_final,token);
+    addTransition(from,s,_finalState);
+    addMatched(from,token);
   }
   
   T doTransition(char symbol)
   {
     _previousState = _currentState;
+    
     /* Acha o elemento */
     typename transitionVector::iterator i(_table.begin());
     for (; i != _table.end(); i++) {
@@ -92,9 +94,9 @@ public:
         break;
     }
     
-    _currentState = i != _table.end() ? i->_to : _invalid;
+    _currentState = i != _table.end() ? i->_to : _invalidState;
     
-    if (_currentState != _invalid && _currentState != _final)
+    if (_currentState != _invalidState && _currentState != _finalState)
       _matchedString += symbol;
     
     //std::cout << "read '" << symbol << "' and changed to state " << _currentState << std::endl;
@@ -105,7 +107,7 @@ public:
   /* reseta estado ao inicial e limpa o buffer do lexema  */
   void reset()
   {
-    _currentState = _start;
+    _currentState = _startState;
     _matchedString = "";
   }
   
@@ -124,6 +126,15 @@ public:
     return _matchedString;
   }
   
+  Ttoken getMatchedToken() const 
+  {
+    /* Casei. meu estado final não me diz nada 
+     * Mas _previousState aponta para o último estado que eu estava.
+     * Busco _previousState no mapa e obtenho um iterator.
+     * Busco o segundo termo deste iterator
+     */
+    return _matchedStates.at(_previousState);
+  }
 };
 }
 #endif
