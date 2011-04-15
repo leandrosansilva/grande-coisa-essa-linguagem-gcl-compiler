@@ -27,27 +27,32 @@ namespace Common {
   * Tabela hash com todos as palavras reservadas
   * Como tratar linguagens que não são case-sensitive? 
 */
-template<typename T>
+template<typename Ttoken>
 class TokenHash
 {
-  T _none;
-  typedef std::map<const String,T> rMap;
+  Ttoken _none;
+  typedef std::map<const String,Ttoken> rMap;
   rMap _reservedMap;
   
 public:
-  TokenHash(T none):
+  TokenHash(Ttoken none):
   _none(none)
   {
   }
  
-  virtual void add(const String &pattern,T token)
+  virtual void add(const String &pattern,Ttoken token)
   {
     _reservedMap[pattern] = token;
   }
   
-  virtual T findReservedWord(const String &pattern) const {
+  virtual Ttoken find(const String &pattern) const {
     typename rMap::const_iterator it(_reservedMap.find(pattern));
     return (it != _reservedMap.end()) ? it->second : _none;
+  }
+  
+  virtual Ttoken getNone() const
+  {
+    return _none;
   }
 };
 

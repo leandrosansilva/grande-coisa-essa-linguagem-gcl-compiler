@@ -48,6 +48,11 @@ public:
     return _line;
   }
   
+  void setType(Ttoken type)
+  {
+    _type = type;
+  }
+  
 private:
   /* A classe de um token */
   Ttoken _type;

@@ -25,6 +25,8 @@
 #include <algorithm>
 #include <map>
 
+#include <exception>
+
 namespace Lexical {
 
 using namespace Common;
@@ -60,17 +62,19 @@ class TransitionTable
   T _finalState;
   T _currentState;
   T _previousState;
+  Ttoken _invalidToken;
   TransitionVector _table;
   StateTokenMap _matchedTokens;
   String _matchedString;
   
 public:
   /* Please tell me the initial, invalid and final states! */
-  TransitionTable(T start, T invalid, T final):
+  TransitionTable(T start, T invalidState, T final,Ttoken invalidToken):
   _startState(start),
-  _invalidState(invalid),
+  _invalidState(invalidState),
   _finalState(final),
-  _currentState(start)
+  _currentState(start),
+  _invalidToken(invalidToken)
   {
   }
   
@@ -148,12 +152,13 @@ public:
   
   virtual Ttoken getMatchedToken() const 
   {
-    /* Casei. meu estado final não me diz nada 
-     * Mas _previousState aponta para o último estado que eu estava.
+    /* Mas _previousState aponta para o último estado que eu estava.
      * Busco _previousState no mapa e obtenho um iterator.
      * Busco o segundo termo deste iterator
-     */
-    return _matchedTokens.at(_previousState);
+    */
+    return  _matchedTokens.find(_previousState) != _matchedTokens.end()
+            ? _matchedTokens.at(_previousState)
+            : _invalidToken;
   }
 };
 }

@@ -6,34 +6,32 @@
 using namespace Lexical;
 using namespace Common;
 
-/* Definição dos tipos */
-typedef String State;
-typedef String TokenType;
-
-State
+typedef enum {
   /* Estado inválido */
-  invalid("invalid"),
+  invalid = -1,
   
   /* Estado inicial */
-  start("start"),
+  start,
   
-  a1("a1"), a2("a2"),
-  b1("b1"), b2("b2"), b3("b3"),
-  c1("c1"), c2("c2"), c3("c3"),
-  d1("d1"), d2("d2"), d3("d3"),
-  e1("e1"), e2("e2"),
-  f1("f1"), f2("f2"),
-  g1("g1"), g2("g2"),
-  h1("h1"), h2("h2"),
-  i1("i1"), i2("i2"),
-  j1("j1"),
+  /* Final genérico e obrigatório, só para finalizar o autômato */
+  final,
   
-  /* Para espaço */
-  sp1("sp1"),
-  
-  /* Final genérico */
-  final("final");
-  
+  /* Estados intermediários */
+  a1, a2,
+  b1, b2, b3,
+  c1, c2, c3,
+  d1, d2, d3,
+  e1, e2,
+  f1, f2,
+  g1, g2,
+  h1, h2,
+  i1, i2,
+  j1,
+  sp1
+} State;
+
+typedef String TokenType;
+
 /* Tokens de teste */
 TokenType
   TkId("Id"),
@@ -44,6 +42,8 @@ TokenType
   TkSpaces("Spaces"),
   TkAssign("Assign"),
   TkSymbol("Symbol"),
+  TkIf("If"),
+  TkFor("For"),
   TkNone("None");
   
 int main(int argc, char **argv)
@@ -62,7 +62,7 @@ int main(int argc, char **argv)
   
   const String separators(symbols + spaces);
   
-  TransitionTable<State,TokenType> automata(start,invalid,final);
+  TransitionTable<State,TokenType> automata(start,invalid,final,TkNone);
   
   /* Consome espaços em branco */
   automata.addTransition(start,spaces,sp1);
@@ -119,9 +119,10 @@ int main(int argc, char **argv)
   
   /* Estrutura com as palavras reservadas */
   TokenHash<TokenType> reservedWords(TkNone);
-  reservedWords.add("if",TkId);
+  reservedWords.add("if",TkIf);
+  reservedWords.add("for",TkFor);
   
-  Analyser<State,TokenType> analyser(reader,automata,reservedWords);
+  Analyser<State,TokenType> analyser(reader,automata,reservedWords,TkId);
   
   /* Ignore os seguintes tokens,
    * que não serão passados pro 
@@ -134,9 +135,14 @@ int main(int argc, char **argv)
   {
     Token<TokenType> t(analyser.getToken());
     
-    std::cout << "'" << t.getLexema() << "' que é do tipo "
-              << t.getType() << " e está em "
-              << t.getLine() << "x" << t.getColumn() << std::endl;
+    if (t.getType() == TkNone) {
+      std::cout << "Peguei um token inválido. Poutz!" << std::endl;
+    } else {
+    
+      std::cout << "'" << t.getLexema() << "' que é do tipo "
+                << t.getType() << " e está em "
+                << t.getLine() << "x" << t.getColumn() << std::endl;
+    }
   }
   
   return 0;

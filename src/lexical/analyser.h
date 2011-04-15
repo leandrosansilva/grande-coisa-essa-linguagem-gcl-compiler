@@ -51,6 +51,10 @@ class Analyser
   typedef std::list<Ttoken> IgnoreList;
   IgnoreList _ignore;
   
+  /* qual é o token que representa identificador 
+   * e poderá ser uma palavra reservada */
+  Ttoken _idToken;
+  
   /* Método privado para pegar o próximo token */
   Token<Ttoken> _privGetToken() 
   {
@@ -87,10 +91,11 @@ class Analyser
 
 public:
 
-  Analyser(FileReader &file, TransitionTable<T,Ttoken> &table, TokenHash<Ttoken> &reserved):
+  Analyser(FileReader &file, TransitionTable<T,Ttoken> &table, TokenHash<Ttoken> &reserved, Ttoken idToken):
   _file(file),
   _table(table),
-  _reserved(reserved)
+  _reserved(reserved),
+  _idToken(idToken)
   {
   }
   
@@ -106,16 +111,29 @@ public:
     return _file.canRead();
   }
  
-  /* Obtem o próximo token, 
+  /* Obtem o próximo token,
    * mas ignora aqueles que estão na lista de "ignorados"
    * e já olha na tabela de palavras reservadas
   */
   Token<Ttoken> getToken()
   {
     Token<Ttoken> t;
+    
+    /* Lê token até achar um que não possa ser descartado */
     do {
       t = _privGetToken();
     } while (std::find(_ignore.begin(), _ignore.end(),t.getType()) != _ignore.end());
+    
+    /* se foi pego como identificador, vejo se é uma palavra reservada */
+    if (t.getType() == _idToken) {
+      
+      /* o token da string que casou. Deve ser diferente do tipo inválido */
+      Ttoken foundType(_reserved.find(t.getLexema()));
+      if (foundType != _reserved.getNone()) {
+        /* Se for uma palavra reservada, defino o novo tipo do token encontrado */
+        t.setType(foundType);
+      }
+    }
     
     return t;
   }

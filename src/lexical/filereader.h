@@ -55,17 +55,37 @@ public:
   
   FileReader(const char *filename);
   
+  virtual ~FileReader();
+  
   /* pega o número de linha do arquivo que está sendo analizada */
   int getLineNumber() const;
   
   /* Pega a coluna da linha que está sendo analizada */
   int getColumnNumber() const;
   
+  int getPreviousColumnNumber() const;
+  
   bool backOnePosition();
+  
+  /* Carrega pra memória! */
+  bool loadToMemory();
+  
+  /* Retorna o tamanho, em bytes, do arquivo */
+  int getSize();
   
 private:
   int _lineNumber;
   int _columnNumber;
+  int _previousColumnNumber;
+  
+  /* nesta string fica todo o conteúdo do arquivo! */
+  char *_fileContent;
+  
+  /* posição atual na string */
+  int _curPos;
+  
+  /* Só para ter armazenado o tamanho do arquivo, em bytes */
+  int _size;
 };
 
 }

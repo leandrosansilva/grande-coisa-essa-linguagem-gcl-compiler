@@ -28,30 +28,46 @@
 using namespace Lexical;
 
 FileReader::FileReader(const std::string &filename):
-std::ifstream(filename.c_str()),
+std::ifstream(filename.c_str(),std::ios::ate),
 _lineNumber(1),
-_columnNumber(0)
+_columnNumber(0),
+_curPos(0),
+_size(tellg())
 {
+  loadToMemory();
 }
 
 FileReader::FileReader(const char* filename): 
-std::ifstream(filename),
+std::ifstream(filename,std::ios::ate),
 _lineNumber(1),
-_columnNumber(0)
+_columnNumber(1),
+_curPos(0),
+_size(tellg())
 {
+  loadToMemory();
+}
+
+int FileReader::getSize()
+{
+  return _size;
+}
+
+bool FileReader::loadToMemory()
+{
+  _fileContent = new char[_size];
+  seekg(0,std::ios::beg);
+  read(_fileContent,_size);
 }
 
 char FileReader::getChar()
 {
-  /* TODO: melhorar isso lendo grandes buffers por vez
-   * Ou mesmo o arquivo todo para a memória
-   */
-  char c;
-  
-  read(&c,sizeof(char));
+  char c(_fileContent[_curPos++]);
+ 
+  /* faço um "backup" da coluna anterior */
+  _previousColumnNumber = _columnNumber;
   
   if (c == '\n') {
-    _columnNumber = 0;
+    _columnNumber = 1;
     _lineNumber++;
   } else {
     _columnNumber++;
@@ -62,7 +78,7 @@ char FileReader::getChar()
 
 bool FileReader::canRead() const
 {
-  return !eof();
+  return _curPos < _size;
 }
 
 int FileReader::getLineNumber() const
@@ -75,7 +91,20 @@ int FileReader::getColumnNumber() const
   return _columnNumber;
 }
 
+int FileReader::getPreviousColumnNumber() const
+{
+  return _previousColumnNumber;
+}
+
 bool FileReader::backOnePosition()
 {
-  seekg(-1,std::ios::cur);
+  if (_fileContent[--_curPos] == '\n') {
+    _lineNumber--;
+    _columnNumber = _previousColumnNumber;
+  }
+}
+
+FileReader::~FileReader()
+{
+  delete _fileContent;
 }
