@@ -27,74 +27,36 @@
 
 using namespace Lexical;
 
-FileReader::FileReader(const std::string &filename, bool iBlank):
+FileReader::FileReader(const std::string &filename):
 std::ifstream(filename.c_str()),
 _lineNumber(1),
-_columnNumber(0),
-_ignoreBlank(iBlank)
+_columnNumber(1)
 {
 }
 
-FileReader::FileReader(const char* filename, bool iBlank): 
+FileReader::FileReader(const char* filename): 
 std::ifstream(filename),
 _lineNumber(1),
-_columnNumber(0),
-_ignoreBlank(iBlank)
+_columnNumber(1)
 {
 }
 
 char FileReader::getChar()
 {
-  /* TODO: melhorar isso lendo grandes buffers por vez */
-  /* TODO: quando há varios espaços, retornar um só */
-  
-  /* inicializo o caractere com uma quebra de 
-   * linha para executar o laço ao menos uma vez 
+  /* TODO: melhorar isso lendo grandes buffers por vez
+   * Ou mesmo o arquivo todo para a memória
    */
-  char c('\n');
+  char c;
   
-  /* contador de colunas */
-  int columnCounter(0);
+  read(&c,sizeof(char));
   
-  /* conta quantas linhas serão andadas pra ler um char */
-  int origLineNumber(_lineNumber);
-  
-  while (c == '\n' && canRead()) {
-    
-    
-    /* se estou a partir da segunda iteração,
-     * ou seja, andei mais de uma linha pra pegar um char
-     * coluna volta pra zero
-    */
-    if (origLineNumber < _lineNumber) {
-      _columnNumber = 0;
-      columnCounter = 0;
-    }
-      
-    /* contador de caracteres em branco */
-    int blankCounter(0);
-      
-    /* laço que consome os espaços em branco */
-    read(&c,sizeof(char));
-    while ((isblank(c)) && ignoreBlank()) {
-      read(&c,sizeof(char));
-      blankCounter++;
-    }
-    
-    /* incrementa o tanto de colunas que deslocou.
-     * é, no mínimo, 1, pois leu um caractere
-    */
-    columnCounter += blankCounter;
-
+  if (c == '\n') {
+    _columnNumber = 1;
     _lineNumber++;
+  } else {
+    _columnNumber++;
   }
-  
-  /* como tenho um incremento de linhas a mais, decremento */
-  _lineNumber--; 
 
-  /* incrementa o número de colunas com o que eu li */
-  _columnNumber += columnCounter + 1;
- 
   return c;
 }
 
@@ -113,17 +75,7 @@ int FileReader::getColumnNumber() const
   return _columnNumber;
 }
 
-bool FileReader::ignoreBlank() const
+bool FileReader::backOnePosition()
 {
-  return _ignoreBlank;
-}
-
-bool FileReader::disableIgnoreBlank()
-{
-  _ignoreBlank = false;
-}
-
-bool FileReader::enableIgnoreBlank()
-{
-  _ignoreBlank = true;
+  seekg(-1,std::ios::cur);
 }

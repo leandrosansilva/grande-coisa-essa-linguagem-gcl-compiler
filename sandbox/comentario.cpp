@@ -10,7 +10,7 @@ typedef String State;
 typedef String Token;
 
 State s = "start", a1 = "a1", a2 = "a2", a3 = "a3", a4 = "a4", invalid = "invalid", final = "final", s1 = "s1", s2 = "s2";
-Token comment = "comment", space = "space", //TKif = "if", TKinvalid = "invalido", TKfor = "for";
+Token comment = "comment", space = "space", TKif = "if", TKinvalid = "invalido", TKfor = "for";
 
 int main(int argc, char** argv) {
   /*TokenHash<Token> Hash(TKinvalid);

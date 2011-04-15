@@ -1,5 +1,7 @@
 #include <lexical/transitiontable.h>
 #include <common/tokentype.h>
+#include <lexical/filereader.h>
+#include <lexical/analyser.h>
 
 using namespace Lexical;
 
@@ -48,7 +50,7 @@ int main(int argc, char **argv)
   /* aspas (quotes) e apóstrofos (apostrophes) */
   const String quotes("\'\"");
   
-  const String blanks(" "); // tem tbm \t
+  const String blanks(" \t"); // tem tbm \t
   const String breakline("\n");
   
   const String spaces(blanks + breakline);
@@ -56,10 +58,9 @@ int main(int argc, char **argv)
   const String separators(symbols + spaces);
   
   /* Estrutura com as palavras reservadas */
-  /* FIXME: adicionar todas as formas possíveis */
+  /* FIXME: adicionar todas as palavras possíveis */
   TokenHash<String> reservedWords(TkNone);
   reservedWords.add("if",TkId);
-  
   
   TransitionTable<String,String> automata(start,invalid,final);
   
@@ -114,31 +115,24 @@ int main(int argc, char **argv)
   automata.addTransition(d1,">",d2);
   automata.addFinalTransition(d2,letters + digits + spaces,TkSymbol);
   
-  String input(argv[1] + breakline);
+  FileReader reader(argv[1]);
   
-  //String input("a_123abc_ := 123.44 :=876 -- comentario \n < := ");
+  Analyser<String,String> analyser(reader,automata,reservedWords);
   
-  for (int i = 0; i<input.size();i++) {
-    automata.doTransition(input[i]);
+  /* Ignore os seguintes tokens,
+   * que não serão passados pro 
+   * analisador sintático
+   */
+  analyser.ignoreToken(TkSpaces);
+  analyser.ignoreToken(TkComment);
+  
+  while (analyser.canReadToken())
+  {
+    Token<String> t(analyser.getToken());
     
-    if (automata.isInAValidState()) {
-      if (automata.isInAMatchedState()) {
-        
-        /* Casou!!!! */
-        std::cout << "Casou '" << automata.getMatchedString() 
-                  << "' como '" << automata.getMatchedToken() 
-                  << "'" << std::endl;
-                  
-        automata.reset();
-        /* Volta uma posição na entrada */
-        i--;
-        continue;
-        
-      } 
-    } else {
-      std::cout << "Deu pau com estado (" << automata.getCurrentState() <<  ") em '" << input[i] << "': " << i << std::endl;
-      break;
-    }
+    std::cout << "'" << t.getLexema() << "' que é do tipo "
+              << t.getType() << " e está em "
+              << t.getLine() << "x" << t.getColumn() << std::endl;
   }
   
   return 0;
