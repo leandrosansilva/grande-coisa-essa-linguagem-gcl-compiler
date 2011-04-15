@@ -61,7 +61,7 @@ class TransitionTable
   T _currentState;
   T _previousState;
   TransitionVector _table;
-  StateTokenMap _matchedStates;
+  StateTokenMap _matchedTokens;
   String _matchedString;
   
 public:
@@ -77,7 +77,7 @@ public:
   /* Adiciona um estado que casa um padrão */
   virtual void addMatched(T state, Ttoken tokenType)
   {
-    _matchedStates[state] = tokenType;
+    _matchedTokens[state] = tokenType;
   }
   
   /* retorna true se o estado atual é um dos finais positivamente,
@@ -153,7 +153,7 @@ public:
      * Busco _previousState no mapa e obtenho um iterator.
      * Busco o segundo termo deste iterator
      */
-    return _matchedStates.at(_previousState);
+    return _matchedTokens.at(_previousState);
   }
 };
 }

@@ -30,14 +30,14 @@ using namespace Lexical;
 FileReader::FileReader(const std::string &filename):
 std::ifstream(filename.c_str()),
 _lineNumber(1),
-_columnNumber(1)
+_columnNumber(0)
 {
 }
 
 FileReader::FileReader(const char* filename): 
 std::ifstream(filename),
 _lineNumber(1),
-_columnNumber(1)
+_columnNumber(0)
 {
 }
 
@@ -51,7 +51,7 @@ char FileReader::getChar()
   read(&c,sizeof(char));
   
   if (c == '\n') {
-    _columnNumber = 1;
+    _columnNumber = 0;
     _lineNumber++;
   } else {
     _columnNumber++;

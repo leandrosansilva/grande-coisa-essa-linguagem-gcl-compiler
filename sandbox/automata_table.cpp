@@ -4,8 +4,13 @@
 #include <lexical/analyser.h>
 
 using namespace Lexical;
+using namespace Common;
 
-String
+/* Definição dos tipos */
+typedef String State;
+typedef String TokenType;
+
+State
   /* Estado inválido */
   invalid("invalid"),
   
@@ -29,8 +34,8 @@ String
   /* Final genérico */
   final("final");
   
-  /* Tokens de teste */
-  String
+/* Tokens de teste */
+TokenType
   TkId("Id"),
   TkString("String"),
   TkInteger("Integer"),
@@ -57,12 +62,7 @@ int main(int argc, char **argv)
   
   const String separators(symbols + spaces);
   
-  /* Estrutura com as palavras reservadas */
-  /* FIXME: adicionar todas as palavras possíveis */
-  TokenHash<String> reservedWords(TkNone);
-  reservedWords.add("if",TkId);
-  
-  TransitionTable<String,String> automata(start,invalid,final);
+  TransitionTable<State,TokenType> automata(start,invalid,final);
   
   /* Consome espaços em branco */
   automata.addTransition(start,spaces,sp1);
@@ -117,18 +117,22 @@ int main(int argc, char **argv)
   
   FileReader reader(argv[1]);
   
-  Analyser<String,String> analyser(reader,automata,reservedWords);
+  /* Estrutura com as palavras reservadas */
+  TokenHash<TokenType> reservedWords(TkNone);
+  reservedWords.add("if",TkId);
+  
+  Analyser<State,TokenType> analyser(reader,automata,reservedWords);
   
   /* Ignore os seguintes tokens,
    * que não serão passados pro 
-   * analisador sintático
+   * analisador sintático; espaços e comentários
    */
   analyser.ignoreToken(TkSpaces);
   analyser.ignoreToken(TkComment);
   
   while (analyser.canReadToken())
   {
-    Token<String> t(analyser.getToken());
+    Token<TokenType> t(analyser.getToken());
     
     std::cout << "'" << t.getLexema() << "' que é do tipo "
               << t.getType() << " e está em "

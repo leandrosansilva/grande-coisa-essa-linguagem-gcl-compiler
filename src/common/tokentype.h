@@ -1,5 +1,5 @@
 /*
-    <one line to give the program's name and a brief idea of what it does.>
+    <Tabela Hash com palavras reservadas>
     Copyright (C) 2011  Leandro Santiago <leandrosansilva@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
@@ -23,101 +23,9 @@
 #include "string.h"
 
 namespace Common {
-/*
-  * Palavras reservadas da GCL:
-  * 
-  * module private end const Boolean integer begin typedef array range
-  * proc val ref return write read if fi do od true false forall llarof skip
-  * 
-  * Símbolos:
-  * 
-  * .   =   :=  --  ,   ;   (   ) []  [   ]   ->  #
-  * < > <=  >=  &   |   ~   +   -   *   /   \  ..
-  * 
-  * Comentários:
-  * -- comentário
-  *
-  * Um programa é uma sequência de módulos. Definição de módulo:
-  * <module> ->
-  * module identifier
-  * <definitionPart>
-  * private
-  * <block> .
-*/
-typedef enum {
-  /* Nenhum Token, útil como resultado de busca? */
-  None = 0,
-  
-  /* Palavras reservadas */
-  Module,
-  Private,
-  End,
-  Const,
-  Boolean,
-  Integer,
-  Begin,
-  Typedef,
-  Array,
-  Range,
-  Proc,
-  Val,
-  Ref,
-  Return,
-  Write,
-  Read,
-  If,
-  Fi,
-  Do,
-  Od,
-  True,
-  False,
-  Forall,
-  Llarof,
-  Skip,
-  
-  /* Símbolos */
-  Dot, // .
-  Equal, // =
-  Assign, // :=
-  Comment, // --
-  Comma, // ,
-  Semicolon, // ;
-  LParentesis, // (
-  RParentesis, // )
-  LBracket, // [
-  RBracket, // ]
-  Else, // [] // else
-  Then, // -> // then
-  Sharp, // #
-  Lesser, // <
-  Greater, // >
-  LessEqual, // <=
-  GreaterEqual, // >=
-  And, // &
-  Or, // |
-  Til, // ~
-  Plus, // +
-  Minus, // -
-  Asterisk, // *
-  Slash, // /
-  BackSlash, // \\ 
-  TwoDot, // ..
- 
-  /* Tipos constantes, números, etc. */
-  ClassInteger,
-  ClassReal,
-  ClassString,
-  ClassId,
-  ClassComment,
-  ClassSpaces
-  
-} TokenType;
-
 /* 
   * Tabela hash com todos as palavras reservadas
-  * 
-  * TODO: como GCL não é case-sensitive,
-  * devo fazer todas as operações com lowercase
+  * Como tratar linguagens que não são case-sensitive? 
 */
 template<typename T>
 class TokenHash

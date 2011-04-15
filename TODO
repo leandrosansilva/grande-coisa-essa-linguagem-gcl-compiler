@@ -1,2 +1,11 @@
 Tu-do
 
+Analisador sintático
+-> gerar uma AST -> abstract syntatic tree
+Analisador semântico
+-> gerar AAST -> anoted abstract syntact tree
+Gerador de código intermediário
+-> utilizar algum mecanismo de serialização padronizado, em texto puro
+
+======================================================================
+

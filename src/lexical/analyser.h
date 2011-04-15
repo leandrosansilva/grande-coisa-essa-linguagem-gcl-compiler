@@ -33,7 +33,9 @@
 #include <algorithm>
 
 namespace Lexical {
-
+  
+using namespace Common;
+  
 template<typename T, typename Ttoken>
 class Analyser
 {
@@ -81,9 +83,10 @@ class Analyser
         );
       }
     }
-  } 
+  }
+
 public:
-  /* chamo o analizador passando qual arquivo deve fazer parser */
+
   Analyser(FileReader &file, TransitionTable<T,Ttoken> &table, TokenHash<Ttoken> &reserved):
   _file(file),
   _table(table),
@@ -104,7 +107,7 @@ public:
   }
  
   /* Obtem o próximo token, 
-   * mas ignora aqueles que estão na lista de "ignorados" 
+   * mas ignora aqueles que estão na lista de "ignorados"
    * e já olha na tabela de palavras reservadas
   */
   Token<Ttoken> getToken()
