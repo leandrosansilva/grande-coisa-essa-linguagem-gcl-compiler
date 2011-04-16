@@ -119,10 +119,14 @@ int main(int argc, char **argv)
   
   /* Estrutura com as palavras reservadas */
   TokenHash<TokenType> reservedWords(TkNone);
-  reservedWords.add("if",TkIf);
+  //reservedWords.add("if",TkIf);
   reservedWords.add("for",TkFor);
   
-  Analyser<State,TokenType> analyser(reader,automata,reservedWords,TkId);
+  Analyser<State,TokenType> analyser(reader,automata,reservedWords);
+  
+  //id deve ser comparado na tabela de palavras reservadas
+  
+  analyser.addTokenToCompareWithReserved(TkId);
   
   /* Ignore os seguintes tokens,
    * que não serão passados pro 

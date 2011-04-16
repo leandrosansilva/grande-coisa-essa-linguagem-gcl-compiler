@@ -121,7 +121,7 @@ public:
     if (isInAValidState() && !isInAMatchedState())
       _matchedString += symbol;
     
-    std::cout << "read '" << symbol << "' and changed to state " << _currentState << std::endl;
+   // std::cout << "read '" << symbol << "' and changed to state " << _currentState << std::endl;
       
     return _currentState;
   }
