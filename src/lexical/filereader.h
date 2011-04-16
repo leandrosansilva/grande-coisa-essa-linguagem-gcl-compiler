@@ -79,7 +79,7 @@ private:
   int _previousColumnNumber;
   
   /* nesta string fica todo o conteúdo do arquivo! */
-  char *_fileContent;
+  int8_t *_fileContent;
   
   /* posição atual na string */
   int _curPos;

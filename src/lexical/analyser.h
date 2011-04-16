@@ -1,5 +1,5 @@
 /*
-    <one line to give the program's name and a brief idea of what it does.>
+    Implementação de um analisador léxico genérico
     Copyright (C) 2011  Leandro Santiago <leandrosansilva@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
@@ -21,15 +21,10 @@
 #define LEXICAL_ANALYSER_H
 
 #include "filereader.h"
-
 #include <common/token.h>
-
 #include <common/tokentype.h>
-
 #include "transitiontable.h"
-
 #include <list>
-
 #include <algorithm>
 
 namespace Lexical {
@@ -80,17 +75,23 @@ class Analyser
           return t;
         }
       } else { // isInAValidState()
+        /* Se não casei tokei, ainda sim volto uma posição */
+        _file.backOnePosition();
         break;
       }
     } // _file.canRead()
-    std::cout << "Deu pau!" << std::endl;
-    // Retorna um token inválido
-    return Token<Ttoken>(
+    
+    /* Retorna um token inválido */
+    Token<Ttoken> t(
       _reserved.getNone(),
       line,
       column,
       _table.getMatchedString()
     );
+    
+    _table.reset();
+    
+    return t;
   }
 
 public:

@@ -55,9 +55,9 @@ int FileReader::getSize()
 
 bool FileReader::loadToMemory()
 {
-  _fileContent = new char[_size];
+  _fileContent = new int8_t[_size];
   seekg(0,std::ios::beg);
-  read(_fileContent,_size);
+  read((char *)_fileContent,_size);
 }
 
 char FileReader::getChar()
