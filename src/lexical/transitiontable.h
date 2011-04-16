@@ -62,19 +62,17 @@ class TransitionTable
   T _finalState;
   T _currentState;
   T _previousState;
-  Ttoken _invalidToken;
   TransitionVector _table;
   StateTokenMap _matchedTokens;
   String _matchedString;
   
 public:
   /* Please tell me the initial, invalid and final states! */
-  TransitionTable(T start, T invalidState, T final,Ttoken invalidToken):
+  TransitionTable(T start, T invalidState, T final):
   _startState(start),
   _invalidState(invalidState),
   _finalState(final),
-  _currentState(start),
-  _invalidToken(invalidToken)
+  _currentState(start)
   {
   }
   
@@ -123,7 +121,7 @@ public:
     if (isInAValidState() && !isInAMatchedState())
       _matchedString += symbol;
     
-    //std::cout << "read '" << symbol << "' and changed to state " << _currentState << std::endl;
+    std::cout << "read '" << symbol << "' and changed to state " << _currentState << std::endl;
       
     return _currentState;
   }
@@ -152,13 +150,10 @@ public:
   
   virtual Ttoken getMatchedToken() const 
   {
-    /* Mas _previousState aponta para o último estado que eu estava.
-     * Busco _previousState no mapa e obtenho um iterator.
-     * Busco o segundo termo deste iterator
+    /* _previousState aponta para o último estado que eu estava.
+     * Logo é ele que me diz por qual estado saí do autômato
     */
-    return  _matchedTokens.find(_previousState) != _matchedTokens.end()
-            ? _matchedTokens.at(_previousState)
-            : _invalidToken;
+    return _matchedTokens.at(_previousState);
   }
 };
 }

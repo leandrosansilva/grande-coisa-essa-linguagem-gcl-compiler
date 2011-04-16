@@ -27,7 +27,7 @@ typedef enum {
   h1, h2,
   i1, i2,
   j1,
-  sp1
+  sp1 = 100
 } State;
 
 typedef String TokenType;
@@ -62,7 +62,7 @@ int main(int argc, char **argv)
   
   const String separators(symbols + spaces);
   
-  TransitionTable<State,TokenType> automata(start,invalid,final,TkNone);
+  TransitionTable<State,TokenType> automata(start,invalid,final);
   
   /* Consome espaços em branco */
   automata.addTransition(start,spaces,sp1);
@@ -126,7 +126,7 @@ int main(int argc, char **argv)
   
   /* Ignore os seguintes tokens,
    * que não serão passados pro 
-   * analisador sintático; espaços e comentários
+   * analisador sintático: espaços e comentários
    */
   analyser.ignoreToken(TkSpaces);
   analyser.ignoreToken(TkComment);

@@ -18,7 +18,7 @@ int main(int argc, char** argv) {
   Hash.add("for", TKfor);
   std::cout << Hash.findReservedWord("For") << "\n"; */
   
-  TransitionTable<State, Token> table(s, invalid, final, TKinvalid);
+  TransitionTable<State, Token> table(s, invalid, final);
   table.addTransition(s, "/", a1);
   table.addTransition(a1, "*", a2);
   table.addTransition(a2, " aeiou", a2);

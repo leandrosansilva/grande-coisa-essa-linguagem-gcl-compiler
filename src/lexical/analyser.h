@@ -77,8 +77,11 @@ class Analyser
           /* Volta uma posição na entrada */
           _file.backOnePosition();
           return t;
-        } 
-      } else {
+        }
+      } else { // isInAValidState()
+        
+        std::cout << "Deu pau!" << std::endl;
+        // Retorna um token inválido
         return Token<Ttoken>(
           _table.getMatchedToken(),
           line,
@@ -86,7 +89,18 @@ class Analyser
           _table.getMatchedString()
         );
       }
-    }
+    } // _file.canRead()
+    /* Se cheguei aqui, não posso mais ler o arquivo, pq acabou */
+    std::cout << "Acabou o arquivo" << std::endl;
+    /* Se acabou o arquivo, o que devo retornar? */
+    std::cout << "Deu pau!" << std::endl;
+    // Retorna um token inválido
+    return Token<Ttoken>(
+      _table.getMatchedToken(),
+      line,
+      column,
+      _table.getMatchedString()
+    );
   }
 
 public:

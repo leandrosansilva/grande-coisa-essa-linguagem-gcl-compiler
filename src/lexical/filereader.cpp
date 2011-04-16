@@ -32,6 +32,7 @@ std::ifstream(filename.c_str(),std::ios::ate),
 _lineNumber(1),
 _columnNumber(0),
 _curPos(0),
+/* Preciso de um caractere a mais no final do arquivo, por isso +1 */
 _size(tellg())
 {
   loadToMemory();
