@@ -2,49 +2,46 @@
 #include <lexical/transitiontable.h>
 #include <common/string.h>
 #include <common/tokentype.h>
+#include <lexical/analyser.h>
+#include <lexical/filereader.h>
 
-using namespace Common;
-using namespace Lexical;
+/* Para usar string como tipo */
+//typedef Common::String State;
+//typedef Common::String Token;
+//State s = "start", a1 = "a1", a2 = "a2", a3 = "a3", a4 = "a4", invalid = "invalid", final = "final", s1 = "s1", s2 = "s2";
+//Token comment = "comment", space = "space", TKif = "if", TKinvalid = "invalido", TKfor = "for";
 
-typedef String State;
-typedef String Token;
-
-State s = "start", a1 = "a1", a2 = "a2", a3 = "a3", a4 = "a4", invalid = "invalid", final = "final", s1 = "s1", s2 = "s2";
-Token comment = "comment", space = "space", TKif = "if", TKinvalid = "invalido", TKfor = "for";
+/* Para usar enum... */
+typedef enum {s, a1, a2, a3, a4, invalid, final, s1, s2 } State;
+typedef enum {comment, space, TKif, TKinvalid, TKfor} Token;
 
 int main(int argc, char** argv) {
-  /*TokenHash<Token> Hash(TKinvalid);
-  Hash.add("if", TKif);
-  Hash.add("for", TKfor);
-  std::cout << Hash.findReservedWord("For") << "\n"; */
+  Lexical::TokenHash<Token> Hash(TKinvalid);
   
-  TransitionTable<State, Token> table(s, invalid, final);
+  Lexical::TransitionTable<State, Token> table(s, invalid, final);
   table.addTransition(s, "/", a1);
   table.addTransition(a1, "*", a2);
-  table.addTransition(a2, " aeiou", a2);
+  table.addTransition(a2, " \naeiou", a2);
   table.addTransition(a2, "*", a3);
   table.addTransition(a3, "/", a4);
-  table.addTransition(a3, " aeiou", a2);
-  table.addFinalTransition(a4, " aeiou", comment);
-  table.addTransition(s, " ", s1);
-  table.addTransition(s1, " ", s1);
+  table.addTransition(a3, " \naeiou", a2);
+  table.addFinalTransition(a4, " \naeiou", comment);
+  table.addTransition(s, " \n", s1);
+  table.addTransition(s1, " \n", s1);
   table.addFinalTransition(s1, "/*aeiou", space);
   
-  String input(argv[1] + String(" "));
+  Lexical::FileReader file(argv[1]);
   
-  for (int i=0; i<input.size(); i++) {
-    table.doTransition(input[i]);
-    if (table.isInAValidState()){
-      if (table.isInAMatchedState()) {
-        std::cout << table.getMatchedString() << " " << table.getMatchedToken() << "\n";
-        table.reset();
-        i--;
-      }
-    } else {
-      std::cout << "Travou em " << i << " caracter: " << input[i] << "\n";
-      break;
-    }
-      
+  Lexical::Analyser<State,Token> analyser(file,table,Hash);
+  
+  analyser.ignoreToken(space);
+  
+  Common::Token<Token> token;
+  
+  while (analyser.canReadToken()) {
+    token = analyser.getToken();
+    
+    std::cout << "Pegou '" << token.getLexema() << "' do tipo '" << token.getType() << "'" << std::endl;
   }
   
   return 0;

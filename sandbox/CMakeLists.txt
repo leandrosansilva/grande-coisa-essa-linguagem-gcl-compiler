@@ -6,3 +6,4 @@ add_executable(table automata_table.cpp)
 target_link_libraries(table gcl-lexical)
 
 add_executable(comment comentario.cpp)
+target_link_libraries(comment gcl-lexical)

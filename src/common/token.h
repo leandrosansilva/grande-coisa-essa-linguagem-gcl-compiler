@@ -8,7 +8,7 @@
 
 namespace Common {
 
-template <typename Ttoken>
+template <typename TokenType>
 class Token {
 public:
   
@@ -16,7 +16,7 @@ public:
   {
   }
   
-  Token(Ttoken type,int line, int column, String lexema):
+  Token(const TokenType &type,int line, int column, const String &lexema):
   _column(column),
   _lexema(lexema),
   _line(line),
@@ -28,7 +28,7 @@ public:
   {
   }
   
-  Ttoken getType() const
+  TokenType getType() const
   {
     return _type;
   }
@@ -48,14 +48,14 @@ public:
     return _line;
   }
   
-  void setType(Ttoken type)
+  void setType(const TokenType &type)
   {
     _type = type;
   }
   
 private:
   /* A classe de um token */
-  Ttoken _type;
+  TokenType _type;
   
   /* O lexema, ou string achada */
   String _lexema;

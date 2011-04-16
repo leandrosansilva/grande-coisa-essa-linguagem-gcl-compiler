@@ -132,7 +132,7 @@ int main(int argc, char **argv)
    * analisador sintático: espaços e comentários
   */
   analyser.ignoreToken(TkSpaces);
-  //analyser.ignoreToken(TkComment);
+  analyser.ignoreToken(TkComment);
   
   while (analyser.canReadToken())
   {

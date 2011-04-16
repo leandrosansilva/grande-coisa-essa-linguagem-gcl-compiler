@@ -31,15 +31,15 @@ namespace Lexical {
 
 using namespace Common;
   
-template<typename T>
+template<typename StateType>
 class Transition
 {
 public:
-  T _from;
-  T _to;
+  StateType _from;
+  StateType _to;
   String _pattern;
   
-  Transition(T from, T to, const String &s):
+  Transition(const StateType &from, const StateType &to, const String &s):
   _from(from),
   _to(to),
   _pattern(s)
@@ -47,25 +47,25 @@ public:
   }
 };
   
-/* FIXME: implementação com array é porca.
+/* 
  * TODO: reimplementar de forma mais eficiente
  * 
 */
-template<typename T, typename Ttoken>
+template<typename StateType, typename TokenType>
 class TransitionTable
 {
-  typedef std::vector< Transition<T> > TransitionVector;
-  typedef std::map<T,Ttoken> StateTokenMap;
+  typedef std::vector< Transition<StateType> > TransitionVector;
+  typedef std::map<StateType,TokenType> StateTokenMap;
   
-  T _startState;
-  T _invalidState;
-  T _finalState;
-  T _currentState;
+  StateType _startState;
+  StateType _invalidState;
+  StateType _finalState;
+  StateType _currentState;
   
   /* O estado antes de fazer a transição.
    * É por ele que sei por qual estado saí do autômato
   */
-  T _previousState;
+  StateType _previousState;
   
   TransitionVector _table;
   StateTokenMap _matchedTokens;
@@ -73,7 +73,7 @@ class TransitionTable
   
 public:
   /* Please tell me the initial, invalid and final states! */
-  TransitionTable(T start, T invalidState, T final):
+  TransitionTable(const StateType &start, const StateType &invalidState, const StateType &final):
   _startState(start),
   _invalidState(invalidState),
   _finalState(final),
@@ -82,7 +82,7 @@ public:
   }
   
   /* Adiciona um estado que casa um padrão */
-  virtual void addMatched(T state, Ttoken tokenType)
+  virtual void addMatched(const StateType &state, const TokenType &tokenType)
   {
     _matchedTokens[state] = tokenType;
   }
@@ -99,12 +99,12 @@ public:
     return _currentState != _invalidState;
   }
   
-  virtual void addTransition(T from, const String &s, T to)
+  virtual void addTransition(const StateType &from, const String &s, const StateType &to)
   {
-    _table.push_back(Transition<T>(from,to,s));
+    _table.push_back(Transition<StateType>(from,to,s));
   }
   
-  virtual void addFinalTransition(T from, const String &s,Ttoken token)
+  virtual void addFinalTransition(const StateType &from, const String &s,const TokenType &token)
   {
     addTransition(from,s,_finalState);
     addMatched(from,token);
@@ -114,7 +114,7 @@ public:
    * Retorna o estado inválido caso não 
    * tenha conseguido fazer esta transição
    */
-  virtual T doTransition(char symbol)
+  virtual StateType doTransition(const char &symbol)
   {
     _previousState = _currentState;
     
@@ -131,10 +131,10 @@ public:
     /* só concateno a string achada quando não for um estado depois do final 
      * ou caso tenha entrado num estado inválido
      */
-    if (isInAValidState() && !isInAMatchedState())
+    if (!isInAMatchedState())
       _matchedString += symbol;
     
-   // std::cout << "read '" << symbol << "' and changed to state " << _currentState << std::endl;
+    //std::cout << "read " << (int)symbol << " -> '" << symbol <<  "' and changed to state " << _currentState << std::endl;
       
     return _currentState;
   }
@@ -146,12 +146,12 @@ public:
     _matchedString = "";
   }
   
-  virtual T getCurrentState() const
+  virtual StateType getCurrentState() const
   {
     return _currentState;
   }
   
-  virtual T getPreviousState() const 
+  virtual StateType getPreviousState() const 
   {
     return _previousState;
   }
@@ -161,7 +161,12 @@ public:
     return _matchedString;
   }
   
-  virtual Ttoken getMatchedToken() const 
+  virtual StateType getInitialState() const 
+  {
+    return _startState;
+  }
+  
+  virtual TokenType getMatchedToken() const 
   {
     /* _previousState aponta para o último estado que eu estava.
      * Logo é ele que me diz por qual estado saí do autômato

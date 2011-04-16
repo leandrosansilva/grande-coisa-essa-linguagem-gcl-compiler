@@ -31,25 +31,25 @@ namespace Lexical {
   
 using namespace Common;
   
-template<typename T, typename Ttoken>
+template<typename StateType, typename TokenType>
 class Analyser
 {
   FileReader &_file;
   
   /* autômato */
-  TransitionTable<T,Ttoken> &_table;
+  TransitionTable<StateType,TokenType> &_table;
   
   /* hash de palavras reservadas */
-  TokenHash<Ttoken> &_reserved;
+  TokenHash<TokenType> &_reserved;
   
   /* Lista de tokens que devem ser ignorados */
-  typedef std::list<Ttoken> IgnoreList;
+  typedef std::list<TokenType> IgnoreList;
   IgnoreList _ignore;
   
-  std::list<Ttoken> _listTypeTokenToCompare;
+  std::list<TokenType> _listTypeTokenToCompare;
   
   /* Método privado para pegar o próximo token */
-  Token<Ttoken> _privGetToken() 
+  Token<TokenType> _privGetToken() 
   {
     /* Já gravo a linha e coluna onde inicio o a leitura do token */
     int column(_file.getColumnNumber());
@@ -62,7 +62,7 @@ class Analyser
       if (_table.isInAValidState()) {
         if (_table.isInAMatchedState()) {
           /* Casou. Retorno token */
-          Token<Ttoken> t(
+          Token<TokenType> t(
             _table.getMatchedToken(),
             line,
             column,
@@ -70,19 +70,26 @@ class Analyser
           );
           /* Reseta o automato pro estado inicial*/
           _table.reset();
-          /* Volta uma posição na entrada */
+          
+          /* Volto uma posição na entrada*/
           _file.backOnePosition();
+
           return t;
         }
       } else { // isInAValidState()
-        /* Se não casei tokei, ainda sim volto uma posição */
-        _file.backOnePosition();
+
+        /* Se o estado anterior for diferente de inicial, ou seja,
+         * se li ao menos um caractere, volto uma posição
+        */
+        if (_table.getPreviousState() != _table.getInitialState()) {
+          _file.backOnePosition();
+        }
         break;
       }
     } // _file.canRead()
     
-    /* Retorna um token inválido */
-    Token<Ttoken> t(
+    /* Se chegou até aqui, retorna um token inválido */
+    Token<TokenType> t(
       _reserved.getNone(),
       line,
       column,
@@ -96,19 +103,20 @@ class Analyser
 
 public:
 
-  Analyser(FileReader &file, TransitionTable<T,Ttoken> &table, TokenHash<Ttoken> &reserved):
+  Analyser(FileReader &file, TransitionTable<StateType,TokenType> &table, TokenHash<TokenType> &reserved):
   _file(file),
   _table(table),
   _reserved(reserved)
   {
   }
   
-  void addTokenToCompareWithReserved(const Ttoken &t)
+  void addTokenToCompareWithReserved(const TokenType &t)
   {
     _listTypeTokenToCompare.push_back(t);
   }
-  
-  void ignoreToken(Ttoken &token)
+ 
+  /* Deve ignorar o tipo passado */
+  void ignoreToken(const TokenType &token)
   {
     _ignore.push_back(token);
   }
@@ -124,9 +132,9 @@ public:
    * mas ignora aqueles que estão na lista de "ignorados"
    * e já olha na tabela de palavras reservadas
   */
-  Token<Ttoken> getToken()
+  Token<TokenType> getToken()
   {
-    Token<Ttoken> t;
+    Token<TokenType> t;
     
     /* Lê token até achar um que não possa ser descartado */
     do {
@@ -139,7 +147,7 @@ public:
     
       
       /* o token da string que casou. Deve ser diferente do tipo inválido */
-      Ttoken foundType(_reserved.find(t.getLexema()));
+      TokenType foundType(_reserved.find(t.getLexema()));
       if (foundType != _reserved.getNone()) {
         /* Se for uma palavra reservada, defino o novo tipo do token encontrado */
         t.setType(foundType);
