@@ -43,10 +43,24 @@ class Analyser
   TokenHash<TokenType> &_reserved;
   
   /* Lista de tokens que devem ser ignorados */
-  typedef std::list<TokenType> IgnoreList;
-  IgnoreList _ignore;
+  class TokenTypeList
+  {
+    std::list<TokenType> _list;
+    
+  public:
+    bool find(const TokenType &type)
+    {
+      return std::find(_list.begin(),_list.end(),type) != _list.end();
+    }
+    
+    void add(const TokenType &type)
+    {
+      _list.push_back(type);
+    }
+  };
   
-  std::list<TokenType> _listTypeTokenToCompare;
+  TokenTypeList _listTypeTokenToCompare;
+  TokenTypeList _ignore;
   
   /* Método privado para pegar o próximo token */
   Token<TokenType> _privGetToken() 
@@ -112,13 +126,13 @@ public:
   
   void addTokenToCompareWithReserved(const TokenType &t)
   {
-    _listTypeTokenToCompare.push_back(t);
+    _listTypeTokenToCompare.add(t);
   }
  
   /* Deve ignorar o tipo passado */
   void ignoreToken(const TokenType &token)
   {
-    _ignore.push_back(token);
+    _ignore.add(token);
   }
   
   /* me retorna se posso continuar a pegar token ou se já terminou */
@@ -139,13 +153,12 @@ public:
     /* Lê token até achar um que não possa ser descartado */
     do {
       t = _privGetToken();
-    } while (std::find(_ignore.begin(), _ignore.end(),t.getType()) != _ignore.end());
+    } while (_ignore.find(t.getType()));
     
     
     /* se foi pego como identificador, vejo se é uma palavra reservada */
-    if (std::find(_listTypeTokenToCompare.begin(), _listTypeTokenToCompare.end(), t.getType()) != _listTypeTokenToCompare.end()) {
-    
-      
+    if (_listTypeTokenToCompare.find(t.getType())) {
+        
       /* o token da string que casou. Deve ser diferente do tipo inválido */
       TokenType foundType(_reserved.find(t.getLexema()));
       if (foundType != _reserved.getNone()) {
@@ -154,6 +167,7 @@ public:
       }
     }
     
+    /* Retorna o token, seja ele válido ou inválido */
     return t;
   }
 };
