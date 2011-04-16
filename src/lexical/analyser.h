@@ -56,11 +56,14 @@ class Analyser
   /* Método privado para pegar o próximo token */
   Token<Ttoken> _privGetToken() 
   {
+    /* Já gravo a linha e coluna onde inicio o a leitura do token */
     int column(_file.getColumnNumber());
-    int line(_file.getLineNumber()); 
+    int line(_file.getLineNumber());
+    
     while (_file.canRead()) {
       char c(_file.getChar());
       _table.doTransition(c);
+      
       if (_table.isInAValidState()) {
         if (_table.isInAMatchedState()) {
           /* Casou. Retorno token */
@@ -77,24 +80,13 @@ class Analyser
           return t;
         }
       } else { // isInAValidState()
-        
-        std::cout << "Deu pau!" << std::endl;
-        // Retorna um token inválido
-        return Token<Ttoken>(
-          _table.getMatchedToken(),
-          line,
-          column,
-          _table.getMatchedString()
-        );
+        break;
       }
     } // _file.canRead()
-    /* Se cheguei aqui, não posso mais ler o arquivo, pq acabou */
-    std::cout << "Acabou o arquivo" << std::endl;
-    /* Se acabou o arquivo, o que devo retornar? */
     std::cout << "Deu pau!" << std::endl;
     // Retorna um token inválido
     return Token<Ttoken>(
-      _table.getMatchedToken(),
+      _reserved.getNone(),
       line,
       column,
       _table.getMatchedString()

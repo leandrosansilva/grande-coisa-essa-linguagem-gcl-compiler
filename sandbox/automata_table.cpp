@@ -119,28 +119,29 @@ int main(int argc, char **argv)
   
   /* Estrutura com as palavras reservadas */
   TokenHash<TokenType> reservedWords(TkNone);
-  //reservedWords.add("if",TkIf);
+  reservedWords.add("if",TkIf);
   reservedWords.add("for",TkFor);
   
   Analyser<State,TokenType> analyser(reader,automata,reservedWords);
   
   //id deve ser comparado na tabela de palavras reservadas
-  
   analyser.addTokenToCompareWithReserved(TkId);
   
   /* Ignore os seguintes tokens,
    * que não serão passados pro 
    * analisador sintático: espaços e comentários
-   */
+  */
   analyser.ignoreToken(TkSpaces);
-  analyser.ignoreToken(TkComment);
+  //analyser.ignoreToken(TkComment);
   
   while (analyser.canReadToken())
   {
     Token<TokenType> t(analyser.getToken());
     
     if (t.getType() == TkNone) {
-      std::cout << "Peguei um token inválido. Poutz!" << std::endl;
+      std::cout << "Peguei um token inválido. Poutz! Casei só '" 
+                << t.getLexema() << "'"
+                << std::endl;
     } else {
     
       std::cout << "'" << t.getLexema() << "' que é do tipo "

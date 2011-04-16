@@ -61,7 +61,12 @@ class TransitionTable
   T _invalidState;
   T _finalState;
   T _currentState;
+  
+  /* O estado antes de fazer a transição.
+   * É por ele que sei por qual estado saí do autômato
+  */
   T _previousState;
+  
   TransitionVector _table;
   StateTokenMap _matchedTokens;
   String _matchedString;
@@ -105,6 +110,10 @@ public:
     addMatched(from,token);
   }
   
+  /* Efetua uma transição. 
+   * Retorna o estado inválido caso não 
+   * tenha conseguido fazer esta transição
+   */
   virtual T doTransition(char symbol)
   {
     _previousState = _currentState;
@@ -116,8 +125,12 @@ public:
         break;
     }
     
+    /* retorna a primeira transição que encontrou. Ou inválido, caso contrário */
     _currentState = i != _table.end() ? i->_to : _invalidState;
-    
+   
+    /* só concateno a string achada quando não for um estado depois do final 
+     * ou caso tenha entrado num estado inválido
+     */
     if (isInAValidState() && !isInAMatchedState())
       _matchedString += symbol;
     
