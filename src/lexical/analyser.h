@@ -20,7 +20,7 @@
 #ifndef LEXICAL_ANALYSER_H
 #define LEXICAL_ANALYSER_H
 
-#include "filereader.h"
+#include "input.h"
 #include <common/token.h>
 #include <common/tokentype.h>
 #include "transitiontable.h"
@@ -34,7 +34,8 @@ using namespace Common;
 template<typename StateType, typename TokenType>
 class Analyser
 {
-  FileReader &_file;
+  /* De onde vêm os caracteres? */
+  Input &_input;
   
   /* autômato */
   TransitionTable<StateType,TokenType> &_table;
@@ -59,18 +60,21 @@ class Analyser
     }
   };
   
-  TokenTypeList _listTypeTokenToCompare;
+  /* Lista de tipos de tokens a serem comparados na tabela de reservados */
+  TokenTypeList _compare;
+  
+  /* Lista de tipos de tokens a serem ignorados */
   TokenTypeList _ignore;
   
   /* Método privado para pegar o próximo token */
-  Token<TokenType> _privGetToken() 
+  Token<TokenType> _privGetToken()
   {
     /* Já gravo a linha e coluna onde inicio o a leitura do token */
-    int column(_file.getColumnNumber());
-    int line(_file.getLineNumber());
+    int column(_input.getColumnNumber());
+    int line(_input.getLineNumber());
     
-    while (_file.canRead()) {
-      char c(_file.getChar());
+    while (_input.canRead()) {
+      char c(_input.getChar());
       _table.doTransition(c);
       
       if (_table.isInAValidState()) {
@@ -86,7 +90,7 @@ class Analyser
           _table.reset();
           
           /* Volto uma posição na entrada*/
-          _file.backOnePosition();
+          _input.backOnePosition();
 
           return t;
         }
@@ -96,7 +100,7 @@ class Analyser
          * se li ao menos um caractere, volto uma posição
         */
         if (_table.getPreviousState() != _table.getInitialState()) {
-          _file.backOnePosition();
+          _input.backOnePosition();
         }
         break;
       }
@@ -117,8 +121,8 @@ class Analyser
 
 public:
 
-  Analyser(FileReader &file, TransitionTable<StateType,TokenType> &table, TokenHash<TokenType> &reserved):
-  _file(file),
+  Analyser(Input &file, TransitionTable<StateType,TokenType> &table, TokenHash<TokenType> &reserved):
+  _input(file),
   _table(table),
   _reserved(reserved)
   {
@@ -126,7 +130,7 @@ public:
   
   void addTokenToCompareWithReserved(const TokenType &t)
   {
-    _listTypeTokenToCompare.add(t);
+    _compare.add(t);
   }
  
   /* Deve ignorar o tipo passado */
@@ -139,7 +143,7 @@ public:
   bool canReadToken() const 
   {
     /* Só retorna se é capaz de ler do arquivo */
-    return _file.canRead();
+    return _input.canRead();
   }
  
   /* Obtem o próximo token,
@@ -157,7 +161,7 @@ public:
     
     
     /* se foi pego como identificador, vejo se é uma palavra reservada */
-    if (_listTypeTokenToCompare.find(t.getType())) {
+    if (_compare.find(t.getType())) {
         
       /* o token da string que casou. Deve ser diferente do tipo inválido */
       TokenType foundType(_reserved.find(t.getLexema()));

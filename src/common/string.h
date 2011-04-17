@@ -16,7 +16,7 @@ public:
   {
   }
   
-  String(std::basic_string<char,std::char_traits<char>,std::allocator<char> > other): std::string(other)
+  String(const std::string &other): std::string(other)
   {
   }
   
@@ -24,12 +24,26 @@ public:
   {
   }
   
-  bool hasChar(char c) const
+  /* remove da string os caracteres passados.
+   * Atua como "complementar" 
+  */
+  const String operator-(const String &other) const
+  {
+    String final;
+    
+    for (const_iterator i = begin(); i != end(); i++) {
+      if (!other.hasChar(*i)) final += *i;
+    }
+    
+    return final;
+  }
+  
+  virtual bool hasChar(char c) const
   {
     //std::cout << "Buscando '" << c << "' em '" << *this << "'" << std::endl;
     return find(c) != npos;
   }
 };
- 
+
 }
 #endif

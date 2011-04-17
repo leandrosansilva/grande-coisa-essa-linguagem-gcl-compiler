@@ -33,7 +33,7 @@ _lineNumber(1),
 _columnNumber(0),
 _curPos(0),
 /* Preciso de um caractere a mais no final do arquivo, por isso +1 */
-_size(tellg())
+_size(int(tellg())+1)
 {
   loadToMemory();
 }
@@ -43,7 +43,7 @@ std::ifstream(filename,std::ios::ate),
 _lineNumber(1),
 _columnNumber(1),
 _curPos(0),
-_size(tellg())
+_size(int(tellg())+1)
 {
   loadToMemory();
 }
@@ -58,6 +58,7 @@ bool FileReader::loadToMemory()
   _fileContent = new int8_t[_size];
   seekg(0,std::ios::beg);
   read((char *)_fileContent,_size);
+  _fileContent[_size] = '\0';
 }
 
 char FileReader::getChar()

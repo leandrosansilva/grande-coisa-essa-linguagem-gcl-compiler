@@ -71,6 +71,12 @@ class TransitionTable
   StateTokenMap _matchedTokens;
   String _matchedString;
   
+  /* Adiciona um estado que casa um padrão */
+  virtual void _addMatched(const StateType &state, const TokenType &tokenType)
+  {
+    _matchedTokens[state] = tokenType;
+  }
+  
 public:
   /* Please tell me the initial, invalid and final states! */
   TransitionTable(const StateType &start, const StateType &invalidState, const StateType &final):
@@ -81,11 +87,7 @@ public:
   {
   }
   
-  /* Adiciona um estado que casa um padrão */
-  virtual void addMatched(const StateType &state, const TokenType &tokenType)
-  {
-    _matchedTokens[state] = tokenType;
-  }
+
   
   /* retorna true se o estado atual é um dos finais positivamente,
    * onde não tem mais pra onde ir */
@@ -107,7 +109,7 @@ public:
   virtual void addFinalTransition(const StateType &from, const String &s,const TokenType &token)
   {
     addTransition(from,s,_finalState);
-    addMatched(from,token);
+    _addMatched(from,token);
   }
   
   /* Efetua uma transição. 
@@ -121,7 +123,7 @@ public:
     /* Acha o elemento */
     typename TransitionVector::iterator i(_table.begin());
     for (; i != _table.end(); i++) {
-      if (i->_from == _currentState && i->_pattern.hasChar(symbol))
+      if (i->_from == _currentState && String(i->_pattern + "\0").hasChar(symbol))
         break;
     }
     
@@ -134,7 +136,9 @@ public:
     if (!isInAMatchedState())
       _matchedString += symbol;
     
-    //std::cout << "read " << (int)symbol << " -> '" << symbol <<  "' and changed to state " << _currentState << std::endl;
+    /*std::cout << "was in state '" << _previousState << "' ,read " 
+              << (int)symbol << " -> '" << symbol 
+              <<  "' and changed to state " << _currentState << std::endl;*/
       
     return _currentState;
   }

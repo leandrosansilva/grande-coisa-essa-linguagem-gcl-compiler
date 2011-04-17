@@ -7,3 +7,5 @@ target_link_libraries(
   file_reader_test1
   gcl-lexical
 )
+
+add_executable(string_test string_test.cpp)

@@ -25,7 +25,7 @@
 
 #include <stdint.h>
 
-#define LINESIZE 1024
+#include "input.h"
 
 namespace Lexical {
 
@@ -42,7 +42,7 @@ namespace Lexical {
  * 
  * Já elimina linhas em branco e espaços em branco sequenciais
 */
-class FileReader: public std::ifstream
+class FileReader: public std::ifstream, public Input
 {
 public:
   /* Obtem um caractere do arquivo (duh!) */
