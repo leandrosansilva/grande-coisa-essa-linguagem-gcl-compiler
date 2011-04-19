@@ -55,8 +55,6 @@ TokenType
   TkSpaces("Spaces"),
   TkAssign("Assign"),
   TkSymbol("Symbol"),
-  TkIf("If"),
-  TkFor("For"),
   TkThen("Then"),
   TkEnd("EndCommand"),
   TkTwoDots("TwoDots"),
@@ -86,7 +84,34 @@ TokenType
   TkDiv("Div"),
   TkRem("Rem"),
   
-  
+  /* Palavras reservadas */
+  TkModule("Module"),
+  TkPrivate("Private"),
+  TkEnd("End"),
+  TkConst("Const"),
+  TkBoolean("Boolean"),
+  TkIntegerWord("Integer Word"),
+  TkRealWord("Real Word"),
+  TkBegin("Begin"),
+  TkTypedef("Typedef"),
+  TkArray("Array"),
+  TkRange("Range"),
+  TkProc("Proc"),
+  TkVal("Val"),
+  TkRef("Ref"),
+  TkReturn("Return"),
+  TkWrite("Write"),
+  TkRead("Read"),
+  TkIf("If"),
+  TkFi("Fi"),
+  TkDo("Do"),
+  TkOd("Od"),
+  TkTrue("True"),
+  TkFalse("False"),
+  TkForall("Forall"),
+  TkLlarof("Llarof"),
+  TkSkip("Skip"),
+    
   TkNone("None");
   
 int main(int argc, char **argv)
@@ -241,9 +266,35 @@ int main(int argc, char **argv)
   
   /* Estrutura com as palavras reservadas */
   TokenHash<TokenType> reservedWords(TkNone);
-  reservedWords.add("if",TkIf);
-  reservedWords.add("for",TkFor);
   
+  reservedWords.add("module",TkModule);
+  reservedWords.add("private",TkPrivate);
+  reservedWords.add("end",TkEnd);
+  reservedWords.add("const",TkConst);
+  reservedWords.add("boolean",TkBoolean);
+  reservedWords.add("integer",TkIntegerWord);
+  reservedWords.add("real",TkRealWord);
+  reservedWords.add("begin",TkBegin);
+  reservedWords.add("typedef",TkTypedef);
+  reservedWords.add("array",TkArray);
+  reservedWords.add("range",TkRange);
+  reservedWords.add("proc",TkProc);
+  reservedWords.add("val",TkVal);
+  reservedWords.add("ref",TkRef);
+  reservedWords.add("return",TkReturn);
+  reservedWords.add("write",TkWrite);
+  reservedWords.add("read",TkRead);
+  reservedWords.add("if",TkIf);
+  reservedWords.add("fi",TkFi);
+  reservedWords.add("do",TkDo);
+  reservedWords.add("od",TkOd);
+  reservedWords.add("true",TkTrue);
+  reservedWords.add("false",TkFalse);
+  reservedWords.add("forall",TkForall);
+  reservedWords.add("llarof",TkLlarof);
+  reservedWords.add("skip",TkSkip);
+  
+    
   Analyser<State,TokenType> analyser(reader,automata,reservedWords);
   
   //id deve ser comparado na tabela de palavras reservadas
