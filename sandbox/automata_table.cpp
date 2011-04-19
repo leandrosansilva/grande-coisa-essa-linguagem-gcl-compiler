@@ -87,11 +87,11 @@ TokenType
   /* Palavras reservadas */
   TkModule("Module"),
   TkPrivate("Private"),
-  TkEnd("End"),
+  TkEndWord("EndWord"),
   TkConst("Const"),
   TkBoolean("Boolean"),
-  TkIntegerWord("Integer Word"),
-  TkRealWord("Real Word"),
+  TkIntegerWord("IntegerWord"),
+  TkRealWord("RealWord"),
   TkBegin("Begin"),
   TkTypedef("Typedef"),
   TkArray("Array"),
@@ -269,7 +269,7 @@ int main(int argc, char **argv)
   
   reservedWords.add("module",TkModule);
   reservedWords.add("private",TkPrivate);
-  reservedWords.add("end",TkEnd);
+  reservedWords.add("end",TkEndWord);
   reservedWords.add("const",TkConst);
   reservedWords.add("boolean",TkBoolean);
   reservedWords.add("integer",TkIntegerWord);
