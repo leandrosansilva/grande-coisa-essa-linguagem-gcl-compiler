@@ -65,13 +65,13 @@ public:
   
   int getPreviousColumnNumber() const;
   
-  bool backOnePosition();
+  bool back(int = 1);
   
   /* Carrega pra memória! */
   bool loadToMemory();
   
   /* Retorna o tamanho, em bytes, do arquivo */
-  int getSize();
+  int getSize() const;
   
 private:
   int _lineNumber;

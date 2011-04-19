@@ -73,8 +73,11 @@ class Analyser
     int column(_input.getColumnNumber());
     int line(_input.getLineNumber());
     
+    char s;
+    
     while (_input.canRead()) {
       char c(_input.getChar());
+      s = c;
       _table.doTransition(c);
       
       if (_table.isInAValidState()) {
@@ -90,7 +93,7 @@ class Analyser
           _table.reset();
           
           /* Volto uma posição na entrada*/
-          _input.backOnePosition();
+          _input.back();
 
           return t;
         }
@@ -100,11 +103,18 @@ class Analyser
          * se li ao menos um caractere, volto uma posição
         */
         if (_table.getPreviousState() != _table.getInitialState()) {
-          _input.backOnePosition();
+          _input.back();
         }
         break;
       }
     } // _file.canRead()
+    
+    /* Arquivo chegou no fim? */
+    if (!_input.canRead()) {
+      std::cout << "Can't read file in '" << s << "'" << std::endl;
+      std::cout << "Parei no estado " << _table.getCurrentState() << std::endl;
+      _table.doTransition('\n');
+    }
     
     /* Se chegou até aqui, retorna um token inválido */
     Token<TokenType> t(
@@ -152,27 +162,26 @@ public:
   */
   Token<TokenType> getToken()
   {
-    Token<TokenType> t;
+    Token<TokenType> token;
     
     /* Lê token até achar um que não possa ser descartado */
     do {
-      t = _privGetToken();
-    } while (_ignore.find(t.getType()));
-    
+      token = _privGetToken();
+    } while (_ignore.find(token.getType()));
     
     /* se foi pego como identificador, vejo se é uma palavra reservada */
-    if (_compare.find(t.getType())) {
+    if (_compare.find(token.getType())) {
         
       /* o token da string que casou. Deve ser diferente do tipo inválido */
-      TokenType foundType(_reserved.find(t.getLexema()));
+      TokenType foundType(_reserved.find(token.getLexema()));
       if (foundType != _reserved.getNone()) {
         /* Se for uma palavra reservada, defino o novo tipo do token encontrado */
-        t.setType(foundType);
+        token.setType(foundType);
       }
     }
     
     /* Retorna o token, seja ele válido ou inválido */
-    return t;
+    return token;
   }
 };
 

@@ -29,6 +29,7 @@ typedef enum {
   j1,
   k1,
   l1,
+  m1,m2,
   sp1 = 100
 } State;
 
@@ -57,6 +58,25 @@ TokenType
   TkGThan("GreaterThan"),
   TkLEThan("LesserEqualThan"),
   TkGEThan("GreaterEqualThan"),
+  TkLParentesis("LParentesis"),
+  TkRParentesis("RParentesis"),
+  TkSharp("Sharp"),
+  TkComma("Comma"),
+  TkEqual("Equal"),
+  
+  /* Lógicos */
+  TkAnd("And"),
+  TkOr("Or"),
+  TkNegation("Negation"),
+  
+  /* Operações matemáticas */
+  TkMinus("Minus"),
+  TkPlus("Plus"),
+  TkTimes("Times"),
+  TkDiv("Div"),
+  TkDiv2("Div"),
+  
+  
   TkNone("None");
   
 int main(int argc, char **argv)
@@ -112,6 +132,10 @@ int main(int argc, char **argv)
   automata.addFinalTransition(i2,any,TkGEThan);
   
   /* Para parentesis */
+  automata.addTransition(start,"(",m1);
+  automata.addFinalTransition(m1,any,TkLParentesis);
+  automata.addTransition(start,")",m2);
+  automata.addFinalTransition(m2,any,TkRParentesis);
   
   /* Para inteiros e reais */
   automata.addTransition(start,digits,b1);
@@ -176,10 +200,10 @@ int main(int argc, char **argv)
   analyser.addTokenToCompareWithReserved(TkId);
   
   /* Ignore os seguintes tokens,
-   * que não serão passados pro 
+   * que não serão passados pro
    * analisador sintático: espaços e comentários
   */
-  //analyser.ignoreToken(TkSpaces);
+  analyser.ignoreToken(TkSpaces);
   analyser.ignoreToken(TkComment);
   
   while (analyser.canReadToken())

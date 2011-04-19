@@ -48,7 +48,7 @@ _size(int(tellg())+1)
   loadToMemory();
 }
 
-int FileReader::getSize()
+int FileReader::getSize() const
 {
   return _size;
 }
@@ -98,9 +98,10 @@ int FileReader::getPreviousColumnNumber() const
   return _previousColumnNumber;
 }
 
-bool FileReader::backOnePosition()
+bool FileReader::back(int pos)
 {
-  if (_fileContent[--_curPos] == '\n') {
+  _curPos -= pos;
+  if (_fileContent[_curPos] == '\n') {
     _lineNumber--;
     _columnNumber = _previousColumnNumber;
   }

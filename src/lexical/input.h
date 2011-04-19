@@ -18,10 +18,10 @@ public:
   
   virtual int getPreviousColumnNumber() const = 0;
   
-  virtual bool backOnePosition() = 0;
+  virtual bool back(int = 1) = 0;
   
   /* Retorna o tamanho, em bytes, do arquivo */
-  virtual int getSize() = 0;
+  virtual int getSize() const = 0;
 };
 }
 #endif

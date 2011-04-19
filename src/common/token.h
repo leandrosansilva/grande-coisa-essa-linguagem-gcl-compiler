@@ -28,7 +28,7 @@ public:
   {
   }
   
-  TokenType getType() const
+  const TokenType getType() const
   {
     return _type;
   }
@@ -38,12 +38,12 @@ public:
     return _lexema;
   }
   
-  int getColumn() const
+  const int getColumn() const
   {
     return _column;
   }
   
-  int getLine() const
+  const int getLine() const
   {
     return _line;
   }
