@@ -12,13 +12,16 @@ int main(int argc, char **argv)
   const String any(alpha + digit);
   
   const String pair("02468");
+  const String impar("13579");
   
-  const String r(String(digit + alpha) - pair);
+  const String r(any - pair);
+  const String s(any - impar);
   
   std::cout << alpha << std::endl;
   std::cout << digit << std::endl;
   std::cout << any << std::endl;
   std::cout << r << std::endl;
+  std::cout << s << std::endl;
   
   return 0;
 }

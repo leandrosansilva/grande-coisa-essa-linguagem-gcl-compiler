@@ -30,6 +30,16 @@ typedef enum {
   k1,
   l1,
   m1,m2,
+  n1,
+  o1,
+  p1,
+  q1,
+  r1,
+  s1,
+  t1,
+  u1,
+  v1,
+  w1,
   sp1 = 100
 } State;
 
@@ -67,14 +77,14 @@ TokenType
   /* Lógicos */
   TkAnd("And"),
   TkOr("Or"),
-  TkNegation("Negation"),
+  TkNot("Not"),
   
   /* Operações matemáticas */
   TkMinus("Minus"),
   TkPlus("Plus"),
   TkTimes("Times"),
   TkDiv("Div"),
-  TkDiv2("Div"),
+  TkRem("Rem"),
   
   
   TkNone("None");
@@ -137,6 +147,46 @@ int main(int argc, char **argv)
   automata.addTransition(start,")",m2);
   automata.addFinalTransition(m2,any,TkRParentesis);
   
+  /* Para = */
+  automata.addTransition(start,"=",n1);
+  automata.addFinalTransition(n1,any,TkEqual);
+  
+  /* Para , */
+  automata.addTransition(start,",",o1);
+  automata.addFinalTransition(o1,any,TkComma);
+  
+  /* Para + */
+  automata.addTransition(start,"+",p1);
+  automata.addFinalTransition(p1,any,TkPlus);
+  
+  /* Para # */
+  automata.addTransition(start,"#",q1);
+  automata.addFinalTransition(q1,any,TkSharp);
+  
+  /* Para ~ */
+  automata.addTransition(start,"~",r1);
+  automata.addFinalTransition(r1,any,TkNot);
+  
+  /* Para & */
+  automata.addTransition(start,"&",s1);
+  automata.addFinalTransition(s1,any,TkAnd);
+  
+  /* Para | */
+  automata.addTransition(start,"|",t1);
+  automata.addFinalTransition(t1,any,TkOr);
+  
+  /* Para / */
+  automata.addTransition(start,"/",u1);
+  automata.addFinalTransition(u1,any,TkDiv);
+  
+  /* Para \ */
+  automata.addTransition(start,"\\",v1);
+  automata.addFinalTransition(v1,any,TkRem);
+  
+  /* Para * */
+  automata.addTransition(start,"*",w1);
+  automata.addFinalTransition(w1,any,TkTimes);
+  
   /* Para inteiros e reais */
   automata.addTransition(start,digits,b1);
   automata.addTransition(b1,".",b2);
@@ -181,7 +231,7 @@ int main(int argc, char **argv)
   automata.addFinalTransition(d3,breakline,TkComment);
   
   /* para símbolo - (minus) */
-  automata.addFinalTransition(d1,any - "-",TkSymbol);
+  automata.addFinalTransition(d1,any - ">-",TkMinus);
   
   /* para símbolo -> */
   automata.addTransition(d1,">",d2);
