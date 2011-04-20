@@ -131,7 +131,7 @@ int main(int argc, char **argv)
   const String separators(symbols + spaces);
   
   /* qualquer caractere! */
-  const String any(digits + letters + separators);
+  const String any(digits + letters + separators + quotes);
   
   TransitionTable<State,TokenType> automata(start,invalid,final);
   
