@@ -6,53 +6,59 @@
 using namespace Lexical;
 using namespace Common;
 
-typedef enum {
+typedef String State;
+
+//typedef enum {
+  State
   /* Estado inválido */
-  invalid = -1,
+  invalid("invalid"),
   
   /* Estado inicial */
-  start,
+  start("start"),
   
   /* Final genérico e obrigatório, só para finalizar o autômato */
-  final,
+  final("final"),
   
   /* Estados intermediários */
-  a1, a2,
-  b1, b2, b3,
-  c1, c2, c3,
-  d1, d2, d3,
-  e1, e2,
-  f1, f2,
-  g1, g2,
-  h1, h2,
-  i1, i2,
-  j1,
-  k1,
-  l1,
-  m1,m2,
-  n1,
-  o1,
-  p1,
-  q1,
-  r1,
-  s1,
-  t1,
-  u1,
-  v1,
-  w1,
-  sp1 = 100
-} State;
+  a1("a1"), a2("a2"),
+  b1("b1"), b2("b2"), b3("b3"), b4("b4"),
+  c1("c1"), c2("c2"), c3("c3"),
+  d1("d1"), d2("d2"), d3("d3"),
+  e1("e1"), e2("e2"),
+  f1("f1"), f2("f2"),
+  g1("g1"), g2("g2"),
+  h1("h1"), h2("h2"),
+  i1("i1"), i2("i2"),
+  j1("j1"),
+  k1("k1"),
+  l1("l1"),
+  m1("m1"),m2("m2"),
+  n1("n1"),
+  o1("o1"),
+  p1("p1"),
+  q1("q1"),
+  r1("r1"),
+  s1("s1"),
+  t1("t1"),
+  u1("u1"),
+  v1("v1"),
+  w1("w1"),
+  sp1("sp1");
+//} State;
 
 typedef String TokenType;
 
 /* Tokens de teste */
 TokenType
   TkId("Id"),
+  
   TkString("String"),
   TkInteger("Integer"),
   TkReal("Real"),
+  
   TkComment("Comment"),
   TkSpaces("Spaces"),
+  
   TkAssign("Assign"),
   TkSymbol("Symbol"),
   TkThen("Then"),
@@ -111,7 +117,7 @@ TokenType
   TkForall("Forall"),
   TkLlarof("Llarof"),
   TkSkip("Skip"),
-    
+  
   TkNone("None");
   
 int main(int argc, char **argv)
@@ -140,11 +146,28 @@ int main(int argc, char **argv)
   automata.addTransition(sp1,spaces,sp1);
   automata.addFinalTransition(sp1,any - spaces,TkSpaces);
   
-  /* Para .. e . */
-  automata.addTransition(start,".",f1);
-  automata.addTransition(f1,".",f2);
-  automata.addFinalTransition(f2,any - ".",TkTwoDots);
-  automata.addFinalTransition(f1,any - ".", TkDot);
+  /* Para inteiros e reais */
+  automata.addTransition(start,digits,b1);
+  automata.addTransition(b1,digits,b1);
+  automata.addFinalTransition(b1,any - digits - ".",TkInteger);
+  automata.addTransition(b1,".",b2);
+  automata.addTransition(b2,digits,b3);
+  automata.addTransition(b3,digits,b3);
+  automata.addFinalTransition(b3,any - digits,TkReal);
+  automata.addTransition(b2,".",b4);
+  
+  /* se para chegar a b4 eu passei por um b1 há dois caracteres atrás,
+   * b1 era um número, então devo casá-lo, e não casar os dois pontos 
+  */
+  automata.addConflict(b1,b4);
+  
+  /* Para identificador */
+  automata.addTransition(start,letters,a1);
+  automata.addTransition(a1,letters + digits, a1);
+  automata.addTransition(a1,"_",a2);
+  automata.addTransition(a2,letters + digits, a1);
+  automata.addFinalTransition(a1,any - String(letters + digits),TkId);
+  automata.addFinalTransition(a2,any - String(letters + digits),TkId);
   
   /* Para [, ] e [] */
   automata.addTransition(start,"[",g1);
@@ -212,26 +235,16 @@ int main(int argc, char **argv)
   automata.addTransition(start,"*",w1);
   automata.addFinalTransition(w1,any,TkTimes);
   
-  /* Para inteiros e reais */
-  automata.addTransition(start,digits,b1);
-  automata.addTransition(b1,".",b2);
-  automata.addTransition(b1,digits,b1);
-  automata.addTransition(b2,digits,b3);
-  automata.addTransition(b3,digits,b3);
-  automata.addFinalTransition(b3,any - digits,TkReal);
-  automata.addFinalTransition(b1,any - digits,TkInteger);
+  /* Para .. e . */
+  automata.addTransition(start,".",f1);
+  automata.addTransition(f1,".",f2);
+  
+  automata.addFinalTransition(f2,any - ".",TkTwoDots);
+  automata.addFinalTransition(f1,any - ".", TkDot);
   
   /* separador de comandos ponto e vírgula (;) */
   automata.addTransition(start,";",k1);
   automata.addFinalTransition(k1,any,TkEnd);
-  
-  /* Para identificador */
-  automata.addTransition(start,letters,a1);
-  automata.addTransition(a1,letters + digits, a1);
-  automata.addTransition(a1,"_",a2);
-  automata.addTransition(a2,letters + digits, a1);
-  automata.addFinalTransition(a1,any - String(letters + digits),TkId);
-  automata.addFinalTransition(a2,any - String(letters + digits),TkId);
   
   /* string com aspas simples*/
   automata.addTransition(start,"\'",c1);
@@ -271,7 +284,7 @@ int main(int argc, char **argv)
   reservedWords.add("private",TkPrivate);
   reservedWords.add("end",TkEndWord);
   reservedWords.add("const",TkConst);
-  reservedWords.add("boolean",TkBoolean);
+  reservedWords.add("Boolean",TkBoolean);
   reservedWords.add("integer",TkIntegerWord);
   reservedWords.add("real",TkRealWord);
   reservedWords.add("begin",TkBegin);
@@ -310,17 +323,8 @@ int main(int argc, char **argv)
   while (analyser.canReadToken())
   {
     Token<TokenType> t(analyser.getToken());
-    
-    if (t.getType() == TkNone) {
-      std::cout << "Peguei um token inválido. Poutz! Casei só '" 
-                << t.getLexema() << "'"
-                << std::endl;
-    } else {
-    
-      std::cout << "'" << t.getLexema() << "' que é do tipo "
-                << t.getType() << " e está em "
-                << t.getLine() << "x" << t.getColumn() << std::endl;
-    }
+    std::cout << "'" << t.getLexema() << "' => "
+              << t.getType() << std::endl;
   }
   
   return 0;

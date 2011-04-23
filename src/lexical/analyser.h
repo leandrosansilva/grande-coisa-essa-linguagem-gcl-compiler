@@ -24,6 +24,7 @@
 #include <common/token.h>
 #include <common/tokentype.h>
 #include "transitiontable.h"
+
 #include <list>
 #include <algorithm>
 
@@ -42,6 +43,9 @@ class Analyser
   
   /* hash de palavras reservadas */
   TokenHash<TokenType> &_reserved;
+  
+  /* controla se ainda pode haver leitura de token */
+  bool _canRead;
   
   /* Lista de tokens que devem ser ignorados */
   class TokenTypeList
@@ -66,63 +70,99 @@ class Analyser
   /* Lista de tipos de tokens a serem ignorados */
   TokenTypeList _ignore;
   
-  /* Método privado para pegar o próximo token */
+  /* Método privado para pegar o próximo token 
+   * FIXME: OMG! OMG! Que método graaande! :-(
+   * TODO: refatorar!
+   */
   Token<TokenType> _privGetToken()
   {
     /* Já gravo a linha e coluna onde inicio o a leitura do token */
     int column(_input.getColumnNumber());
     int line(_input.getLineNumber());
     
-    char s;
-    
     while (_input.canRead()) {
       char c(_input.getChar());
-      s = c;
+      
       _table.doTransition(c);
       
-      if (_table.isInAValidState()) {
-        if (_table.isInAMatchedState()) {
-          /* Casou. Retorno token */
-          Token<TokenType> t(
-            _table.getMatchedToken(),
-            line,
-            column,
-            _table.getMatchedString()
-          );
-          /* Reseta o automato pro estado inicial*/
-          _table.reset();
-          
-          /* Volto uma posição na entrada*/
-          _input.back();
-
-          return t;
+      /* Verifico se existe uma marca no autômato, 
+       * de um estado anterior em conflito
+       * 
+       * Mas o estado conflitante desta marca deve ser 
+       * igual ao estado atual
+       */
+      if (_table.hasMark(_table.getCurrentState())) {
+        
+        /*std::cout << "O Autômato tem uma marca em " 
+                  << "'" << _table.getMarkPos() << "' => "
+                  << "'" << _table.getMarkState() << "'"
+                  << std::endl;*/
+                  
+        /* Devo voltar quantos caracteres? (tanto no lexema quanto na entrada) */
+        int backSize(_input.getPos() - _table.getMarkPos());
+        
+        /* String casada no autômato, com os caracteres errados no final */
+        String matched(_table.getMatchedString());
+        
+        /* Pego a string sem o final adicional gerado pelo conflito */
+        String lexema(matched.substr(0,matched.size() - backSize));
+        
+        Token<TokenType> t(_table.getTokenTypeFinishedIn(_table.getMarkState()),line,column,lexema);
+        
+        _input.back(backSize);
+        _table.reset();
+        
+        return t;
+      }
+      
+      /* Se o estado atual poderá causar um conflito futuro,
+       * insiro uma "marca" no autômato
+      */
+      if (_table.hasConflict(_table.getCurrentState())) {
+        _table.setMark(_table.getCurrentState(),_input.getPos());
+      }
+      
+      /* se o automato está num estado inválido, é pau */
+      if (!_table.isInAValidState()) {
+        /* se não posso mais ler do arquivo, informa isso */
+        if (!_input.canRead()) {
+          _canRead = false;
         }
-      } else { // isInAValidState()
-
+        
         /* Se o estado anterior for diferente de inicial, ou seja,
          * se li ao menos um caractere, volto uma posição
         */
-        if (_table.getPreviousState() != _table.getInitialState()) {
+        if ((_table.getPreviousState() != _table.getInitialState())) {
           _input.back();
         }
         break;
       }
+      
+      /* Se casou, retorno o token correto e saio */
+      if (_table.isInAMatchedState()) {
+        /* Casou. Retorno token */
+        Token<TokenType> t(_table.getMatchedToken(),line,column,_table.getMatchedString());
+        
+        /* Reseta o automato pro estado inicial */
+        _table.reset();
+        
+        /* se não posso mais ler do arquivo, informa isso */
+        if (!_input.canRead()) {
+          _canRead = false;
+        }
+        
+        //std::cout << "Size: " << _input.getSize() << ", pos: " << _input.getPos() << std::endl;
+        
+        /* Volto uma posição na entrada*/
+        _input.back();
+
+        return t;
+      }
     } // _file.canRead()
     
-    /* Arquivo chegou no fim? */
-    if (!_input.canRead()) {
-      std::cout << "Can't read file in '" << s << "'" << std::endl;
-      std::cout << "Parei no estado " << _table.getCurrentState() << std::endl;
-      _table.doTransition('\n');
-    }
-    
+
     /* Se chegou até aqui, retorna um token inválido */
-    Token<TokenType> t(
-      _reserved.getNone(),
-      line,
-      column,
-      _table.getMatchedString()
-    );
+    Token<TokenType> t(_reserved.getNone(),line,column,_table.getMatchedString());
     
     _table.reset();
     
@@ -134,7 +174,8 @@ public:
   Analyser(Input &file, TransitionTable<StateType,TokenType> &table, TokenHash<TokenType> &reserved):
   _input(file),
   _table(table),
-  _reserved(reserved)
+  _reserved(reserved),
+  _canRead(true)
   {
   }
   
@@ -153,7 +194,7 @@ public:
   bool canReadToken() const 
   {
     /* Só retorna se é capaz de ler do arquivo */
-    return _input.canRead();
+    return _canRead;
   }
  
   /* Obtem o próximo token,

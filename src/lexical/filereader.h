@@ -73,6 +73,8 @@ public:
   /* Retorna o tamanho, em bytes, do arquivo */
   int getSize() const;
   
+  int getPos() const;
+  
 private:
   int _lineNumber;
   int _columnNumber;

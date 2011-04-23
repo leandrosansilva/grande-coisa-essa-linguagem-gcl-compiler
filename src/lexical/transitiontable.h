@@ -46,7 +46,7 @@ public:
   {
   }
 };
-  
+
 /* 
  * TODO: reimplementar de forma mais eficiente
  * 
@@ -56,6 +56,20 @@ class TransitionTable
 {
   typedef std::vector< Transition<StateType> > TransitionVector;
   typedef std::map<StateType,TokenType> StateTokenMap;
+  
+  typedef std::map<StateType,StateType> ConflictTable;
+  
+  struct Mark {
+    Mark(const StateType &state, const int &pos):
+    _pos(pos),
+    _state(state)
+    {}
+    
+    int _pos;
+    StateType _state;
+  };
+  
+  Mark _mark;
   
   StateType _startState;
   StateType _invalidState;
@@ -69,6 +83,8 @@ class TransitionTable
   
   TransitionVector _table;
   StateTokenMap _matchedTokens;
+  ConflictTable _conflict;
+  
   String _matchedString;
   
   /* Adiciona um estado que casa um padrão */
@@ -83,11 +99,51 @@ public:
   _startState(start),
   _invalidState(invalidState),
   _finalState(final),
-  _currentState(start)
+  _currentState(start),
+  _mark(invalidState,0)
   {
   }
   
-
+  virtual void setMark(const StateType &t, const int &pos)
+  {
+    _mark._state = t;
+    _mark._pos = pos;
+    
+    //std::cout << "Marquei estado " << t << " na posição " << pos << std::endl;
+  }
+  
+  virtual bool hasMark(const StateType &state) const
+  {
+    if (_mark._state == _invalidState)
+      return false;
+    
+    /* Procura por uma marca que tenha como valor o estado passado */
+    typename ConflictTable::const_iterator it(_conflict.begin());
+    for (; it != _conflict.end(); it++) {
+      if (it->second == state) {
+        break;
+      }
+    }
+    /* se encontrei uma marca correspondente, retorno true */
+    return it != _conflict.end() ? true : false;
+  }
+  
+  virtual StateType getMarkState() const
+  {
+    return _mark._state;
+  }
+  
+  virtual int getMarkPos() const
+  {
+    return _mark._pos;
+  }
+  
+  virtual void resetMark() 
+  {
+    _mark._pos = 0;
+    _mark._state = _invalidState;
+    //std::cout << "Resetei a marca" << std::endl;
+  }
   
   /* retorna true se o estado atual é um dos finais positivamente,
    * onde não tem mais pra onde ir */
@@ -112,6 +168,24 @@ public:
     _addMatched(from,token);
   }
   
+  virtual bool hasConflict(const StateType &state)
+  {
+    /* checagem dos conflitos */
+    typename ConflictTable::const_iterator itConflict(_conflict.find(state));
+    
+    if (itConflict != _conflict.end()) {
+      /* se chegou aqui, existe chance de conflito */
+      //std::cout << "[" << itConflict->first << "] => '" << itConflict->second << "'" << std::endl;
+      return true;
+    }
+    return false;
+  }
+  /* adiciona um conflito. Ajuda a resolver a questão do 1..2 */
+  virtual void addConflict(const StateType &cur, const StateType &mark)
+  {
+    _conflict[cur] = mark;
+  }
+  
   /* Efetua uma transição. 
    * Retorna o estado inválido caso não 
    * tenha conseguido fazer esta transição
@@ -129,7 +203,7 @@ public:
     
     /* retorna a primeira transição que encontrou. Ou inválido, caso contrário */
     _currentState = i != _table.end() ? i->_to : _invalidState;
-   
+    
     /* só concateno a string achada quando não for um estado depois do final 
      * ou caso tenha entrado num estado inválido
      */
@@ -139,7 +213,7 @@ public:
     /*std::cout << "was in state '" << _previousState << "' ,read " 
               << (int)symbol << " -> '" << symbol 
               <<  "' and changed to state " << _currentState << std::endl;*/
-      
+              
     return _currentState;
   }
   
@@ -148,6 +222,7 @@ public:
   {
     _currentState = _startState;
     _matchedString = "";
+    resetMark();
   }
   
   virtual StateType getCurrentState() const
@@ -165,17 +240,22 @@ public:
     return _matchedString;
   }
   
-  virtual StateType getInitialState() const 
+  virtual StateType getInitialState() const
   {
     return _startState;
   }
   
-  virtual TokenType getMatchedToken() const 
+  virtual TokenType getMatchedToken() const
   {
     /* _previousState aponta para o último estado que eu estava.
      * Logo é ele que me diz por qual estado saí do autômato
     */
     return _matchedTokens.at(_previousState);
+  }
+  
+  virtual TokenType getTokenTypeFinishedIn(const StateType &state) const
+  {
+    return _matchedTokens.at(state);
   }
 };
 }

@@ -22,6 +22,9 @@ public:
   
   /* Retorna o tamanho, em bytes, do arquivo */
   virtual int getSize() const = 0;
+  
+  /* posição atual na stream */
+  virtual int getPos() const = 0;
 };
 }
 #endif

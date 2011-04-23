@@ -33,7 +33,7 @@ _lineNumber(1),
 _columnNumber(0),
 _curPos(0),
 /* Preciso de um caractere a mais no final do arquivo, por isso +1 */
-_size(int(tellg())+1)
+_size(tellg())
 {
   loadToMemory();
 }
@@ -43,7 +43,7 @@ std::ifstream(filename,std::ios::ate),
 _lineNumber(1),
 _columnNumber(1),
 _curPos(0),
-_size(int(tellg())+1)
+_size(tellg())
 {
   loadToMemory();
 }
@@ -110,4 +110,9 @@ bool FileReader::back(int pos)
 FileReader::~FileReader()
 {
   delete _fileContent;
+}
+
+int FileReader::getPos() const
+{
+  return _curPos;
 }
