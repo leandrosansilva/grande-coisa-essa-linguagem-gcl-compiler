@@ -16,33 +16,18 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
 #include "filereader.h"
 
 #include <fstream>
-
 #include <iostream>
-
-#include <ctype.h>
 
 using namespace Lexical;
 
 FileReader::FileReader(const std::string &filename):
 std::ifstream(filename.c_str(),std::ios::ate),
 _lineNumber(1),
-_columnNumber(0),
 _curPos(0),
 /* Preciso de um caractere a mais no final do arquivo, por isso +1 */
-_size(tellg())
-{
-  loadToMemory();
-}
-
-FileReader::FileReader(const char* filename): 
-std::ifstream(filename,std::ios::ate),
-_lineNumber(1),
-_columnNumber(1),
-_curPos(0),
 _size(tellg())
 {
   loadToMemory();
@@ -55,23 +40,18 @@ int FileReader::getSize() const
 
 bool FileReader::loadToMemory()
 {
-  _fileContent = new int8_t[_size];
+  _fileContent = new char[_size];
   seekg(0,std::ios::beg);
   read((char *)_fileContent,_size);
 }
 
 char FileReader::getChar()
 {
+  /* Pega um caractere da entrada */
   char c(_fileContent[_curPos++]);
  
-  /* faço um "backup" da coluna anterior */
-  _previousColumnNumber = _columnNumber;
-  
   if (c == '\n') {
-    _columnNumber = 1;
     _lineNumber++;
-  } else {
-    _columnNumber++;
   }
 
   return c;
@@ -87,28 +67,22 @@ int FileReader::getLineNumber() const
   return _lineNumber;
 }
 
-int FileReader::getColumnNumber() const
-{
-  return _columnNumber;
-}
-
-int FileReader::getPreviousColumnNumber() const
-{
-  return _previousColumnNumber;
-}
-
 bool FileReader::back(int pos)
 {
-  _curPos -= pos;
-  if (_fileContent[_curPos] == '\n') {
-    _lineNumber--;
-    _columnNumber = _previousColumnNumber;
+  /* A posição para onde devo voltar */
+  int backPos(_curPos - pos);
+  
+  while (_curPos > backPos) {
+    if (_fileContent[_curPos] == '\n')
+      _lineNumber--;
+    
+    _curPos--;
   }
 }
 
 FileReader::~FileReader()
 {
-  delete _fileContent;
+  delete[] _fileContent;
 }
 
 int FileReader::getPos() const

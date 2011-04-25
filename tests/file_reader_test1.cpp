@@ -8,8 +8,7 @@ int main(int argc, char **argv)
   
   while (file.canRead()) {
     const char c(file.getChar());
-    std::cout << "'" << c << "' => " << file.getLineNumber() << "x" << file.getColumnNumber() 
-              << " e coluna anterior: " << file.getPreviousColumnNumber()  << std::endl;
+    std::cout << "'" << c << "' => " << file.getLineNumber() << std::endl;
   }
   
   return 0;

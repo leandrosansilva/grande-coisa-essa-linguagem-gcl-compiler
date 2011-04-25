@@ -53,35 +53,28 @@ public:
   
   FileReader(const std::string &filename);
   
-  FileReader(const char *filename);
-  
   virtual ~FileReader();
   
   /* pega o número de linha do arquivo que está sendo analizada */
   int getLineNumber() const;
   
-  /* Pega a coluna da linha que está sendo analizada */
-  int getColumnNumber() const;
-  
-  int getPreviousColumnNumber() const;
-  
+  /* volta n posições na entrada */
   bool back(int = 1);
   
-  /* Carrega pra memória! */
+  /* Carrega o arquivo todo pra memória! */
   bool loadToMemory();
   
   /* Retorna o tamanho, em bytes, do arquivo */
   int getSize() const;
   
+  /* Posição na entrada */
   int getPos() const;
   
 private:
   int _lineNumber;
-  int _columnNumber;
-  int _previousColumnNumber;
   
   /* nesta string fica todo o conteúdo do arquivo! */
-  int8_t *_fileContent;
+  char *_fileContent;
   
   /* posição atual na string */
   int _curPos;

@@ -122,6 +122,7 @@ TokenType
   
 int main(int argc, char **argv)
 {
+  /* defino o conjunto de caracteres permitidos na linguagem */
   const String digits("0123456789");
   const String letters("abcdefghijklmnopqrstuvxwyzABCDEFGHIJKLMNOPQRSTUVXWYZ");
   const String symbols(":.=-,;()[]#<>&|~+-*/\\.");
@@ -129,7 +130,7 @@ int main(int argc, char **argv)
   /* aspas (quotes) e apóstrofos (apostrophes) */
   const String quotes("\'\"");
   
-  const String blanks(" \t"); // tem tbm \t
+  const String blanks(" \t");
   const String breakline("\n");
   
   const String spaces(blanks + breakline);
@@ -324,12 +325,18 @@ int main(int argc, char **argv)
   lexer.ignoreToken(TkSpaces);
   lexer.ignoreToken(TkComment);
   
+  /* 
+   * todo token do tipo string terá "cortados" um caractere à esquerda e outro à direita
+   * estes caracteres correspondem às aspas e apóstrofos
+   */
+  lexer.setTokenPadding(TkString,1,1);
+  
   /* Laço principal do analisador sintático, ainda não implementado */
   while (lexer.canReadToken())
   {
     Token<TokenType> t(lexer.getToken());
     std::cout << "'" << t.getLexema() << "' => "
-              << t.getType() << std::endl;
+              << t.getType() << " na linha: " << t.getLine() << std::endl;
   }
   
   return 0;

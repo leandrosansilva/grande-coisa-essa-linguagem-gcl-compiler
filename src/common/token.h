@@ -8,6 +8,30 @@
 
 namespace Common {
 
+/* o padding sobre o lexema de um token */
+struct TokenPadding
+{
+  TokenPadding(const int &left, const int &right):
+  _left(left),
+  _right(right)
+  {}
+  
+  int _left;
+  int _right;
+};
+
+/* mapa de padding de cada tipo de token */
+template<typename TokenType>
+class TokenPaddingMap: public std::map<TokenType,TokenPadding>
+{
+public:
+  void add(const TokenType &type, const TokenPadding &padding)
+  {
+    insert(std::pair<TokenType,TokenPadding>(type,padding));
+  }
+};
+
+
 template <typename TokenType>
 class Token {
 public:
@@ -16,8 +40,7 @@ public:
   {
   }
   
-  Token(const TokenType &type,int line, int column, const String &lexema):
-  _column(column),
+  Token(const TokenType &type,int line, const String &lexema):
   _lexema(lexema),
   _line(line),
   _type(type)
@@ -38,11 +61,6 @@ public:
     return _lexema;
   }
   
-  const int getColumn() const
-  {
-    return _column;
-  }
-  
   const int getLine() const
   {
     return _line;
@@ -51,6 +69,11 @@ public:
   void setType(const TokenType &type)
   {
     _type = type;
+  }
+  
+  void setPadding(const TokenPadding &padding)
+  {
+    _lexema = _lexema.substr(padding._left,_lexema.size() - padding._right - padding._left );
   }
   
 private:
@@ -62,9 +85,6 @@ private:
   
   /* em que linha o token foi encontrado */
   int _line;
-  
-  /* e em que coluna inicia */
-  int _column;
 };
 
 }

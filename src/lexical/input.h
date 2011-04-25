@@ -13,11 +13,6 @@ public:
   /* pega o número de linha da entrada que está sendo analizada */
   virtual int getLineNumber() const = 0;
   
-  /* Pega a coluna da linha que está sendo analizada */
-  virtual int getColumnNumber() const = 0;
-  
-  virtual int getPreviousColumnNumber() const = 0;
-  
   virtual bool back(int = 1) = 0;
   
   /* Retorna o tamanho, em bytes, do arquivo */

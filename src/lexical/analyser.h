@@ -16,7 +16,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
 #ifndef LEXICAL_ANALYSER_H
 #define LEXICAL_ANALYSER_H
 
@@ -70,6 +69,9 @@ class Analyser
   /* Lista de tipos de tokens a serem ignorados */
   TokenTypeList _ignore;
   
+  /* Uma estrutura com as informações de padding */
+  TokenPaddingMap<TokenType> _paddings;
+  
   virtual void setCanRead()
   {
     /* se não posso mais ler do arquivo, informa isso */
@@ -94,8 +96,7 @@ class Analyser
      * 
     * 
     
-    /* Já gravo a linha e coluna onde inicio o a leitura do token */
-    int column(_input.getColumnNumber());
+    /* Já gravo a linha onde inicio o a leitura do token */
     int line(_input.getLineNumber());
     
     while (_input.canRead()) {
@@ -111,11 +112,6 @@ class Analyser
        */
       if (_table.hasMark(_table.getCurrentState())) {
         
-        /*std::cout << "O Autômato tem uma marca em " 
-                  << "'" << _table.getMarkPos() << "' => "
-                  << "'" << _table.getMarkState() << "'"
-                  << std::endl;*/
-                  
         /* Devo voltar quantos caracteres? (tanto no lexema quanto na entrada) */
         int backSize(_input.getPos() - _table.getMarkPos());
         
@@ -125,14 +121,13 @@ class Analyser
         /* Pego a string sem o final adicional gerado pelo conflito */
         String lexema(matched.substr(0,matched.size() - backSize));
         
-        Token<TokenType> t(_table.getTokenTypeFinishedIn(_table.getMarkState()),line,column,lexema);
+        Token<TokenType> t(_table.getTokenTypeFinishedIn(_table.getMarkState()),line,lexema);
         
         /* Volto, na entrada, a quantidade de caracteres a mais que não fazem parte do token */
         _input.back(backSize);
         _table.reset();
         
         setCanRead();
-        
         return t;
       }
       
@@ -145,7 +140,6 @@ class Analyser
       
       /* se o automato está num estado inválido, é pau */
       if (!_table.isInAValidState()) {
-
         /* Se o estado anterior for diferente de inicial, ou seja,
          * se li ao menos um caractere, volto uma posição
         */
@@ -158,30 +152,22 @@ class Analyser
       /* Se casou, retorno o token correto e saio */
       if (_table.isInAMatchedState()) {
         /* Casou. Retorno token */
-        Token<TokenType> t(_table.getMatchedToken(),line,column,_table.getMatchedString());
+        Token<TokenType> t(_table.getMatchedToken(),line,_table.getMatchedString());
         
         /* Reseta o automato pro estado inicial */
         _table.reset();
-        
         setCanRead();
-        
-        //std::cout << "Size: " << _input.getSize() << ", pos: " << _input.getPos() << std::endl;
         
         /* Volto uma posição na entrada*/
         _input.back();
-
         return t;
       }
     } // _file.canRead()
     
-
     /* Se chegou até aqui, retorna um token inválido */
-    Token<TokenType> t(_reserved.getNone(),line,column,_table.getMatchedString());
-    
+    Token<TokenType> t(_reserved.getNone(),line,_table.getMatchedString());
     _table.reset();
-    
     setCanRead();
-    
     return t;
   }
 
@@ -237,9 +223,23 @@ public:
       }
     }
     
+    /* Faz a parte do padding dos tokens */
+    typename TokenPaddingMap<TokenType>::const_iterator it(_paddings.find(token.getType()));
+    /* se achou, o token tem padding */
+    if (it != _paddings.end()) {
+      token.setPadding(it->second);
+    }
+    
     /* Retorna o token, seja ele válido ou inválido */
     return token;
   }
+  
+  /* Define o padding de um token */
+  void setTokenPadding(const TokenType &type, const int &left, const int &right)
+  {
+    _paddings.add(type,TokenPadding(left,right));
+  }
+  
 };
 
 }
