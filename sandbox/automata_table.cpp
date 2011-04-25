@@ -166,8 +166,8 @@ int main(int argc, char **argv)
   automata.addTransition(a1,letters + digits, a1);
   automata.addTransition(a1,"_",a2);
   automata.addTransition(a2,letters + digits, a1);
-  automata.addFinalTransition(a1,any - String(letters + digits),TkId);
-  automata.addFinalTransition(a2,any - String(letters + digits),TkId);
+  automata.addFinalTransition(a1,any - letters - digits,TkId);
+  automata.addFinalTransition(a2,any - letters - digits,TkId);
   
   /* Para [, ] e [] */
   automata.addTransition(start,"[",g1);
@@ -275,11 +275,15 @@ int main(int argc, char **argv)
   automata.addTransition(d1,">",d2);
   automata.addFinalTransition(d2,any,TkThen);
   
+  /* um cara que lê um arquivo do disco */
   FileReader reader(argv[1]);
   
   /* Estrutura com as palavras reservadas */
   TokenHash<TokenType> reservedWords(TkNone);
   
+  /* adiciona toda as palavras reservadas na linguagem
+   * com seus respectivos tokens
+   */
   reservedWords.add("module",TkModule);
   reservedWords.add("private",TkPrivate);
   reservedWords.add("end",TkEndWord);
@@ -307,22 +311,23 @@ int main(int argc, char **argv)
   reservedWords.add("llarof",TkLlarof);
   reservedWords.add("skip",TkSkip);
   
-    
-  Analyser<State,TokenType> analyser(reader,automata,reservedWords);
+  /* Analisador léxico */
+  Analyser<State,TokenType> lexer(reader,automata,reservedWords);
   
-  //id deve ser comparado na tabela de palavras reservadas
-  analyser.addTokenToCompareWithReserved(TkId);
+  // os identificadores devem ser comparados na tabela de palavras reservadas
+  lexer.addTokenToCompareWithReserved(TkId);
   
   /* Ignore os seguintes tokens,
    * que não serão passados pro
    * analisador sintático: espaços e comentários
   */
-  analyser.ignoreToken(TkSpaces);
-  analyser.ignoreToken(TkComment);
+  lexer.ignoreToken(TkSpaces);
+  lexer.ignoreToken(TkComment);
   
-  while (analyser.canReadToken())
+  /* Laço principal do analisador sintático, ainda não implementado */
+  while (lexer.canReadToken())
   {
-    Token<TokenType> t(analyser.getToken());
+    Token<TokenType> t(lexer.getToken());
     std::cout << "'" << t.getLexema() << "' => "
               << t.getType() << std::endl;
   }

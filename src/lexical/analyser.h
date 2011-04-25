@@ -70,12 +70,30 @@ class Analyser
   /* Lista de tipos de tokens a serem ignorados */
   TokenTypeList _ignore;
   
+  virtual void setCanRead()
+  {
+    /* se não posso mais ler do arquivo, informa isso */
+      if (!_input.canRead()) {
+      _canRead = false;
+    }
+  }
+  
   /* Método privado para pegar o próximo token 
    * FIXME: OMG! OMG! Que método graaande! :-(
    * TODO: refatorar!
    */
   Token<TokenType> _privGetToken()
   {
+    /*
+     * O que faz: pega linha e coluna onde inicial o token
+     * faz o tratamento dos conflitos
+     * faz o tratamento de token inválido
+     * faz o tratamento de token correto
+     * faz o tratamento de fim de arquivo
+     * Faz coisa demais!
+     * 
+    * 
+    
     /* Já gravo a linha e coluna onde inicio o a leitura do token */
     int column(_input.getColumnNumber());
     int line(_input.getLineNumber());
@@ -109,8 +127,11 @@ class Analyser
         
         Token<TokenType> t(_table.getTokenTypeFinishedIn(_table.getMarkState()),line,column,lexema);
         
+        /* Volto, na entrada, a quantidade de caracteres a mais que não fazem parte do token */
         _input.back(backSize);
         _table.reset();
+        
+        setCanRead();
         
         return t;
       }
@@ -124,11 +145,7 @@ class Analyser
       
       /* se o automato está num estado inválido, é pau */
       if (!_table.isInAValidState()) {
-        /* se não posso mais ler do arquivo, informa isso */
-        if (!_input.canRead()) {
-          _canRead = false;
-        }
-        
+
         /* Se o estado anterior for diferente de inicial, ou seja,
          * se li ao menos um caractere, volto uma posição
         */
@@ -146,10 +163,7 @@ class Analyser
         /* Reseta o automato pro estado inicial */
         _table.reset();
         
-        /* se não posso mais ler do arquivo, informa isso */
-        if (!_input.canRead()) {
-          _canRead = false;
-        }
+        setCanRead();
         
         //std::cout << "Size: " << _input.getSize() << ", pos: " << _input.getPos() << std::endl;
         
@@ -165,6 +179,8 @@ class Analyser
     Token<TokenType> t(_reserved.getNone(),line,column,_table.getMatchedString());
     
     _table.reset();
+    
+    setCanRead();
     
     return t;
   }
@@ -208,7 +224,7 @@ public:
     /* Lê token até achar um que não possa ser descartado */
     do {
       token = _privGetToken();
-    } while (_ignore.find(token.getType()));
+    } while (_ignore.find(token.getType()) && canReadToken());
     
     /* se foi pego como identificador, vejo se é uma palavra reservada */
     if (_compare.find(token.getType())) {
