@@ -125,7 +125,7 @@ public:
       }
     }
     /* se encontrei uma marca correspondente, retorno true */
-    return it != _conflict.end() ? true : false;
+    return it != _conflict.end();
   }
   
   virtual StateType getMarkState() const
