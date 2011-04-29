@@ -46,10 +46,6 @@ public:
   _type(type)
   {
   }
-  /* o token é válido? */
-  bool isValid() 
-  {
-  }
   
   const TokenType getType() const
   {
