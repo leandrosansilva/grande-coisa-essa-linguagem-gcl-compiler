@@ -75,9 +75,8 @@ class Analyser
   virtual void setCanRead()
   {
     /* se não posso mais ler do arquivo, informa isso */
-      if (!_input.canRead()) {
+    if (!_input.canRead())
       _canRead = false;
-    }
   }
   
   /* Método privado para pegar o próximo token 
@@ -94,15 +93,14 @@ class Analyser
      * faz o tratamento de fim de arquivo
      * Faz coisa demais!
      * 
-    * 
+    */ 
     
     /* Já gravo a linha onde inicio o a leitura do token */
     int line(_input.getLineNumber());
     
     while (_input.canRead()) {
-      char c(_input.getChar());
-      
-      _table.doTransition(c);
+      /* faz a transição com o caractere que leu da entrada */ 
+      _table.doTransition(_input.getChar());
       
       /* Verifico se existe uma marca no autômato, 
        * de um estado anterior em conflito
@@ -121,6 +119,7 @@ class Analyser
         /* Pego a string sem o final adicional gerado pelo conflito */
         String lexema(matched.substr(0,matched.size() - backSize));
         
+        /*  */
         Token<TokenType> t(_table.getTokenTypeFinishedIn(_table.getMarkState()),line,lexema);
         
         /* Volto, na entrada, a quantidade de caracteres a mais que não fazem parte do token */

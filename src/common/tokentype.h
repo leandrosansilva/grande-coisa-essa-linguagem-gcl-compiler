@@ -1,5 +1,5 @@
 /*
-    <Tabela Hash com palavras reservadas>
+    Tabela Hash com palavras reservadas
     Copyright (C) 2011  Leandro Santiago <leandrosansilva@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
@@ -31,8 +31,8 @@ template<typename TokenType>
 class TokenHash
 {
   TokenType _none;
-  typedef std::map<const String,TokenType> rMap;
-  rMap _reservedMap;
+  typedef std::map<const String,TokenType> ReservedMap;
+  ReservedMap _reservedMap;
   
 public:
   TokenHash(const TokenType &none):
@@ -46,7 +46,7 @@ public:
   }
   
   virtual TokenType find(const String &pattern) const {
-    typename rMap::const_iterator it(_reservedMap.find(pattern));
+    typename ReservedMap::const_iterator it(_reservedMap.find(pattern));
     return (it != _reservedMap.end()) ? it->second : _none;
   }
   
