@@ -46,7 +46,10 @@ class Analyser
   /* controla se ainda pode haver leitura de token */
   bool _canRead;
   
-  /* Lista de tokens que devem ser ignorados */
+  /* Lista de tokens que devem ser ignorados
+   * TODO: isto não pode ser uma lista, mas algo mais efciente.
+   * Tentar encaixar um hash ou árvore aqui
+   */
   class TokenTypeList
   {
     std::list<TokenType> _list;

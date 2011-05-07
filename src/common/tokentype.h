@@ -25,7 +25,7 @@
 namespace Common {
 /* 
   * Tabela hash com todos as palavras reservadas
-  * Como tratar linguagens que não são case-sensitive? 
+  * TODO: Como tratar linguagens que são case-insensitive? 
 */
 template<typename TokenType>
 class TokenHash
