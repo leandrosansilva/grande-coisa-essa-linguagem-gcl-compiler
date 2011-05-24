@@ -94,9 +94,9 @@ class Analyser
      * faz o tratamento de token inválido
      * faz o tratamento de token correto
      * faz o tratamento de fim de arquivo
-     * Faz coisa demais!
-     * 
-    */ 
+     * Faz coisa demais! 
+     *
+    */
     
     /* Já gravo a linha onde inicio o a leitura do token */
     int line(_input.getLineNumber());
@@ -175,6 +175,10 @@ class Analyser
 
 public:
 
+  /* um analisador precisa de uma entrada de dados,
+   * de um automato (tabela de transição),
+   * e de uma tabela de palavras reservadas
+   */
   Analyser(Input &file, TransitionTable<StateType,TokenType> &table, TokenHash<TokenType> &reserved):
   _input(file),
   _table(table),
@@ -183,19 +187,23 @@ public:
   {
   }
   
+  /* Toda vez que um token identificado com o tipo passado
+   * for encontrado, deve ser comparado na tabela de palavras reservadas
+   */
   void addTokenToCompareWithReserved(const TokenType &t)
   {
     _compare.add(t);
   }
  
-  /* Deve ignorar o tipo passado */
+  /* Deve ignorar o tipo passado, que não será passado às fazes seguintes de compilação
+  */
   void ignoreToken(const TokenType &token)
   {
     _ignore.add(token);
   }
   
   /* me retorna se posso continuar a pegar token ou se já terminou */
-  bool canReadToken() const 
+  bool canReadToken() const
   {
     /* Só retorna se é capaz de ler do arquivo */
     return _canRead;
@@ -219,13 +227,19 @@ public:
         
       /* o token da string que casou. Deve ser diferente do tipo inválido */
       TokenType foundType(_reserved.find(token.getLexema()));
+      
       if (foundType != _reserved.getNone()) {
-        /* Se for uma palavra reservada, defino o novo tipo do token encontrado */
+        /* Se for uma palavra reservada, defino o novo tipo do token encontrado 
+         * como sendo o tipo da palavra reservada encontrada
+        */
         token.setType(foundType);
       }
     }
     
-    /* Faz a parte do padding dos tokens */
+    /* Faz a parte do padding dos tokens
+     * Por exemplo, o conteúdo da string "amarelo" é só amarelo, sem aspas
+     * então aplico padding de 1 a esquerda e 1 á direita
+    */
     typename TokenPaddingMap<TokenType>::const_iterator it(_paddings.find(token.getType()));
     /* se achou, o token tem padding */
     if (it != _paddings.end()) {

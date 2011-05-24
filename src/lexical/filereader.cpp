@@ -41,7 +41,7 @@ bool FileReader::loadToMemory()
 {
   _fileContent = new char[_size];
   seekg(0,std::ios::beg);
-  read((char *)_fileContent,_size);
+  read(reinterpret_cast<char *>(_fileContent),_size);
 }
 
 char FileReader::getChar()
@@ -49,6 +49,7 @@ char FileReader::getChar()
   /* Pega um caractere da entrada */
   char c(_fileContent[_curPos++]);
  
+  /* se o caractere lido for um espaço, incrementa a linha */
   if (c == '\n') {
     _lineNumber++;
   }
@@ -56,6 +57,7 @@ char FileReader::getChar()
   return c;
 }
 
+/* é posível continuar a ler? */
 bool FileReader::canRead() const
 {
   return _curPos < _size;

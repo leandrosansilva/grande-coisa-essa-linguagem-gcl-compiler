@@ -35,12 +35,10 @@ namespace Lexical {
  * Use std::wifstream e wchar_t
  */
 
-/* TODO: implementar o buffer */
+/* TODO: implementar o buffer para não ler o arquivo todo para a memória */
 
-/**
+/*
  * Interface com o arquivo de código-fonte
- * 
- * Já elimina linhas em branco e espaços em branco sequenciais
 */
 class FileReader: public std::ifstream, public Input
 {
