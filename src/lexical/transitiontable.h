@@ -229,6 +229,12 @@ public:
     
     /* Acha o elemento */
     typename TransitionVector::iterator i(_table.begin());
+
+    /* no pior dos casos buscará na lista toda!
+     * TODO: reimplementar utilizando uma estrutura melhor (hash)
+     * Um dos problemas com hash é que ele não possui ordem
+     * e ordem é algo que faz diferença aqui
+    */
     for (; i != _table.end(); i++) {
       if (i->_from == _currentState && String(i->_pattern + "\0").hasChar(symbol))
         break;
@@ -247,7 +253,12 @@ public:
     return _currentState;
   }
   
-  /* reseta estado ao inicial e limpa o buffer do lexema  */
+  /* reseta estado ao inicial e limpa o buffer do lexema 
+   * TODO: talvez seja interessante que não se volte ao estado inicial
+   * mas talvez para um estado definido pelo usuário, a fim de processar
+   * um tipo restrito de token
+   *
+  */
   virtual void reset()
   {
     _currentState = _startState;

@@ -241,7 +241,7 @@ public:
      * então aplico padding de 1 a esquerda e 1 á direita
     */
     typename TokenPaddingMap<TokenType>::const_iterator it(_paddings.find(token.getType()));
-    /* se achou, o token tem padding */
+    /* se achou, o token tem padding, por isso devo aplicá-lo */
     if (it != _paddings.end()) {
       token.setPadding(it->second);
     }

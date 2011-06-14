@@ -49,7 +49,7 @@ char FileReader::getChar()
   /* Pega um caractere da entrada */
   char c(_fileContent[_curPos++]);
  
-  /* se o caractere lido for um espaço, incrementa a linha */
+  /* se o caractere lido for um enter, incrementa a linha */
   if (c == '\n') {
     _lineNumber++;
   }
