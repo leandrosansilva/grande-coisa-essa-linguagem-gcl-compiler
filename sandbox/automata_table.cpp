@@ -67,7 +67,7 @@ TokenType
   TkDot("Dot"),
   TkRBracket("RBracket"),
   TkLBracket("LBracket"),
-  TkElse("Else"),
+  TkGuarded("Else"),
   TkLThan("LesserThan"),
   TkGThan("GreaterThan"),
   TkLEThan("LesserEqualThan"),
@@ -150,11 +150,11 @@ int main(int argc, char **argv)
   /* Para inteiros e reais */
   automata.addTransition(start,digits,b1);
   automata.addTransition(b1,digits,b1);
-  automata.addFinalTransition(b1,any - digits - ".",TkInteger);
+  automata.addFinalTransition(b1,any - digits - "." - letters,TkInteger);
   automata.addTransition(b1,".",b2);
   automata.addTransition(b2,digits,b3);
   automata.addTransition(b3,digits,b3);
-  automata.addFinalTransition(b3,any - digits,TkReal);
+  automata.addFinalTransition(b3,any - digits - letters,TkReal);
   automata.addTransition(b2,".",b4);
   
   /* se para chegar a b4 eu passei por um b1 há dois caracteres atrás,
@@ -174,7 +174,7 @@ int main(int argc, char **argv)
   automata.addTransition(start,"[",g1);
   automata.addTransition(g1,"]",g2);
   automata.addFinalTransition(g1,any,TkLBracket);
-  automata.addFinalTransition(g2,any,TkElse);
+  automata.addFinalTransition(g2,any,TkGuarded);
   automata.addTransition(start,"]",l1);
   automata.addFinalTransition(l1,any,TkRBracket);
   

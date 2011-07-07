@@ -16,7 +16,6 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-
 #ifndef LEXICAL_FILEREADER_H
 #define LEXICAL_FILEREADER_H
 
@@ -33,14 +32,11 @@ namespace Lexical {
 
 /* TODO: reimplementar este leitor para ler código unicode (utf-x) também.
  * Use std::wifstream e wchar_t
- */
-
-/* TODO: implementar o buffer */
+*/
 
 /**
  * Interface com o arquivo de código-fonte
  * 
- * Já elimina linhas em branco e espaços em branco sequenciais
 */
 class FileReader: public std::ifstream, public Input
 {
@@ -58,6 +54,8 @@ public:
   /* pega o número de linha do arquivo que está sendo analizada */
   int getLineNumber() const;
   
+  int getColumnNumber() const;
+  
   /* volta n posições na entrada */
   bool back(int = 1);
   
@@ -70,10 +68,15 @@ public:
   /* Posição na entrada */
   int getPos() const;
   
+
+  
 private:
   int _lineNumber;
+  int _columnNumber;
   
-  /* nesta string fica todo o conteúdo do arquivo! */
+  /* nesta string fica todo o conteúdo do arquivo! 
+   * TODO: mudar isso para pedaços por demanda
+  */
   char *_fileContent;
   
   /* posição atual na string */

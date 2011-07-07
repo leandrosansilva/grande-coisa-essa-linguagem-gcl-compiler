@@ -1,5 +1,5 @@
 /*
-    <one line to give the program's name and a brief idea of what it does.>
+    Ler um arquivo do disco
     Copyright (C) 2011  Leandro Santiago <leandrosansilva@gmail.com>
 
     This program is free software: you can redistribute it and/or modify
@@ -27,6 +27,7 @@ FileReader::FileReader(const std::string &filename):
 std::ifstream(filename.c_str(),std::ios::ate),
 _lineNumber(1),
 _curPos(0),
+_columnNumber(0),
 _size(tellg())
 {
   loadToMemory();
@@ -48,11 +49,14 @@ char FileReader::getChar()
 {
   /* Pega um caractere da entrada */
   char c(_fileContent[_curPos++]);
- 
+  
+  _columnNumber++;
+  
   if (c == '\n') {
     _lineNumber++;
+    _columnNumber = 0;
   }
-
+  
   return c;
 }
 
@@ -66,14 +70,25 @@ int FileReader::getLineNumber() const
   return _lineNumber;
 }
 
+int FileReader::getColumnNumber() const
+{
+  return _columnNumber;
+}
+
 bool FileReader::back(int pos)
 {
   /* A posição para onde devo voltar */
   int backPos(_curPos - pos);
   
+  std::cout << "estou voltando " << backPos << " posições" << std::endl;
+  
   while (_curPos > backPos) {
-    if (_fileContent[_curPos] == '\n')
+    if (_fileContent[_curPos] == '\n') {
       _lineNumber--;
+      _columnNumber = 0;
+    } else {
+      _columnNumber--;
+    }
     
     _curPos--;
   }
