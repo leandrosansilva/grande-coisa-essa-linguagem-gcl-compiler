@@ -29,7 +29,7 @@ typedef String State;
   g1("g1"), g2("g2"),
   h1("h1"), h2("h2"),
   i1("i1"), i2("i2"),
-  j1("j1"),
+  J1("J1"),
   k1("k1"),
   l1("l1"),
   m1("m1"),m2("m2"),
@@ -280,50 +280,47 @@ int main(int argc, char **argv)
   FileReader reader(argv[1]);
   
   /* Estrutura com as palavras reservadas */
-  TokenHash<TokenType> reservedWords(TkNone);
-  
-  /* adiciona toda as palavras reservadas na linguagem
-   * com seus respectivos tokens
-   */
-  reservedWords.add("module",TkModule);
-  reservedWords.add("private",TkPrivate);
-  reservedWords.add("end",TkEndWord);
-  reservedWords.add("const",TkConst);
-  reservedWords.add("Boolean",TkBoolean);
-  reservedWords.add("integer",TkIntegerWord);
-  reservedWords.add("real",TkRealWord);
-  reservedWords.add("begin",TkBegin);
-  reservedWords.add("typedef",TkTypedef);
-  reservedWords.add("array",TkArray);
-  reservedWords.add("range",TkRange);
-  reservedWords.add("proc",TkProc);
-  reservedWords.add("val",TkVal);
-  reservedWords.add("ref",TkRef);
-  reservedWords.add("return",TkReturn);
-  reservedWords.add("write",TkWrite);
-  reservedWords.add("read",TkRead);
-  reservedWords.add("if",TkIf);
-  reservedWords.add("fi",TkFi);
-  reservedWords.add("do",TkDo);
-  reservedWords.add("od",TkOd);
-  reservedWords.add("true",TkTrue);
-  reservedWords.add("false",TkFalse);
-  reservedWords.add("forall",TkForall);
-  reservedWords.add("llarof",TkLlarof);
-  reservedWords.add("skip",TkSkip);
+  TokenHash<TokenType> reservedWords(
+    TkNone,{
+      {"module",TkModule},
+      {"private",TkPrivate},
+      {"end",TkEndWord},
+      {"const",TkConst},
+      {"Boolean",TkBoolean},
+      {"integer",TkIntegerWord},
+      {"real",TkRealWord},
+      {"begin",TkBegin},
+      {"typedef",TkTypedef},
+      {"array",TkArray},
+      {"range",TkRange},
+      {"proc",TkProc},
+      {"val",TkVal},
+      {"ref",TkRef},
+      {"return",TkReturn},
+      {"write",TkWrite},
+      {"read",TkRead},
+      {"if",TkIf},
+      {"fi",TkFi},
+      {"do",TkDo},
+      {"od",TkOd},
+      {"true",TkTrue},
+      {"false",TkFalse},
+      {"forall",TkForall},
+      {"llarof",TkLlarof},
+      {"skip",TkSkip} 
+    });
   
   /* Analisador léxico */
   Analyser<State,TokenType> lexer(reader,automata,reservedWords);
   
   // os identificadores devem ser comparados na tabela de palavras reservadas
-  lexer.addTokenToCompareWithReserved(TkId);
+  lexer.addTokenToCompareWithReserved({TkId});
   
   /* Ignore os seguintes tokens,
    * que não serão passados pro
    * analisador sintático: espaços e comentários
   */
-  lexer.ignoreToken(TkSpaces);
-  lexer.ignoreToken(TkComment);
+  lexer.ignoreToken({TkSpaces,TkComment});
   
   /* 
    * todo token do tipo string terá "cortados" um caractere à esquerda e outro à direita

@@ -222,7 +222,7 @@ public:
    * Retorna o estado inválido caso não
    * tenha conseguido fazer esta transição
    */
-  virtual StateType doTransition(const char &symbol)
+  virtual StateType doTransition(const char symbol)
   {
     /* salva o estado anterior */
     _previousState = _currentState;

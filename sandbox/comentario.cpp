@@ -34,15 +34,12 @@ int main(int argc, char** argv) {
   
   Lexical::Analyser<State,Token> analyser(file,table,Hash);
   
-  analyser.ignoreToken(space);
+  analyser.ignoreToken({space});
 
   analyser.setTokenPadding(comment,2,2);
   
-  Common::Token<Token> token;
-  
   while (analyser.canReadToken()) {
-    token = analyser.getToken();
-    
+    const Common::Token<Token> token(analyser.getToken());
     std::cout << "Pegou '" << token.getLexema() << "' do tipo '" << token.getType() << "'" << std::endl;
   }
   

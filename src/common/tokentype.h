@@ -30,7 +30,7 @@ namespace Common {
   * sensitividade à caixa. Na hora do find, 
   * buscar a string transformada em "uppercase"
 */
-template<typename TokenType>
+template<typename TokenType, bool caseSensitive=true>
 class TokenHash
 {
   /* um tipo de token inválido */
@@ -41,6 +41,13 @@ class TokenHash
   ReservedMap _reservedMap;
   
 public:
+  
+  /* construtor que recebe um token nulo e um mapa lexema => tokentype */
+  TokenHash(const TokenType &none, const ReservedMap &map):
+  _none(none),
+  _reservedMap(map)
+  {
+  }
   /* precisa de um Token inválido, que serve como referência */
   TokenHash(const TokenType &none):
   _none(none)

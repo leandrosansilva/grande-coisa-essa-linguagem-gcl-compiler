@@ -55,6 +55,11 @@ class Analyser
     std::list<TokenType> _list;
     
   public:
+    void append(const std::list<TokenType> &list)
+    {
+      _list.insert(_list.end(),list.begin(),list.end());
+    }
+    
     bool find(const TokenType &type)
     {
       return std::find(_list.begin(),_list.end(),type) != _list.end();
@@ -190,16 +195,16 @@ public:
   /* Toda vez que um token identificado com o tipo passado
    * for encontrado, deve ser comparado na tabela de palavras reservadas
    */
-  void addTokenToCompareWithReserved(const TokenType &t)
+  void addTokenToCompareWithReserved(const std::list<TokenType> &tokens)
   {
-    _compare.add(t);
+    _compare.append(tokens);
   }
  
   /* Deve ignorar o tipo passado, que não será passado às fazes seguintes de compilação
   */
-  void ignoreToken(const TokenType &token)
+  void ignoreToken(const std::list<TokenType> &tokens)
   {
-    _ignore.add(token);
+    _ignore.append(tokens);
   }
   
   /* me retorna se posso continuar a pegar token ou se já terminou */
