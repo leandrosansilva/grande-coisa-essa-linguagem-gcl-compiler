@@ -1,5 +1,6 @@
 #include <vector>
 #include <string>
+#include <map>
 
 using namespace std;
 
@@ -51,6 +52,8 @@ struct Grammar
   Grammar(const RuleList &list)
   {};
 };
+
+typedef map<NonTerminal,DerivationList> GrammarMap;
 
 DerivationList d1 ({
   {
@@ -108,6 +111,41 @@ Grammar g ({
     })
   )
 });
+
+GrammarMap g2 {
+  {IFSTM,
+    DerivationList({
+      {
+        {{"if"},{"("} ,{CONDITION},{")"},{"then"},{THENSTM},{"else"},{ELSESTM}},1
+      },
+
+      {
+        {{"if"},{"("} ,{CONDITION},{")"},{"then"},{THENSTM}},1
+      }
+    })
+  },
+  {CONDITION,
+    DerivationList({
+      {
+        {{"a"},{">"},{"b"}},2
+      }
+    })
+  },
+  {THENSTM,
+    DerivationList({
+      {
+        {{"true"}},3
+      }
+    })
+  },
+  {ELSESTM,
+    DerivationList({
+      {
+        {{"false"}},3
+      }
+    })
+  }
+};
 
 int main(int argc, char **argv)
 {
