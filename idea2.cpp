@@ -2,12 +2,14 @@
 #include <string>
 #include <map>
 #include <iostream>
+#include <algorithm>
+#include <functional>
 
 using namespace std;
 
 typedef enum
 {
-  IFSTM, THENSTM, ELSESTM, CONDITION
+  EL,E, T, F
 } NonTerminal;
 
 struct Symbol
@@ -15,9 +17,20 @@ struct Symbol
   typedef enum { TERMINAL, NONTERMINAL} Type;
 
   Type _type;
-  const string _lexema;
+
+  string _lexema;
 
   NonTerminal _nT;
+
+  bool isTerminal() const
+  {
+    return _type == TERMINAL;
+  }
+
+  bool isNonTerminal() const
+  {
+    return _type == NONTERMINAL;
+  }
 
   Symbol(const string &tok): _type(TERMINAL),_lexema(tok)
   {
@@ -30,78 +43,110 @@ struct Symbol
 
 typedef vector<Symbol> SymbolList;
 
-struct Action
-{
-  SymbolList _sL;
-  int _semAct;
-  Action(const SymbolList &symbolList, int number):_sL(symbolList), _semAct(number)
-  {
-  };
-};
-
-typedef vector<Action> ActionList;
-
+template<typename LeftSide,typename Production, typename Action>
 struct Rule
 {
-  ActionList _aL;
-  bool _nullable;
-  Rule(const ActionList &v): _aL(v)
+  LeftSide _leftSide; 
+  Production _production; 
+  Action _action;
+
+  Rule(const LeftSide &ls, const Production &prod, const Action &act):
+  _leftSide(ls),
+  _production(prod),
+  _action(act)
   {
-    ActionList::const_iterator it(_aL.begin());
-    while (it != _aL.end() && it->_sL.size())
-    {
-      it++;
-    }
-    
-    _nullable = it == _aL.end() ? false : true;
-  };
-  
-  bool nullable() const
-  {
-    return _nullable;
   }
 };
 
-class Grammar
+struct Item
 {
-  map<NonTerminal,Rule> _map;
-public:
-  Grammar(const map<NonTerminal,Rule> &map): _map(map)
+  int _rule;
+  int _dot;
+  Symbol _s;
+  Item(int ruleNumber,int dot, const Symbol &s):
+  _rule(ruleNumber),
+  _dot(dot),
+  _s(s)
   {
   }
-  
-  Rule &rule(const NonTerminal &t)
+};
+
+typedef vector<Item> SetOfItems;
+
+struct Grammar
+{
+  vector<Rule<NonTerminal,SymbolList,int>> _v;
+
+  Grammar(const vector<Rule<NonTerminal,SymbolList,int>> &v):_v(v)
   {
-    return _map.at(t);
+  }
+
+  SetOfItems closure(const SetOfItems &soi)
+  {
+    /* copia I em J */
+    SetOfItems s(soi);
+
+    vector<bool> used(int(_v.size()),false);
+
+    /* dos itens que vieram na clusure, defino as regras que já foram usadas */
+    for (auto it(s.begin()); it != s.end(); it++) {
+      used[it->_rule] = true;
+    }
+
+    for(int iId(0);iId < s.size(); iId++) {
+      Item curItem(s[iId]);
+
+      cout << "tamanho da lista " << "(" << iId << "<" <<  s.size() << ") ";
+      cout << "em mãos item " << "<" << curItem._rule << "," << curItem._dot << ">" << endl;
+
+      /* se o ponto do item não se encntra num não-terminal, nada a ser feito */
+      if (!_v[curItem._rule]._production[curItem._dot].isNonTerminal()) {
+        cout << "saí com terminal na posição " << curItem._dot << " na regra " << curItem._rule << endl;
+        continue;
+      }
+
+      for (int i(0); i < _v.size(); i++) {
+        cout << endl;
+
+        /* Se já foi adicionado, faço nada */
+        if (used[i]) {
+          cout << "saí com já usado em " << i << endl;
+          continue;
+        }
+
+        if (_v[i]._leftSide == _v[curItem._rule]._production[curItem._dot]._nT) {
+          cout << "adicionei a regra nº " << i << endl; 
+          used[i] = true;
+          s.push_back(Item(i,curItem._dot,Symbol("a")));
+        } else {
+          cout << "não adicionei a regra nº " << i << endl; 
+        }
+      }
+    }
+
+    return s;
   }
 };
 
 Grammar g ({
-  {IFSTM,
-    Rule({
-      {
-        {{"if"},{"("} ,{CONDITION},{")"},{"then"},{THENSTM},{"else"},{ELSESTM}},1
-      },
-
-      {
-        {{"if"},{"("} ,{CONDITION},{")"},{"then"},{THENSTM}},1
-      }
-    })
-  },
-
-  {CONDITION,Rule({{{{"a"},{">"},{"b"}},2}})},
-
-  {THENSTM,Rule({{{{"true"}},3}})},
-           
-  {ELSESTM,Rule({{{{"false"}},3},{{},4}})}
+  {EL,{{E}},1},
+  {E,{{E},{"+"},{T}},1},
+  {E,{{T}},1},
+  {T,{{T},{"*"},{F}},1},
+  {T,{{F}},1},
+  {F,{{"("},{E},{")"}},1},
+  {F,{{"id"}},1}
 });
 
 int main(int argc, char **argv)
 {
-  cout << (g.rule(ELSESTM).nullable() ? "TRUE" : "FALSE") << endl;
-  cout << (g.rule(IFSTM).nullable() ? "TRUE" : "FALSE") << endl;
-  cout << (g.rule(THENSTM).nullable() ? "TRUE" : "FALSE") << endl;
-  cout << (g.rule(CONDITION).nullable() ? "TRUE" : "FALSE") << endl;
+  SetOfItems s(g.closure({{0,0,{""}}}));
 
+  cout << "result:" << endl;
+    
+  for_each(s.begin(),s.end(),[](const Item &item){
+    cout << "<" << item._rule << "," << item._dot << ">" << endl;
+  });
+  
   return 0;
 }
