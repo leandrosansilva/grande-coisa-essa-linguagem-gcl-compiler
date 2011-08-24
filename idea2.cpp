@@ -39,6 +39,16 @@ struct Symbol
   Symbol(const NonTerminal &nT): _type(NONTERMINAL),_nT(nT)
   {
   }
+
+  /* operadores de comparação */
+  bool operator==(const Symbol &other) const
+  {
+    /* TODO: reescrever com operador ternário */
+    bool t(other.isTerminal() && isTerminal() && _lexema == other._lexema);
+    bool n(other.isNonTerminal() && isNonTerminal() && _nT == other._nT);
+
+    return t || n;
+  }
 };
 
 typedef vector<Symbol> SymbolList;
@@ -96,35 +106,39 @@ struct Grammar
     for(int iId(0);iId < s.size(); iId++) {
       Item curItem(s[iId]);
 
-      cout << "tamanho da lista " << "(" << iId << "<" <<  s.size() << ") ";
-      cout << "em mãos item " << "<" << curItem._rule << "," << curItem._dot << ">" << endl;
-
       /* se o ponto do item não se encntra num não-terminal, nada a ser feito */
       if (!_v[curItem._rule]._production[curItem._dot].isNonTerminal()) {
-        cout << "saí com terminal na posição " << curItem._dot << " na regra " << curItem._rule << endl;
         continue;
       }
 
       for (int i(0); i < _v.size(); i++) {
-        cout << endl;
-
         /* Se já foi adicionado, faço nada */
         if (used[i]) {
-          cout << "saí com já usado em " << i << endl;
           continue;
         }
 
         if (_v[i]._leftSide == _v[curItem._rule]._production[curItem._dot]._nT) {
-          cout << "adicionei a regra nº " << i << endl; 
           used[i] = true;
           s.push_back(Item(i,curItem._dot,Symbol("a")));
         } else {
-          cout << "não adicionei a regra nº " << i << endl; 
         }
       }
     }
 
     return s;
+  }
+
+  SetOfItems goTo(const SetOfItems &items,const Symbol &x)
+  {
+    SetOfItems j;
+    for (auto it(items.begin()); it != items.end(); it++) {
+      if (_v[it->_rule]._production[it->_dot] == x) {
+        j.push_back(Item(it->_rule,it->_dot+1,Symbol("a")));
+      } else {
+        cout << "diferentes" << endl;
+      }
+    }
+    return closure(j);
   }
 };
 
@@ -140,7 +154,7 @@ Grammar g ({
 
 int main(int argc, char **argv)
 {
-  SetOfItems s(g.closure({{0,0,{""}}}));
+  SetOfItems s(g.goTo(g.closure({{6,1,{""}}}),Symbol("*")));
 
   cout << "result:" << endl;
     
