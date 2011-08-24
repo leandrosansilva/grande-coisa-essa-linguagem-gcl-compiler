@@ -81,6 +81,13 @@ struct Item
   }
 };
 
+template<typename K1, typename K2>
+struct MultiKey
+{
+  K1 _k1;
+  K2 _k2;
+};
+
 typedef vector<Item> SetOfItems;
 
 struct Grammar
@@ -103,7 +110,7 @@ struct Grammar
       used[it->_rule] = true;
     }
 
-    for(int iId(0);iId < s.size(); iId++) {
+    for(int iId(0); iId < s.size(); iId++) {
       Item curItem(s[iId]);
 
       /* se o ponto do item não se encntra num não-terminal, nada a ser feito */
@@ -117,10 +124,14 @@ struct Grammar
           continue;
         }
 
+        if (_v[i]._production.size() < curItem._dot ) {
+          continue;
+        }
+
+
         if (_v[i]._leftSide == _v[curItem._rule]._production[curItem._dot]._nT) {
           used[i] = true;
-          s.push_back(Item(i,curItem._dot,Symbol("a")));
-        } else {
+          s.push_back(Item(i,0,Symbol("a")));
         }
       }
     }
@@ -134,8 +145,6 @@ struct Grammar
     for (auto it(items.begin()); it != items.end(); it++) {
       if (_v[it->_rule]._production[it->_dot] == x) {
         j.push_back(Item(it->_rule,it->_dot+1,Symbol("a")));
-      } else {
-        cout << "diferentes" << endl;
       }
     }
     return closure(j);
@@ -154,13 +163,42 @@ Grammar g ({
 
 int main(int argc, char **argv)
 {
-  SetOfItems s(g.goTo(g.closure({{6,1,{""}}}),Symbol("*")));
-
-  cout << "result:" << endl;
-    
-  for_each(s.begin(),s.end(),[](const Item &item){
+  /*SetOfItems s(g.closure({{5,1,{""}}}));
+  cout << endl;
+  for_each(s.begin(), s.end(),[](const Item &item){
     cout << "<" << item._rule << "," << item._dot << ">" << endl;
   });
+
+  return 0;*/
+    
+  vector<SetOfItems> t({g.closure({{0,0,{""}}})});
+
+  /* mapa onde a chave é uma estrutura <índice da closure,símbolo do goto> 
+   * e o valor é o índice da closure resultado da transição
+  */
+  map<MultiKey<int,Symbol>,int> e;
+
+  /* i guarda o índice da closure corrente */
+  for (int i(0); i<t.size();) {
+    SetOfItems s(t[i]);
+
+    for_each(s.begin(),s.end(),[&s,&t,&i](const Item &item){
+
+      cout << endl << "analisyng <" << item._rule << "," << item._dot << ">" << endl;
+      
+      /* para cada cara depois do ponto da regra em questão, faz o goto dele */
+      SetOfItems j(g.goTo(s,g._v[item._rule]._production[item._dot]));
+
+      cout << "closure " << i << ":" << endl;
+      for_each(j.begin(), j.end(),[&j](const Item &item){
+        cout << "<" << item._rule << "," << item._dot << ">" << endl;
+      });
+
+      i++;
+      
+      //t.push_back(j);
+    });
+  }
   
   return 0;
 }
