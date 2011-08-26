@@ -4,6 +4,7 @@
 #include <iostream>
 #include <algorithm>
 #include <functional>
+#include <set>
 
 using namespace std;
 
@@ -38,6 +39,33 @@ struct Symbol
   
   Symbol(const NonTerminal &nT): _type(NONTERMINAL),_nT(nT)
   {
+  }
+
+  bool operator<(const Symbol &other) const
+  {
+    bool t(other.isTerminal() && isTerminal() && _lexema < other._lexema);
+    bool n(other.isNonTerminal() && isNonTerminal() && _nT < other._nT);
+
+    /* se os dois são diferentes, terminal é sempre menor que não terminal */
+    bool d(other.isNonTerminal() && isTerminal() && true);
+
+    return t || n || d;
+  }
+
+  bool operator>(const Symbol &other) const
+  {
+    bool t(other.isTerminal() && isTerminal() && _lexema > other._lexema);
+    bool n(other.isNonTerminal() && isNonTerminal() && _nT > other._nT);
+
+    /* se os dois são diferentes, terminal é sempre menor que não terminal */
+    bool d(other.isTerminal() && isNonTerminal() && true);
+
+    return t || n || d;
+  }
+
+  bool operator!=(const Symbol &other) const
+  {
+    return !(*this == other);
   }
 
   /* operadores de comparação */
@@ -79,6 +107,34 @@ struct Item
   _s(s)
   {
   }
+
+  bool operator<(const Item &other) const
+  {
+    if ((_rule * 10 + _dot) < (other._rule * 10 + other._dot)) {
+      return true;
+    }
+    
+    return _s < other._s;
+  }
+
+  bool operator>(const Item &other) const
+  {
+    if ((_rule * 10 + _dot) < (other._rule * 10 + other._dot)) {
+      return true;
+    }
+    
+    return _s < other._s;
+  }
+
+  bool operator==(const Item &other) const
+  {
+    return _rule == other._rule && _dot == other._dot && _s == other._s;
+  }
+
+  bool operator!=(const Item &other) const
+  {
+    return !(*this == other);
+  }
 };
 
 template<typename K1, typename K2>
@@ -86,6 +142,9 @@ struct MultiKey
 {
   K1 _k1;
   K2 _k2;
+  MultiKey(const K1 &k1, const K2 &k2): _k1(k1), _k2(k2)
+  {
+  }
 };
 
 typedef vector<Item> SetOfItems;
@@ -124,13 +183,9 @@ struct Grammar
           continue;
         }
 
-        if (_v[i]._production.size() < curItem._dot ) {
-          continue;
-        }
-
-
         if (_v[i]._leftSide == _v[curItem._rule]._production[curItem._dot]._nT) {
           used[i] = true;
+          /* adiciona o novo item, mas com o ponto no começo */
           s.push_back(Item(i,0,Symbol("a")));
         }
       }
@@ -149,6 +204,58 @@ struct Grammar
     }
     return closure(j);
   }
+
+  void printSetOfItems(const SetOfItems &s)
+  {
+    for_each(s.begin(), s.end(),[](const Item &item){
+      cout << "<" << item._rule << "," << item._dot << ">" << endl;
+    });
+  }
+  
+  void canonical(const SetOfItems &s)
+  {
+    vector<SetOfItems *> t;
+
+    t.push_back(new SetOfItems(closure({{0,0,{""}}})));
+
+    /* mapa onde a chave é uma estrutura <índice da closure,símbolo do goto> 
+     * e o valor é o índice da closure resultado da transição
+    */
+    map<MultiKey<int,Symbol>,int> e;
+
+    /* guarda os items que eu já usei para fazer goto e para onde levam*/
+    map<Item,SetOfItems *> usedItems;
+
+    /* s guarda o índice da closure corrente */
+    for (int s(0); s < t.size(); s++) {
+
+      for (SetOfItems::iterator item(t[s]->begin()); item != t[s]->end(); item++) {
+
+        // Se o item já foi usado
+        if (usedItems.find(*item) != usedItems.end()) {
+          //cout << "Já usado" << endl;
+          continue;
+        } 
+
+        cout << endl << "analysing <" << item->_rule << "," << item->_dot << ">" << endl;
+
+        usedItems[*item] = NULL;
+
+        // para cada cara depois do ponto da regra em questão, faz o goto dele
+        SetOfItems j(goTo(*(t[s]),_v[item->_rule]._production[item->_dot]));
+
+        /* se o goto aplicado no elemento resultou num novo conjunto, adiciona */
+        if (j.size()) {
+          cout << "closure " << s << ":" << endl;
+
+          printSetOfItems(j);
+
+          // se não achou a closure na lista de closures, a adiciona
+          t.push_back(new SetOfItems(j));
+        }
+      }
+    }
+  }
 };
 
 Grammar g ({
@@ -161,44 +268,51 @@ Grammar g ({
   {F,{{"id"}},1}
 });
 
+
+bool TEST(const bool ret, const string &msg)
+{
+  cout << msg << ": " << (ret ? "TRUE" : "FALSE") << endl << endl;
+}
+
+void testSymbol()
+{
+  Symbol s1(E);
+  Symbol s2(T);
+
+  Symbol s3("primeiro");
+  Symbol s4("segundo");
+
+  TEST(s1 < s2, "TRUE");
+  TEST(s3 < s4, "TRUE");
+  
+  TEST(s1 > s2, "FALSE");
+  TEST(s3 > s4, "FALSE");
+ 
+  TEST(s1 > s4, "TRUE");
+  TEST(s2 < s4, "FALSE");
+
+  TEST(s2 == s2, "TRUE");
+  TEST(s3 != s3, "FALSE");
+}
+
+void testItem()
+{
+  Item i1(2,2,Symbol("a"));
+  Item i2(2,2,Symbol("b"));
+  Item i3(2,2,Symbol(E));
+  Item i4(2,3,Symbol("b"));
+  Item i5(3,2,Symbol("b"));
+
+  TEST(i1 < i2,"TRUE");
+  TEST(i1 != i1,"FALSE");
+  TEST(i1 < i3,"TRUE");
+}
+
 int main(int argc, char **argv)
 {
-  /*SetOfItems s(g.closure({{5,1,{""}}}));
-  cout << endl;
-  for_each(s.begin(), s.end(),[](const Item &item){
-    cout << "<" << item._rule << "," << item._dot << ">" << endl;
-  });
+  //testItem();
+ 
+  g.canonical({{0,0,{""}}});
 
-  return 0;*/
-    
-  vector<SetOfItems> t({g.closure({{0,0,{""}}})});
-
-  /* mapa onde a chave é uma estrutura <índice da closure,símbolo do goto> 
-   * e o valor é o índice da closure resultado da transição
-  */
-  map<MultiKey<int,Symbol>,int> e;
-
-  /* i guarda o índice da closure corrente */
-  for (int i(0); i<t.size();) {
-    SetOfItems s(t[i]);
-
-    for_each(s.begin(),s.end(),[&s,&t,&i](const Item &item){
-
-      cout << endl << "analisyng <" << item._rule << "," << item._dot << ">" << endl;
-      
-      /* para cada cara depois do ponto da regra em questão, faz o goto dele */
-      SetOfItems j(g.goTo(s,g._v[item._rule]._production[item._dot]));
-
-      cout << "closure " << i << ":" << endl;
-      for_each(j.begin(), j.end(),[&j](const Item &item){
-        cout << "<" << item._rule << "," << item._dot << ">" << endl;
-      });
-
-      i++;
-      
-      //t.push_back(j);
-    });
-  }
-  
   return 0;
 }
