@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <functional>
 #include <set>
+#include <list>
 
 using namespace std;
 
@@ -12,6 +13,14 @@ typedef enum
 {
   EL,E, T, F
 } NonTerminal;
+
+map<NonTerminal,string> NonTerminalMap 
+{
+  {EL,"EL"},
+  {E,"E"},
+  {T,"T"},
+  {F,"F"}
+};
 
 struct Symbol
 {
@@ -39,6 +48,15 @@ struct Symbol
   
   Symbol(const NonTerminal &nT): _type(NONTERMINAL),_nT(nT)
   {
+  }
+
+  string toString() const 
+  {
+    if (isTerminal()) {
+      return _lexema;
+    }
+
+    return NonTerminalMap[_nT]; 
   }
 
   bool operator<(const Symbol &other) const
@@ -104,7 +122,7 @@ struct Item
   Item(int ruleNumber,int dot, const Symbol &s):
   _rule(ruleNumber),
   _dot(dot),
-  _s(s)
+  _s("")
   {
   }
 
@@ -119,11 +137,11 @@ struct Item
 
   bool operator>(const Item &other) const
   {
-    if ((_rule * 10 + _dot) < (other._rule * 10 + other._dot)) {
+    if ((_rule * 10 + _dot) > (other._rule * 10 + other._dot)) {
       return true;
     }
     
-    return _s < other._s;
+    return _s > other._s;
   }
 
   bool operator==(const Item &other) const
@@ -137,17 +155,9 @@ struct Item
   }
 };
 
-template<typename K1, typename K2>
-struct MultiKey
-{
-  K1 _k1;
-  K2 _k2;
-  MultiKey(const K1 &k1, const K2 &k2): _k1(k1), _k2(k2)
-  {
-  }
-};
-
 typedef vector<Item> SetOfItems;
+
+typedef pair<list<SetOfItems *>,map<Item,SetOfItems *>> CanonicalPair;
 
 struct Grammar
 {
@@ -157,17 +167,19 @@ struct Grammar
   {
   }
 
+  void printSetOfItems(const SetOfItems &s)
+  {
+    for_each(s.begin(), s.end(),[](const Item &item){
+      cout << "<" << item._rule << "," << item._dot << ">, ";
+    });
+  }
+
   SetOfItems closure(const SetOfItems &soi)
   {
     /* copia I em J */
     SetOfItems s(soi);
 
-    vector<bool> used(int(_v.size()),false);
-
-    /* dos itens que vieram na clusure, defino as regras que já foram usadas */
-    for (auto it(s.begin()); it != s.end(); it++) {
-      used[it->_rule] = true;
-    }
+    set<Item> used;
 
     for(int iId(0); iId < s.size(); iId++) {
       Item curItem(s[iId]);
@@ -178,15 +190,16 @@ struct Grammar
       }
 
       for (int i(0); i < _v.size(); i++) {
-        /* Se já foi adicionado, faço nada */
-        if (used[i]) {
+
+        /* Se já foi adicionado, adiciono e saio */
+        if (used.find(curItem) != used.end()) {
           continue;
         }
 
         if (_v[i]._leftSide == _v[curItem._rule]._production[curItem._dot]._nT) {
-          used[i] = true;
+          used.insert(curItem);
           /* adiciona o novo item, mas com o ponto no começo */
-          s.push_back(Item(i,0,Symbol("a")));
+          s.push_back(Item(i,0,Symbol("")));
         }
       }
     }
@@ -197,64 +210,80 @@ struct Grammar
   SetOfItems goTo(const SetOfItems &items,const Symbol &x)
   {
     SetOfItems j;
-    for (auto it(items.begin()); it != items.end(); it++) {
+    for (SetOfItems::const_iterator it(items.begin()); it != items.end(); it++) {
       if (_v[it->_rule]._production[it->_dot] == x) {
-        j.push_back(Item(it->_rule,it->_dot+1,Symbol("a")));
+        j.push_back(Item(it->_rule,it->_dot+1,Symbol("")));
       }
     }
+    
     return closure(j);
   }
 
-  void printSetOfItems(const SetOfItems &s)
+  CanonicalPair canonical(const SetOfItems &s)
   {
-    for_each(s.begin(), s.end(),[](const Item &item){
-      cout << "<" << item._rule << "," << item._dot << ">" << endl;
-    });
-  }
-  
-  void canonical(const SetOfItems &s)
-  {
-    vector<SetOfItems *> t;
-
-    t.push_back(new SetOfItems(closure({{0,0,{""}}})));
-
-    /* mapa onde a chave é uma estrutura <índice da closure,símbolo do goto> 
-     * e o valor é o índice da closure resultado da transição
-    */
-    map<MultiKey<int,Symbol>,int> e;
+    list<SetOfItems *> f, t({new SetOfItems(closure({{0,0,{""}}}))});
 
     /* guarda os items que eu já usei para fazer goto e para onde levam*/
     map<Item,SetOfItems *> usedItems;
 
-    /* s guarda o índice da closure corrente */
-    for (int s(0); s < t.size(); s++) {
+    /* enquanto houver elementos na lista, remove e joga na lista final */
+    while (t.size()) {
 
-      for (SetOfItems::iterator item(t[s]->begin()); item != t[s]->end(); item++) {
+      map<Symbol,bool> usedSymbols;
+
+      /* TODO: isto não precisa acontecer para todos os símbolos da gramática, 
+       * mas só para os do set
+      */
+      for (int i(0); i< _v.size(); i++) {
+        if (usedSymbols.find(Symbol(_v[i]._leftSide)) == usedSymbols.end()) {
+          usedSymbols[Symbol(_v[i]._leftSide)] = false;
+        }
+      }
+
+      /* pega o primeiro da lista e o remove */
+      SetOfItems *s(t.front());
+      f.push_back(s);
+      t.pop_front();
+
+      for (SetOfItems::iterator item(s->begin()); item != s->end(); item++) {
 
         // Se o item já foi usado
         if (usedItems.find(*item) != usedItems.end()) {
-          //cout << "Já usado" << endl;
           continue;
-        } 
+        }
 
-        cout << endl << "analysing <" << item->_rule << "," << item->_dot << ">" << endl;
+        /* Se já foi feito o goto num símbolo, sai  */
+        if (usedSymbols[_v[item->_rule]._production[item->_dot]]) {
+          continue;  
+        }
 
-        usedItems[*item] = NULL;
-
+        usedSymbols[_v[item->_rule]._production[item->_dot]] = true;
+        
         // para cada cara depois do ponto da regra em questão, faz o goto dele
-        SetOfItems j(goTo(*(t[s]),_v[item->_rule]._production[item->_dot]));
+        SetOfItems j(goTo(*s,_v[item->_rule]._production[item->_dot]));
 
         /* se o goto aplicado no elemento resultou num novo conjunto, adiciona */
         if (j.size()) {
-          cout << "closure " << s << ":" << endl;
+
+          cout << endl << "goto({";
+          printSetOfItems(*s);
+          cout << "}, " << _v[item->_rule]._production[item->_dot].toString() << " ) -> ";
 
           printSetOfItems(j);
 
-          // se não achou a closure na lista de closures, a adiciona
-          t.push_back(new SetOfItems(j));
+          SetOfItems *dst(new SetOfItems(j));
+
+          t.push_back(dst);
+
+          usedItems[*item] = dst;
+
+          
+          cout << endl;
+        } else {
         }
       }
     }
+    return {f,usedItems};
   }
 };
 
@@ -267,7 +296,6 @@ Grammar g ({
   {F,{{"("},{E},{")"}},1},
   {F,{{"id"}},1}
 });
-
 
 bool TEST(const bool ret, const string &msg)
 {
@@ -302,17 +330,31 @@ void testItem()
   Item i3(2,2,Symbol(E));
   Item i4(2,3,Symbol("b"));
   Item i5(3,2,Symbol("b"));
+  Item i6(2,2,Symbol(EL));
 
   TEST(i1 < i2,"TRUE");
   TEST(i1 != i1,"FALSE");
   TEST(i1 < i3,"TRUE");
+  TEST(i3 > i1,"TRUE");
+  TEST(i3 == i1,"FALSE");
+  TEST(i6 == i3,"FALSE");
+  TEST(i6 < i3,"TRUE");
 }
 
 int main(int argc, char **argv)
 {
-  //testItem();
- 
-  g.canonical({{0,0,{""}}});
+  //CanonicalPair c(g.canonical({{0,0,{""}}}));
+
+  //cout << "nº de closures: " << c.first.size() << " e de itens: " << c.second.size() << endl;
+
+  SetOfItems s(g.closure({{5,1,{""}}}));
+
+  g.printSetOfItems(s);
+
+  //cout << " -----> ";
+  //g.printSetOfItems(g.goTo(s,Symbol("(")));
+
+  cout << endl;
 
   return 0;
 }
