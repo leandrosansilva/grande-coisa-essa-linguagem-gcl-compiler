@@ -167,11 +167,28 @@ struct Grammar
   {
   }
 
+  void printItem(const Item &item)
+  {
+    // imprime o left side
+    cout << NonTerminalMap[_v[item._rule]._leftSide] << " -> ";
+    for (int i(0); i<_v[item._rule]._production.size(); i++) {
+      if (i == item._dot) {
+        cout << ". ";
+      }
+      cout << _v[item._rule]._production[i].toString() << " ";
+    }
+
+    if (item._dot == _v[item._rule]._production.size()) {
+      cout << ". ";
+    }
+    cout << endl;
+  }
+
   void printSetOfItems(const SetOfItems &s)
   {
-    for_each(s.begin(), s.end(),[](const Item &item){
-      cout << "<" << item._rule << "," << item._dot << ">, ";
-    });
+    for (int i(0); i< s.size(); i++) {
+      printItem(s[i]);
+    }
   }
 
   SetOfItems closure(const SetOfItems &soi)
@@ -249,6 +266,10 @@ struct Grammar
       f.push_back(s);
       t.pop_front();
 
+      cout << "inserindo: " << endl;
+      printSetOfItems(*s);
+      cout << endl;
+
       for (SetOfItems::iterator item(s->begin()); item != s->end(); item++) {
 
         // Se o item já foi usado
@@ -269,21 +290,16 @@ struct Grammar
         /* se o goto aplicado no elemento resultou num novo conjunto, adiciona */
         if (j.size()) {
 
-          cout << endl << "goto({";
-          printSetOfItems(*s);
-          cout << "}, " << _v[item->_rule]._production[item->_dot].toString() << " ) -> ";
-
-          printSetOfItems(j);
+          //cout << endl << "goto({";
+          //printSetOfItems(*s);
+          //cout << "}, " << _v[item->_rule]._production[item->_dot].toString() << " ) -> ";
+          //printSetOfItems(j);
 
           SetOfItems *dst(new SetOfItems(j));
 
           t.push_back(dst);
 
           usedItems[*item] = dst;
-
-          
-          cout << endl;
-        } else {
         }
       }
     }
