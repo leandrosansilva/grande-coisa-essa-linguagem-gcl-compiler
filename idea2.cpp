@@ -191,15 +191,19 @@ struct Grammar
 
       for (int i(0); i < _v.size(); i++) {
 
-        /* Se já foi adicionado, adiciono e saio */
-        if (used.find(curItem) != used.end()) {
-          continue;
-        }
-
         if (_v[i]._leftSide == _v[curItem._rule]._production[curItem._dot]._nT) {
-          used.insert(curItem);
+
+          Item item(i,0,Symbol(""));
+
+          /* Se já foi usado, aio */
+          if (used.find(item) != used.end()) {
+            continue;
+          }
+
           /* adiciona o novo item, mas com o ponto no começo */
-          s.push_back(Item(i,0,Symbol("")));
+          s.push_back(item);
+
+          used.insert(item);
         }
       }
     }
@@ -343,18 +347,9 @@ void testItem()
 
 int main(int argc, char **argv)
 {
-  //CanonicalPair c(g.canonical({{0,0,{""}}}));
+  CanonicalPair c(g.canonical({{0,0,{""}}}));
 
-  //cout << "nº de closures: " << c.first.size() << " e de itens: " << c.second.size() << endl;
-
-  SetOfItems s(g.closure({{5,1,{""}}}));
-
-  g.printSetOfItems(s);
-
-  //cout << " -----> ";
-  //g.printSetOfItems(g.goTo(s,Symbol("(")));
-
-  cout << endl;
+  cout << "nº de closures: " << c.first.size() << " e de itens: " << c.second.size() << endl;
 
   return 0;
 }
