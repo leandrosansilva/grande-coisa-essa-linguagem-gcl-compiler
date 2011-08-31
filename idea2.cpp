@@ -11,7 +11,9 @@ using namespace std;
 
 typedef enum
 {
-  EL,E, T, F
+  EL,E, T, F,
+  
+  D,K,B,H
 } NonTerminal;
 
 map<NonTerminal,string> NonTerminalMap 
@@ -19,18 +21,32 @@ map<NonTerminal,string> NonTerminalMap
   {EL,"EL"},
   {E,"E"},
   {T,"T"},
-  {F,"F"}
+  {F,"F"},
+  {D,"D"},
+  {K,"K"},
+  {B,"B"},
+  {H,"H"}
 };
 
 struct Symbol
 {
-  typedef enum { TERMINAL, NONTERMINAL} Type;
+  typedef enum { TERMINAL, NONTERMINAL, ENDMARK, EMPTY} Type;
 
   Type _type;
 
   string _lexema;
 
   NonTerminal _nT;
+
+  bool isEndMark() const
+  {
+    return _type == ENDMARK;
+  }
+
+  bool isEmpty() const 
+  {
+    return _type == EMPTY;
+  }
 
   bool isTerminal() const
   {
@@ -50,10 +66,19 @@ struct Symbol
   {
   }
 
+  /* símbolo vazio */
+  Symbol(): _type(EMPTY)
+  {
+  }
+
   string toString() const 
   {
     if (isTerminal()) {
       return _lexema;
+    }
+  
+    if (isEmpty()) {
+      return "<EMPTY>";
     }
 
     return NonTerminalMap[_nT]; 
@@ -65,20 +90,17 @@ struct Symbol
     bool n(other.isNonTerminal() && isNonTerminal() && _nT < other._nT);
 
     /* se os dois são diferentes, terminal é sempre menor que não terminal */
-    bool d(other.isNonTerminal() && isTerminal() && true);
+    bool d(other.isNonTerminal() && isTerminal());
 
-    return t || n || d;
+    /* se é vazio, é menor que qualquer coisa, a não ser que esta outra coisa seja vazio */
+    bool e(isEmpty() && !other.isEmpty());
+
+    return t || n || d || e;
   }
 
   bool operator>(const Symbol &other) const
   {
-    bool t(other.isTerminal() && isTerminal() && _lexema > other._lexema);
-    bool n(other.isNonTerminal() && isNonTerminal() && _nT > other._nT);
-
-    /* se os dois são diferentes, terminal é sempre menor que não terminal */
-    bool d(other.isTerminal() && isNonTerminal() && true);
-
-    return t || n || d;
+    return (!((*this) < other || (*this) == other));
   }
 
   bool operator!=(const Symbol &other) const
@@ -93,7 +115,9 @@ struct Symbol
     bool t(other.isTerminal() && isTerminal() && _lexema == other._lexema);
     bool n(other.isNonTerminal() && isNonTerminal() && _nT == other._nT);
 
-    return t || n;
+    bool e(isEmpty() && other.isEmpty());
+
+    return t || n || e;
   }
 };
 
@@ -167,10 +191,53 @@ struct Grammar
   {
   }
 
+  SymbolList first(const Symbol &symbol)
+  {
+
+    cout << "olhando " << symbol.toString() << endl;
+
+    if (symbol.isTerminal()) {
+      return {symbol};
+    }
+
+    SymbolList f;
+
+    /* para cada produção do símbolo, vai adicionando o first dele em f */
+    for (int i(0); i<_v.size(); i++) {
+      /* é uma produção do símbolo em questão  */  
+      if (_v[i]._leftSide == symbol._nT) {
+
+        /* se o tamanho da produção é 0, significa que produz vazio */
+        //if (!_v[i]._production.size()) {
+          /* adiciona vazio na lista e sai */
+        //}
+
+        for (int j(0); j<_v[i]._production.size(); j++) {
+          /* pega o first do elemento em questão.  */
+          SymbolList pF(first(_v[i]._production[j]));
+
+          /* não achei vazio no first. Logo, devo parar */
+          if (std::find(pF.begin(), pF.end(),Symbol()) == pF.end()) {
+            break;
+          }
+
+          /* TODO: achar um merge */
+          for (int k(0); k < pF.size(); k++) {
+            f.push_back(pF[k]);
+          }
+        }
+      }
+    }
+
+    return f;
+  }
+
   void printItem(const Item &item)
   {
     // imprime o left side
     cout << NonTerminalMap[_v[item._rule]._leftSide] << " -> ";
+
+    // imprime a produção
     for (int i(0); i<_v[item._rule]._production.size(); i++) {
       if (i == item._dot) {
         cout << ". ";
@@ -178,6 +245,7 @@ struct Grammar
       cout << _v[item._rule]._production[i].toString() << " ";
     }
 
+    // no caso de o ponto estar no final
     if (item._dot == _v[item._rule]._production.size()) {
       cout << ". ";
     }
@@ -206,21 +274,28 @@ struct Grammar
         continue;
       }
 
+      /* comparo o item com todas as regras da gramática  */
       for (int i(0); i < _v.size(); i++) {
 
+        /* só aplico às regras cuja símbolo da esquerda seja igual ao que tenho em mãos */
         if (_v[i]._leftSide == _v[curItem._rule]._production[curItem._dot]._nT) {
 
-          Item item(i,0,Symbol(""));
+          SymbolList f(first({}));
 
-          /* Se já foi usado, aio */
-          if (used.find(item) != used.end()) {
-            continue;
+          /* pra cada símbolo achado em first, se não o usei, adiciono na closure */
+          for (int j(0); j<f.size();j++) {
+            Item item(i,0,f[j]);
+
+            /* Se já foi usado, aio */
+            if (used.find(item) != used.end()) {
+              continue;
+            }
+
+            /* adiciona o novo item, mas com o ponto no começo */
+            s.push_back(item);
+
+            used.insert(item);
           }
-
-          /* adiciona o novo item, mas com o ponto no começo */
-          s.push_back(item);
-
-          used.insert(item);
         }
       }
     }
@@ -231,9 +306,10 @@ struct Grammar
   SetOfItems goTo(const SetOfItems &items,const Symbol &x)
   {
     SetOfItems j;
+
     for (SetOfItems::const_iterator it(items.begin()); it != items.end(); it++) {
       if (_v[it->_rule]._production[it->_dot] == x) {
-        j.push_back(Item(it->_rule,it->_dot+1,Symbol("")));
+        j.push_back(Item(it->_rule,it->_dot+1,it->_s));
       }
     }
     
@@ -242,7 +318,7 @@ struct Grammar
 
   CanonicalPair canonical(const SetOfItems &s)
   {
-    list<SetOfItems *> f, t({new SetOfItems(closure({{0,0,{""}}}))});
+    list<SetOfItems *> f, t({new SetOfItems(closure({{0,0,{}}}))});
 
     /* guarda os items que eu já usei para fazer goto e para onde levam*/
     map<Item,SetOfItems *> usedItems;
@@ -250,18 +326,7 @@ struct Grammar
     /* enquanto houver elementos na lista, remove e joga na lista final */
     while (t.size()) {
 
-      map<Symbol,bool> usedSymbols;
-
-      /* TODO: isto não precisa acontecer para todos os símbolos da gramática, 
-       * mas só para os do set
-      */
-      for (int i(0); i< _v.size(); i++) {
-        if (usedSymbols.find(Symbol(_v[i]._leftSide)) == usedSymbols.end()) {
-          usedSymbols[Symbol(_v[i]._leftSide)] = false;
-        }
-      }
-
-      /* pega o primeiro da lista e o remove */
+      /* pega o primeiro da lista, remove-o e insere na lista final */
       SetOfItems *s(t.front());
       f.push_back(s);
       t.pop_front();
@@ -269,6 +334,18 @@ struct Grammar
       cout << "inserindo: " << endl;
       printSetOfItems(*s);
       cout << endl;
+
+      /* nesta iteração, quais símbolos já foram usados? */
+      map<Symbol,bool> usedSymbols;
+
+      /* TODO: isto não precisa acontecer para todos os símbolos da gramática, 
+       * mas só para os do set
+      */
+      for (int i(0); i < _v.size(); i++) {
+        if (usedSymbols.find(Symbol(_v[i]._leftSide)) == usedSymbols.end()) {
+          usedSymbols[Symbol(_v[i]._leftSide)] = false;
+        }
+      }
 
       for (SetOfItems::iterator item(s->begin()); item != s->end(); item++) {
 
@@ -307,25 +384,19 @@ struct Grammar
   }
 };
 
-Grammar g ({
-  {EL,{{E}},1},
-  {E,{{E},{"+"},{T}},1},
-  {E,{{T}},1},
-  {T,{{T},{"*"},{F}},1},
-  {T,{{F}},1},
-  {F,{{"("},{E},{")"}},1},
-  {F,{{"id"}},1}
-});
 
 bool TEST(const bool ret, const string &msg)
 {
-  cout << msg << ": " << (ret ? "TRUE" : "FALSE") << endl << endl;
+  cout << msg << ": " << (ret ? "TRUE" : "FALSE") << endl;
 }
 
 void testSymbol()
 {
   Symbol s1(E);
   Symbol s2(T);
+
+  /* dois vazios */
+  Symbol v1, v2;
 
   Symbol s3("primeiro");
   Symbol s4("segundo");
@@ -341,6 +412,22 @@ void testSymbol()
 
   TEST(s2 == s2, "TRUE");
   TEST(s3 != s3, "FALSE");
+
+  TEST(v1 == v2,"TRUE");
+  TEST(v1 != v2,"FALSE");
+  TEST(v1 == v1,"TRUE");
+  TEST(v1 == s1,"FALSE");
+  TEST(s1 == v1,"FALSE");
+  TEST(s1 != v1,"TRUE");
+
+  SymbolList list { {"a"}, {E}, {}, {"b"}, {EL}, {E}, {"zaza"}, {}, {"a"}, {T}, {}, {}};
+
+  std::sort(list.begin(), list.end());
+    
+  for (int i(0); i< list.size(); i++) {
+    cout << list[i].toString() << ", ";
+  }
+  cout << endl;
 }
 
 void testItem()
@@ -361,11 +448,52 @@ void testItem()
   TEST(i6 < i3,"TRUE");
 }
 
+void testFirst()
+{
+  Grammar g({
+    {F,{{D}},1},
+    {F,{{K}},1},
+    {D,{{"a"},{B}},1},
+    {D,{{E}},1},
+    {K,{{"c"},{H}},1},
+    {H,{{"h"}},1}
+  });
+
+  SymbolList a(g.first({K}));
+
+  for (int i(0); i< a.size(); i++) {
+    cout << a[i].toString() << ", ";
+  }
+  cout << endl;
+}
+
+Grammar g ({
+  {EL,{{E}},1},
+  {E,{{E},{"+"},{T}},1},
+  {E,{{T}},1},
+  {T,{{T},{"*"},{F}},1},
+  {T,{{F}},1},
+  {F,{{"("},{E},{")"}},1},
+  {F,{{"id"}},1}
+});
+
+void testClosure()
+{
+  SetOfItems s(g.closure({{0,0,{}}}));
+  
+  g.printSetOfItems(s);
+}
+
+
 int main(int argc, char **argv)
 {
-  CanonicalPair c(g.canonical({{0,0,{""}}}));
+  //CanonicalPair c(g.canonical({{0,0,{}}}));
 
-  cout << "nº de closures: " << c.first.size() << " e de itens: " << c.second.size() << endl;
+  //cout << "nº de closures: " << c.first.size() << " e de itens: " << c.second.size() << endl;
+
+  //testFirst();
+
+  testSymbol();
 
   return 0;
 }
