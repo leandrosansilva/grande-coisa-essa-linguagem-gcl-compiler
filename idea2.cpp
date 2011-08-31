@@ -193,10 +193,7 @@ struct Grammar
 
   SymbolList first(const Symbol &symbol)
   {
-
-    cout << "olhando " << symbol.toString() << endl;
-
-    if (symbol.isTerminal()) {
+    if (symbol.isTerminal() || symbol.isEmpty()) {
       return {symbol};
     }
 
@@ -208,22 +205,24 @@ struct Grammar
       if (_v[i]._leftSide == symbol._nT) {
 
         /* se o tamanho da produção é 0, significa que produz vazio */
-        //if (!_v[i]._production.size()) {
+        if (!_v[i]._production.size()) {
           /* adiciona vazio na lista e sai */
-        //}
+          f.push_back({});
+          break;
+        }
 
         for (int j(0); j<_v[i]._production.size(); j++) {
           /* pega o first do elemento em questão.  */
           SymbolList pF(first(_v[i]._production[j]));
 
-          /* não achei vazio no first. Logo, devo parar */
-          if (std::find(pF.begin(), pF.end(),Symbol()) == pF.end()) {
-            break;
-          }
-
           /* TODO: achar um merge */
           for (int k(0); k < pF.size(); k++) {
             f.push_back(pF[k]);
+          }
+
+          /* não achei vazio no first. Logo, devo parar */
+          if (std::find(pF.begin(), pF.end(),Symbol()) == pF.end()) {
+            break;
           }
         }
       }
@@ -454,12 +453,12 @@ void testFirst()
     {F,{{D}},1},
     {F,{{K}},1},
     {D,{{"a"},{B}},1},
-    {D,{{E}},1},
+    {D,{{Symbol()}},1},
     {K,{{"c"},{H}},1},
     {H,{{"h"}},1}
   });
 
-  SymbolList a(g.first({K}));
+  SymbolList a(g.first({F}));
 
   for (int i(0); i< a.size(); i++) {
     cout << a[i].toString() << ", ";
@@ -491,9 +490,9 @@ int main(int argc, char **argv)
 
   //cout << "nº de closures: " << c.first.size() << " e de itens: " << c.second.size() << endl;
 
-  //testFirst();
+  testFirst();
 
-  testSymbol();
+  //testSymbol();
 
   return 0;
 }
