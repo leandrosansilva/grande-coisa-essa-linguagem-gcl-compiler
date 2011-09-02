@@ -196,8 +196,6 @@ struct Grammar
 
   SymbolList first(const Symbol &symbol)
   {
-    cout << "calc first(" << symbol.toString() << ")" << endl;
-
     if (symbol.isTerminal() || symbol.isEmpty()) {
       return {symbol};
     }
@@ -208,7 +206,6 @@ struct Grammar
     for (int i(0); i<_v.size(); i++) {
       /* é uma produção do símbolo em questão  */  
       if (_v[i]._leftSide == symbol._nT) {
-        cout << "regra " << i << endl;
 
         /* se o tamanho da produção é 0, significa que produz vazio */
         if (!_v[i]._production.size()) {
@@ -217,7 +214,6 @@ struct Grammar
         }
 
         for (int j(0); j<_v[i]._production.size(); j++) {
-          cout << "símbolo na pos " << j << endl;
           /* o símbolo no qual vou  */
           Symbol s(_v[i]._production[j]);
 
@@ -225,7 +221,6 @@ struct Grammar
           if (_firstChecked.find({i,j}) == _firstChecked.end()) {
             _firstChecked.insert({i,j});
           } else {
-            cout << s.toString() << "<" << i << "," << j << "> em uso " << endl;
             break;
           }
 
@@ -242,6 +237,24 @@ struct Grammar
             break;
           }
         }
+      }
+    }
+
+    return f;
+  }
+
+  SymbolList first(const SymbolList &list)
+  {
+    SymbolList f;
+    for(int i(0); i< list.size(); i++) {
+      SymbolList sF(first(list[i]));
+      for (int j(0); j<sF.size(); j++) {
+        f.push_back(sF[j]);
+      }
+
+      /* se não há vazio no conjunto achado, sai */
+      if (find(sF.begin(),sF.end(),Symbol()) == sF.end()) {
+        break;
       }
     }
 
@@ -296,7 +309,7 @@ struct Grammar
         /* só aplico às regras cuja símbolo da esquerda seja igual ao que tenho em mãos */
         if (_v[i]._leftSide == _v[curItem._rule]._production[curItem._dot]._nT) {
 
-          SymbolList f(first({}));
+          SymbolList f(first(SymbolList({})));
 
           /* pra cada símbolo achado em first, se não o usei, adiciono na closure */
           for (int j(0); j<f.size();j++) {
@@ -474,6 +487,16 @@ void testFirst(Grammar &g, const Symbol &s)
   cout << endl;
 }
 
+void testFirst(Grammar &g, const SymbolList &s)
+{
+  SymbolList a(g.first(s));
+
+  for (int i(0); i< a.size(); i++) {
+    cout << a[i].toString() << ", ";
+  }
+  cout << endl;
+}
+
 Grammar gt({
   {F,{{D}},1},
   {F,{{K}},1},
@@ -494,6 +517,11 @@ Grammar g ({
   {F,{{"id"}},1}
 });
 
+Grammar gE({
+  {EL,{},1},
+  {EL,{{"oie"}},1}
+});
+
 void testClosure()
 {
   SetOfItems s(g.closure({{0,0,{}}}));
@@ -501,14 +529,15 @@ void testClosure()
   g.printSetOfItems(s);
 }
 
-
 int main(int argc, char **argv)
 {
   //CanonicalPair c(g.canonical({{0,0,{}}}));
 
   //cout << "nº de closures: " << c.first.size() << " e de itens: " << c.second.size() << endl;
 
-  testFirst(g, EL);
+  //testFirst(gE, EL);
+
+  testFirst(gE, {{EL},{"aia"}});
 
   //testSymbol();
 
