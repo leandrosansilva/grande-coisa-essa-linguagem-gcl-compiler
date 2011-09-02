@@ -191,8 +191,13 @@ struct Grammar
   {
   }
 
+  /* regra e símbolo que já foi checado */
+  set<pair<int,int>> _firstChecked;
+
   SymbolList first(const Symbol &symbol)
   {
+    cout << "calc first(" << symbol.toString() << ")" << endl;
+
     if (symbol.isTerminal() || symbol.isEmpty()) {
       return {symbol};
     }
@@ -203,17 +208,29 @@ struct Grammar
     for (int i(0); i<_v.size(); i++) {
       /* é uma produção do símbolo em questão  */  
       if (_v[i]._leftSide == symbol._nT) {
+        cout << "regra " << i << endl;
 
         /* se o tamanho da produção é 0, significa que produz vazio */
         if (!_v[i]._production.size()) {
           /* adiciona vazio na lista e sai */
           f.push_back({});
-          break;
         }
 
         for (int j(0); j<_v[i]._production.size(); j++) {
+          cout << "símbolo na pos " << j << endl;
+          /* o símbolo no qual vou  */
+          Symbol s(_v[i]._production[j]);
+
+          /* isso é basicamente para contornar a recursão à esquerda */
+          if (_firstChecked.find({i,j}) == _firstChecked.end()) {
+            _firstChecked.insert({i,j});
+          } else {
+            cout << s.toString() << "<" << i << "," << j << "> em uso " << endl;
+            break;
+          }
+
           /* pega o first do elemento em questão.  */
-          SymbolList pF(first(_v[i]._production[j]));
+          SymbolList pF(first(s));
 
           /* TODO: achar um merge */
           for (int k(0); k < pF.size(); k++) {
@@ -447,24 +464,25 @@ void testItem()
   TEST(i6 < i3,"TRUE");
 }
 
-void testFirst()
+void testFirst(Grammar &g, const Symbol &s)
 {
-  Grammar g({
-    {F,{{D}},1},
-    {F,{{K}},1},
-    {D,{{"a"},{B}},1},
-    {D,{{Symbol()}},1},
-    {K,{{"c"},{H}},1},
-    {H,{{"h"}},1}
-  });
-
-  SymbolList a(g.first({F}));
+  SymbolList a(g.first(s));
 
   for (int i(0); i< a.size(); i++) {
     cout << a[i].toString() << ", ";
   }
   cout << endl;
 }
+
+Grammar gt({
+  {F,{{D}},1},
+  {F,{{K}},1},
+  {D,{{"a"},{B}},1},
+  {D,{{Symbol()}},1},
+  {K,{{"c"},{H}},1},
+  {H,{{"h"}},1}
+});
+
 
 Grammar g ({
   {EL,{{E}},1},
@@ -490,7 +508,7 @@ int main(int argc, char **argv)
 
   //cout << "nº de closures: " << c.first.size() << " e de itens: " << c.second.size() << endl;
 
-  testFirst();
+  testFirst(g, EL);
 
   //testSymbol();
 
