@@ -179,9 +179,11 @@ struct Item
   }
 };
 
-typedef vector<Item> SetOfItems;
+typedef vector<Item> ItemList;
 
-typedef pair<list<SetOfItems *>,map<Item,SetOfItems *>> CanonicalPair;
+typedef set<Symbol> SymbolSet;
+
+typedef pair<list<ItemList *>,map<Item,ItemList *>> CanonicalPair;
 
 struct Grammar
 {
@@ -191,16 +193,16 @@ struct Grammar
   {
   }
 
-  /* regra e símbolo que já foi checado */
+  /* regra e posição que já foi checado */
   set<pair<int,int>> _firstChecked;
 
-  SymbolList first(const Symbol &symbol)
+  SymbolSet first(const Symbol &symbol)
   {
     if (symbol.isTerminal() || symbol.isEmpty()) {
       return {symbol};
     }
 
-    SymbolList f;
+    SymbolSet f;
 
     /* para cada produção do símbolo, vai adicionando o first dele em f */
     for (int i(0); i<_v.size(); i++) {
@@ -210,7 +212,7 @@ struct Grammar
         /* se o tamanho da produção é 0, significa que produz vazio */
         if (!_v[i]._production.size()) {
           /* adiciona vazio na lista e sai */
-          f.push_back({});
+          f.insert(Symbol());
         }
 
         for (int j(0); j<_v[i]._production.size(); j++) {
@@ -225,15 +227,15 @@ struct Grammar
           }
 
           /* pega o first do elemento em questão.  */
-          SymbolList pF(first(s));
-
+          SymbolSet pF(first(s));
+    
           /* TODO: achar um merge */
-          for (int k(0); k < pF.size(); k++) {
-            f.push_back(pF[k]);
+          for (auto k(pF.begin()); k != pF.end(); k++) {
+            f.insert(*k);
           }
 
           /* não achei vazio no first. Logo, devo parar */
-          if (std::find(pF.begin(), pF.end(),Symbol()) == pF.end()) {
+          if (pF.find(Symbol()) == pF.end()) {
             break;
           }
         }
@@ -243,17 +245,20 @@ struct Grammar
     return f;
   }
 
-  SymbolList first(const SymbolList &list)
+  SymbolSet first(const SymbolSet &list)
   {
-    SymbolList f;
-    for(int i(0); i< list.size(); i++) {
-      SymbolList sF(first(list[i]));
-      for (int j(0); j<sF.size(); j++) {
-        f.push_back(sF[j]);
+    SymbolSet f;
+
+    for(auto i(list.begin()); i != list.end(); i++) {
+
+      SymbolSet sF(first(*i));
+
+      for (auto j(sF.begin()); j != sF.end(); j++) {
+        f.insert(*j);
       }
 
       /* se não há vazio no conjunto achado, sai */
-      if (find(sF.begin(),sF.end(),Symbol()) == sF.end()) {
+      if (sF.find({}) == sF.end()) {
         break;
       }
     }
@@ -278,20 +283,21 @@ struct Grammar
     if (item._dot == _v[item._rule]._production.size()) {
       cout << ". ";
     }
-    cout << endl;
+
+    cout << "la: '" << item._s.toString() << endl;
   }
 
-  void printSetOfItems(const SetOfItems &s)
+  void printItemList(const ItemList &s)
   {
     for (int i(0); i< s.size(); i++) {
       printItem(s[i]);
     }
   }
 
-  SetOfItems closure(const SetOfItems &soi)
+  ItemList closure(const ItemList &soi)
   {
     /* copia I em J */
-    SetOfItems s(soi);
+    ItemList s(soi);
 
     set<Item> used;
 
@@ -309,7 +315,8 @@ struct Grammar
         /* só aplico às regras cuja símbolo da esquerda seja igual ao que tenho em mãos */
         if (_v[i]._leftSide == _v[curItem._rule]._production[curItem._dot]._nT) {
 
-          SymbolList f(first(SymbolList({})));
+          //SymbolList f(first(SymbolList()));
+          SymbolList f;
 
           /* pra cada símbolo achado em first, se não o usei, adiciono na closure */
           for (int j(0); j<f.size();j++) {
@@ -332,36 +339,36 @@ struct Grammar
     return s;
   }
 
-  SetOfItems goTo(const SetOfItems &items,const Symbol &x)
+  ItemList goTo(const ItemList &items,const Symbol &x)
   {
-    SetOfItems j;
+    ItemList j;
 
-    for (SetOfItems::const_iterator it(items.begin()); it != items.end(); it++) {
+    for (ItemList::const_iterator it(items.begin()); it != items.end(); it++) {
       if (_v[it->_rule]._production[it->_dot] == x) {
         j.push_back(Item(it->_rule,it->_dot+1,it->_s));
       }
     }
-    
+
     return closure(j);
   }
 
-  CanonicalPair canonical(const SetOfItems &s)
+  CanonicalPair canonical(const ItemList &s)
   {
-    list<SetOfItems *> f, t({new SetOfItems(closure({{0,0,{}}}))});
+    list<ItemList *> f, t({new ItemList(closure({{0,0,{}}}))});
 
     /* guarda os items que eu já usei para fazer goto e para onde levam*/
-    map<Item,SetOfItems *> usedItems;
+    map<Item,ItemList *> usedItems;
 
     /* enquanto houver elementos na lista, remove e joga na lista final */
     while (t.size()) {
 
       /* pega o primeiro da lista, remove-o e insere na lista final */
-      SetOfItems *s(t.front());
+      ItemList *s(t.front());
       f.push_back(s);
       t.pop_front();
 
       cout << "inserindo: " << endl;
-      printSetOfItems(*s);
+      printItemList(*s);
       cout << endl;
 
       /* nesta iteração, quais símbolos já foram usados? */
@@ -376,7 +383,7 @@ struct Grammar
         }
       }
 
-      for (SetOfItems::iterator item(s->begin()); item != s->end(); item++) {
+      for (ItemList::iterator item(s->begin()); item != s->end(); item++) {
 
         // Se o item já foi usado
         if (usedItems.find(*item) != usedItems.end()) {
@@ -391,17 +398,17 @@ struct Grammar
         usedSymbols[_v[item->_rule]._production[item->_dot]] = true;
         
         // para cada cara depois do ponto da regra em questão, faz o goto dele
-        SetOfItems j(goTo(*s,_v[item->_rule]._production[item->_dot]));
+        ItemList j(goTo(*s,_v[item->_rule]._production[item->_dot]));
 
         /* se o goto aplicado no elemento resultou num novo conjunto, adiciona */
         if (j.size()) {
 
           //cout << endl << "goto({";
-          //printSetOfItems(*s);
+          //printItemList(*s);
           //cout << "}, " << _v[item->_rule]._production[item->_dot].toString() << " ) -> ";
-          //printSetOfItems(j);
+          //printItemList(j);
 
-          SetOfItems *dst(new SetOfItems(j));
+          ItemList *dst(new ItemList(j));
 
           t.push_back(dst);
 
@@ -479,20 +486,20 @@ void testItem()
 
 void testFirst(Grammar &g, const Symbol &s)
 {
-  SymbolList a(g.first(s));
+  SymbolSet a(g.first(s));
 
-  for (int i(0); i< a.size(); i++) {
-    cout << a[i].toString() << ", ";
+  for (auto i(a.begin()); i != a.end(); i++) {
+    cout << i->toString() << ", ";
   }
   cout << endl;
 }
 
-void testFirst(Grammar &g, const SymbolList &s)
+void testFirst(Grammar &g, const SymbolSet &s)
 {
-  SymbolList a(g.first(s));
+  SymbolSet a(g.first(s));
 
-  for (int i(0); i< a.size(); i++) {
-    cout << a[i].toString() << ", ";
+  for (auto i(a.begin()); i != a.end(); i++) {
+    cout << i->toString() << ", ";
   }
   cout << endl;
 }
@@ -506,7 +513,6 @@ Grammar gt({
   {H,{{"h"}},1}
 });
 
-
 Grammar g ({
   {EL,{{E}},1},
   {E,{{E},{"+"},{T}},1},
@@ -514,7 +520,8 @@ Grammar g ({
   {T,{{T},{"*"},{F}},1},
   {T,{{F}},1},
   {F,{{"("},{E},{")"}},1},
-  {F,{{"id"}},1}
+  {F,{{"id"}},1},
+  {E,{},1}
 });
 
 Grammar gE({
@@ -524,9 +531,9 @@ Grammar gE({
 
 void testClosure()
 {
-  SetOfItems s(g.closure({{0,0,{}}}));
+  ItemList s(g.closure({{0,0,{}}}));
   
-  g.printSetOfItems(s);
+  g.printItemList(s);
 }
 
 int main(int argc, char **argv)
@@ -535,9 +542,9 @@ int main(int argc, char **argv)
 
   //cout << "nº de closures: " << c.first.size() << " e de itens: " << c.second.size() << endl;
 
-  //testFirst(gE, EL);
+  testFirst(g, EL);
 
-  testFirst(gE, {{EL},{"aia"}});
+  //testFirst(gE, {{EL},{"aia"}});
 
   //testSymbol();
 
