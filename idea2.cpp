@@ -146,7 +146,7 @@ struct Item
   Item(int ruleNumber,int dot, const Symbol &s):
   _rule(ruleNumber),
   _dot(dot),
-  _s("")
+  _s(s)
   {
   }
 
@@ -245,7 +245,7 @@ struct Grammar
     return f;
   }
 
-  SymbolSet first(const SymbolSet &list)
+  SymbolSet first(const SymbolList &list)
   {
     SymbolSet f;
 
@@ -284,7 +284,7 @@ struct Grammar
       cout << ". ";
     }
 
-    cout << "la: '" << item._s.toString() << endl;
+    cout << "la: '" << item._s.toString() << "'" << endl;
   }
 
   void printItemList(const ItemList &s)
@@ -293,6 +293,16 @@ struct Grammar
       printItem(s[i]);
     }
   }
+
+  template <typename T>
+  void printSymbolList(const T &s)
+  {
+    for (auto i(s.begin()); i != s.end(); i++) {
+      cout << i->toString() << ", ";
+    }
+    cout << endl;
+  }
+ 
 
   ItemList closure(const ItemList &soi)
   {
@@ -304,6 +314,21 @@ struct Grammar
     for(int iId(0); iId < s.size(); iId++) {
       Item curItem(s[iId]);
 
+      cout << "com ponto em "  << curItem._dot << " aplicando na regra(" << curItem._rule << "): ";
+      printSymbolList(_v[curItem._rule]._production);
+
+      /* concateno todos os símbolos depois do ponto com o lookahead */
+      SymbolList withLA(_v[curItem._rule]._production.begin() + curItem._dot ,_v[curItem._rule]._production.end());
+
+      /* concateno o lookahead */
+      withLA.push_back(curItem._s);
+
+      /*   */
+      SymbolSet f(first(withLA));
+
+      cout << "first res: ";
+      printSymbolList(f);
+
       /* se o ponto do item não se encntra num não-terminal, nada a ser feito */
       if (!_v[curItem._rule]._production[curItem._dot].isNonTerminal()) {
         continue;
@@ -313,25 +338,26 @@ struct Grammar
       for (int i(0); i < _v.size(); i++) {
 
         /* só aplico às regras cuja símbolo da esquerda seja igual ao que tenho em mãos */
-        if (_v[i]._leftSide == _v[curItem._rule]._production[curItem._dot]._nT) {
+        if (_v[i]._leftSide != _v[curItem._rule]._production[curItem._dot]._nT) {
+          continue;
+        }
 
-          //SymbolList f(first(SymbolList()));
-          SymbolList f;
+        /* pra cada símbolo achado em first, se não o usei, adiciono na closure */
+        for (auto w(f.begin()); w != f.end();w++) {
+          Item item(i,0,*w);
 
-          /* pra cada símbolo achado em first, se não o usei, adiciono na closure */
-          for (int j(0); j<f.size();j++) {
-            Item item(i,0,f[j]);
-
-            /* Se já foi usado, aio */
-            if (used.find(item) != used.end()) {
-              continue;
-            }
-
-            /* adiciona o novo item, mas com o ponto no começo */
-            s.push_back(item);
-
-            used.insert(item);
+          /* Se já foi usado, vou para o próximo  */
+          if (used.find(item) != used.end()) {
+            continue;
           }
+
+          cout << "inserindo ";
+          printItem(item);
+      
+          /* adiciona o novo item, mas com o ponto no começo */
+          s.push_back(item);
+
+          used.insert(item);
         }
       }
     }
@@ -343,7 +369,7 @@ struct Grammar
   {
     ItemList j;
 
-    for (ItemList::const_iterator it(items.begin()); it != items.end(); it++) {
+    for (auto it(items.begin()); it != items.end(); it++) {
       if (_v[it->_rule]._production[it->_dot] == x) {
         j.push_back(Item(it->_rule,it->_dot+1,it->_s));
       }
@@ -494,7 +520,7 @@ void testFirst(Grammar &g, const Symbol &s)
   cout << endl;
 }
 
-void testFirst(Grammar &g, const SymbolSet &s)
+void testFirst(Grammar &g, const SymbolList &s)
 {
   SymbolSet a(g.first(s));
 
@@ -520,19 +546,29 @@ Grammar g ({
   {T,{{T},{"*"},{F}},1},
   {T,{{F}},1},
   {F,{{"("},{E},{")"}},1},
-  {F,{{"id"}},1},
-  {E,{},1}
+  {F,{{"id"}},1}
 });
 
 Grammar gE({
-  {EL,{},1},
-  {EL,{{"oie"}},1}
+  {EL,{{""}},1},
+  {EL,{{"oie"}},1},
+  {EL,{{E}},1},
+  {E,{{E}},1},
+  {E,{{"lal"}},1},
+  {E,{{},{"depois do vazio"}},1}
 });
+
+/*Grammar jsonG({
+  {OBJECT,{{"{}"}},1},
+  {OBJECT,{{MEMBERS}},1},
+  
+});*/
 
 void testClosure()
 {
   ItemList s(g.closure({{0,0,{}}}));
-  
+ 
+  cout << "closure final" << endl; 
   g.printItemList(s);
 }
 
@@ -542,11 +578,13 @@ int main(int argc, char **argv)
 
   //cout << "nº de closures: " << c.first.size() << " e de itens: " << c.second.size() << endl;
 
-  testFirst(g, EL);
+  //testFirst(gE, EL);
 
   //testFirst(gE, {{EL},{"aia"}});
 
   //testSymbol();
+
+  testClosure();
 
   return 0;
 }
