@@ -152,20 +152,24 @@ struct Item
 
   bool operator<(const Item &other) const
   {
-    if ((_rule * 10 + _dot) < (other._rule * 10 + other._dot)) {
-      return true;
-    }
-    
-    return _s < other._s;
+    return !(*this == other || *this > other);
   }
 
   bool operator>(const Item &other) const
   {
-    if ((_rule * 10 + _dot) > (other._rule * 10 + other._dot)) {
+    if (_s > other._s) {
+      return true;
+    }
+
+    if (_s < other._s) {
+      return false;
+    }
+
+    if ((_rule * 2 + _dot) > (other._rule * 2 + other._dot)) {
       return true;
     }
     
-    return _s > other._s;
+    return false;
   }
 
   bool operator==(const Item &other) const
@@ -284,7 +288,7 @@ struct Grammar
       cout << ". ";
     }
 
-    cout << "la: '" << item._s.toString() << "'" << endl;
+    cout << "la: '" << item._s.toString() << "', " << endl;
   }
 
   void printItemList(const ItemList &s)
@@ -312,13 +316,14 @@ struct Grammar
     set<Item> used;
 
     for(int iId(0); iId < s.size(); iId++) {
+
       Item curItem(s[iId]);
 
-      cout << "com ponto em "  << curItem._dot << " aplicando na regra(" << curItem._rule << "): ";
-      printSymbolList(_v[curItem._rule]._production);
-
       /* concateno todos os símbolos depois do ponto com o lookahead */
-      SymbolList withLA(_v[curItem._rule]._production.begin() + curItem._dot ,_v[curItem._rule]._production.end());
+      SymbolList withLA(
+        _v[curItem._rule]._production.begin() + curItem._dot,
+        _v[curItem._rule]._production.end()
+      );
 
       /* concateno o lookahead */
       withLA.push_back(curItem._s);
@@ -326,8 +331,8 @@ struct Grammar
       /*   */
       SymbolSet f(first(withLA));
 
-      cout << "first res: ";
-      printSymbolList(f);
+      /* limpo o cara que guarda as informações do first: FIXME: side-effect*/
+      _firstChecked.clear();
 
       /* se o ponto do item não se encntra num não-terminal, nada a ser feito */
       if (!_v[curItem._rule]._production[curItem._dot].isNonTerminal()) {
@@ -346,14 +351,14 @@ struct Grammar
         for (auto w(f.begin()); w != f.end();w++) {
           Item item(i,0,*w);
 
+          cout << "Inserindo símbolo ";
+          printItem(item);
+  
           /* Se já foi usado, vou para o próximo  */
           if (used.find(item) != used.end()) {
             continue;
           }
 
-          cout << "inserindo ";
-          printItem(item);
-      
           /* adiciona o novo item, mas com o ponto no começo */
           s.push_back(item);
 
@@ -378,7 +383,7 @@ struct Grammar
     return closure(j);
   }
 
-  CanonicalPair canonical(const ItemList &s)
+  CanonicalPair items()
   {
     list<ItemList *> f, t({new ItemList(closure({{0,0,{}}}))});
 
@@ -393,10 +398,6 @@ struct Grammar
       f.push_back(s);
       t.pop_front();
 
-      cout << "inserindo: " << endl;
-      printItemList(*s);
-      cout << endl;
-
       /* nesta iteração, quais símbolos já foram usados? */
       map<Symbol,bool> usedSymbols;
 
@@ -409,7 +410,7 @@ struct Grammar
         }
       }
 
-      for (ItemList::iterator item(s->begin()); item != s->end(); item++) {
+      for (auto item(s->begin()); item != s->end(); item++) {
 
         // Se o item já foi usado
         if (usedItems.find(*item) != usedItems.end()) {
@@ -429,10 +430,10 @@ struct Grammar
         /* se o goto aplicado no elemento resultou num novo conjunto, adiciona */
         if (j.size()) {
 
-          //cout << endl << "goto({";
-          //printItemList(*s);
-          //cout << "}, " << _v[item->_rule]._production[item->_dot].toString() << " ) -> ";
-          //printItemList(j);
+          cout << endl << "goto({";
+          printItemList(*s);
+          cout << "}, " << _v[item->_rule]._production[item->_dot].toString() << " ) -> " << endl << "  ";
+          printItemList(j);
 
           ItemList *dst(new ItemList(j));
 
@@ -534,7 +535,7 @@ Grammar gt({
   {F,{{D}},1},
   {F,{{K}},1},
   {D,{{"a"},{B}},1},
-  {D,{{Symbol()}},1},
+  {D,{},1},
   {K,{{"c"},{H}},1},
   {H,{{"h"}},1}
 });
@@ -570,11 +571,41 @@ void testClosure()
  
   cout << "closure final" << endl; 
   g.printItemList(s);
+  
+  cout << endl;
+}
+
+void testItemSet()
+{
+  set<Item> a;
+
+  a.insert({1,2,{"C"}});
+  a.insert({2,3,{"B"}});
+  //a.insert({2,3,{"C"}});
+  //a.insert({1,2,{"B"}});
+
+  for (auto i(a.begin()); i != a.end(); i++) {
+    cout << i->_rule << ", " << i->_dot << ", " << i->_s.toString() << endl;
+  }
+
+  //TEST(a.find({2,3,{"C"}}) == a.end(),"FALSE");
+  TEST(a.find({2,3,{"B"}}) != a.end(),"TRUE");
+  TEST(a.find({3,2,{"B"}}) == a.end(),"TRUE");
+  //TEST(a.find({1,2,{"B"}}) == a.end(),"FALSE");
+  //TEST(a.find({1,2,{"C"}}) == a.end(),"FALSE");
+  //TEST(a.find({1,3,{"C"}}) == a.end(),"TRUE");
+  //TEST(Item(2,3,{"C"}) == Item(2,3,{"C"}),"TRUE");
+  //TEST(Item(2,3,{"B"}) > Item(3,3,{"C"}),"FALSE");
+  //TEST(Item(2,3,{"C"}) > Item(2,3,{"B"}),"TRUE");
+  TEST(Item(1,2,{"B"}) == Item(1,2,{"C"}),"FALSE");
+  TEST(Item(1,2,{"C"}) == Item(1,2,{"B"}),"FALSE");
+  TEST(Item(2,3,{"B"}) > Item(1,2,{"C"}),"FALSE");
+  TEST(Item(2,3,{"B"}) < Item(1,2,{"C"}),"TRUE");
 }
 
 int main(int argc, char **argv)
 {
-  //CanonicalPair c(g.canonical({{0,0,{}}}));
+  //CanonicalPair c(g.items());
 
   //cout << "nº de closures: " << c.first.size() << " e de itens: " << c.second.size() << endl;
 
@@ -585,6 +616,10 @@ int main(int argc, char **argv)
   //testSymbol();
 
   testClosure();
+
+  //cout << endl;
+
+  //testItemSet();
 
   return 0;
 }
