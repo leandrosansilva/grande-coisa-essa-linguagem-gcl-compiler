@@ -288,7 +288,7 @@ struct Grammar
       cout << ". ";
     }
 
-    cout << "la: '" << item._s.toString() << "', " << endl;
+    cout << ", #la: '" << item._s.toString() << "'; ";
   }
 
   void printItemList(const ItemList &s)
@@ -351,9 +351,6 @@ struct Grammar
         for (auto w(f.begin()); w != f.end();w++) {
           Item item(i,0,*w);
 
-          cout << "Inserindo símbolo ";
-          printItem(item);
-  
           /* Se já foi usado, vou para o próximo  */
           if (used.find(item) != used.end()) {
             continue;
@@ -432,8 +429,10 @@ struct Grammar
 
           cout << endl << "goto({";
           printItemList(*s);
-          cout << "}, " << _v[item->_rule]._production[item->_dot].toString() << " ) -> " << endl << "  ";
+          cout << "}, '" << _v[item->_rule]._production[item->_dot].toString() << "' ) -> " << endl << "  ";
           printItemList(j);
+
+          cout << endl;
 
           ItemList *dst(new ItemList(j));
 
@@ -603,11 +602,16 @@ void testItemSet()
   TEST(Item(2,3,{"B"}) < Item(1,2,{"C"}),"TRUE");
 }
 
+void testCanonical()
+{
+  CanonicalPair c(g.items());
+
+  cout << "nº de closures: " << c.first.size() << " e de itens: " << c.second.size() << endl;
+}
+
 int main(int argc, char **argv)
 {
-  //CanonicalPair c(g.items());
-
-  //cout << "nº de closures: " << c.first.size() << " e de itens: " << c.second.size() << endl;
+  testCanonical();
 
   //testFirst(gE, EL);
 
@@ -615,7 +619,7 @@ int main(int argc, char **argv)
 
   //testSymbol();
 
-  testClosure();
+  //testClosure();
 
   //cout << endl;
 
