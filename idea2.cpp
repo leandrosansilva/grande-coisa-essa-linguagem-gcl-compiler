@@ -442,6 +442,56 @@ struct Grammar
   }
 };
 
+void generateGraph(Grammar &g)
+{
+  cout << "digraph MyGrammar { " << endl;
+  CanonicalPair canonical(g.items());
+
+  map<ItemList*,int> labels;    
+
+  int lCount(0);
+
+  for (auto s(canonical.first.begin()); s!= canonical.first.end(); s++) {
+    int myLabel;
+    
+    /* não encontrei a closure no mapa */
+    if (labels.find(*s) == labels.end()) {
+      labels[*s] = lCount;
+      myLabel = lCount;
+      lCount++;
+    } else {
+      myLabel = labels[*s];
+    }
+
+    /* para cada item */
+    for (auto item((*s)->begin()); item != (*s)->end(); item++) {
+
+      auto d(canonical.second.find(*item));
+    
+      /* se não aponta para lugar algum (ponto no final) */
+      if (d == canonical.second.end()) {
+      }
+
+      /* pra onde goto deste item leva? */
+      ItemList *dst(d->second);
+
+      /* se o destino já foi nomeado, usa este nome */
+      int label;
+
+      if (labels.find(dst) != labels.end()) {
+        label = labels[dst];  
+      } else {
+        lCount++;
+        label = lCount;
+        labels[dst] = label;
+      }
+
+      cout << "  c" << myLabel << " -> c" << label << ";" <<  endl;
+    }
+    
+      }
+  cout << "}" << endl;
+}
 
 bool TEST(const bool ret, const string &msg)
 {
@@ -666,7 +716,9 @@ int main(int argc, char **argv)
 
   //testItemSet();
 
-  testCanonical(ifG);
+  //testCanonical(ifG);
+
+  generateGraph(simpleG);
 
   return 0;
 }
