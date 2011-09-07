@@ -118,6 +118,7 @@ struct Symbol
   {
     /* TODO: reescrever com operador ternário */
     bool t(other.isTerminal() && isTerminal() && _lexema == other._lexema);
+
     bool n(other.isNonTerminal() && isNonTerminal() && _nT == other._nT);
 
     bool e(isEmpty() && other.isEmpty());
@@ -385,6 +386,12 @@ struct Grammar
     ItemList j;
 
     for (auto it(items.begin()); it != items.end(); it++) {
+
+      /* se o ponto está no fim, não devo aplicar */
+      if (_v[it->_rule]._production.size() == it->_dot) {
+        continue;
+      }
+
       if (_v[it->_rule]._production[it->_dot] == x) {
         j.push_back(Item(it->_rule,it->_dot+1,it->_s));
       }
@@ -410,7 +417,6 @@ struct Grammar
 
       /* para cada item no conjunto */
       for (auto item(s->begin()); item != s->end(); item++) {
-
 
         // Se o item já foi usado, vou ao próximo
         if (usedItems.find(*item) != usedItems.end()) {
@@ -540,8 +546,6 @@ Grammar g ({
 });
 
 Grammar gE({
-  {EL,{{""}},1},
-  {EL,{{"oie"}},1},
   {EL,{{E}},1},
   {E,{{E}},1},
   {E,{{"lal"}},1},
@@ -646,246 +650,6 @@ void testCanonical(Grammar &g)
     g.printItem(i->first);
     cout << endl;
   }
-
-  cout << "checagem" << endl;
-
-  for (auto s(c.first.begin()); s != c.first.end(); s++) {
-    cout << "new set " << dec << (unsigned long long int)*s << endl;
-    for (auto i((*s)->begin()); i != (*s)->end(); i++) {
-      if (g._v[i->_rule]._production.size() == i->_dot) {
-        break;
-      }
-
-      if (c.second.find(*i) == c.second.end()) {
-        cout << "não achou" << endl;
-        g.printItem(*i);
-      }
-    }
-  }
- 
-
-}
-
-void testItemMap()
-{
-  vector<Item> v {
-    {1,2,{}},
-    {1,2,{"+"}},
-    {1,2,{}},
-    {1,2,{"+"}},
-    {3,2,{}},
-    {3,2,{"+"}},
-    {3,2,{"*"}},
-    {3,2,{}},
-    {3,2,{"+"}},
-    {3,2,{"*"}},
-    {3,2,{}},
-    {3,2,{"+"}},
-    {3,2,{"*"}},
-    {5,2,{"+"}},
-    {5,2,{"*"}},
-    {5,2,{"+"}},
-    {5,2,{"*"}},
-    {5,2,{"+"}},
-    {5,2,{"*"}},
-    {5,2,{"+"}},
-    {5,2,{"*"}},
-    {5,2,{")"}},
-    {5,2,{")"}},
-    {5,2,{")"}}
-  };
-
-  map<Item,char *> m {
-    {{0,0,{}},NULL},
-    {{1,0,{}},NULL},
-    {{2,0,{}},NULL},
-    {{1,0,{"+"}},NULL},
-    {{2,0,{"+"}},NULL},
-    {{3,0,{}},NULL},
-    {{4,0,{}},NULL},
-    {{3,0,{"+"}},NULL},
-    {{4,0,{"+"}},NULL},
-    {{3,0,{"*"}},NULL},
-    {{4,0,{"*"}},NULL},
-    {{5,0,{}},NULL},
-    {{6,0,{}},NULL},
-    {{5,0,{"+"}},NULL},
-    {{6,0,{"+"}},NULL},
-    {{5,0,{"*"}},NULL},
-    {{6,0,{"*"}},NULL},
-    {{0,1,{}},NULL},
-    {{1,1,{}},NULL},
-    {{1,1,{"+"}},NULL},
-    {{0,1,{}},NULL},
-    {{2,1,{}},NULL},
-    {{2,1,{"+"}},NULL},
-    {{3,1,{}},NULL},
-    {{3,1,{"+"}},NULL},
-    {{3,1,{"*"}},NULL},
-    {{0,1,{}},NULL},
-    {{2,1,{}},NULL},
-    {{2,1,{"+"}},NULL},
-    {{2,1,{}},NULL},
-    {{2,1,{"+"}},NULL},
-    {{4,1,{}},NULL},
-    {{4,1,{"+"}},NULL},
-    {{4,1,{"*"}},NULL},
-    {{2,1,{}},NULL},
-    {{2,1,{"+"}},NULL},
-    {{4,1,{}},NULL},
-    {{4,1,{"+"}},NULL},
-    {{4,1,{"*"}},NULL},
-    {{2,1,{}},NULL},
-    {{2,1,{"+"}},NULL},
-    {{4,1,{}},NULL},
-    {{4,1,{"+"}},NULL},
-    {{4,1,{"*"}},NULL},
-    {{5,1,{}},NULL},
-    {{5,1,{"+"}},NULL},
-    {{5,1,{"*"}},NULL},
-    {{1,0,{")"}},NULL},
-    {{2,0,{")"}},NULL},
-    {{3,0,{")"}},NULL},
-    {{4,0,{")"}},NULL},
-    {{5,0,{")"}},NULL},
-    {{6,0,{")"}},NULL},
-    {{6,1,{}},NULL},
-    {{6,1,{"+"}},NULL},
-    {{6,1,{"*"}},NULL},
-    {{6,1,{}},NULL},
-    {{6,1,{"+"}},NULL},
-    {{6,1,{"*"}},NULL},
-    {{6,1,{}},NULL},
-    {{6,1,{"+"}},NULL},
-    {{6,1,{"*"}},NULL},
-    {{1,2,{}},NULL},
-    {{1,2,{"+"}},NULL},
-    {{1,2,{}},NULL},
-    {{1,2,{"+"}},NULL},
-    {{3,2,{}},NULL},
-    {{3,2,{"+"}},NULL},
-    {{3,2,{"*"}},NULL},
-    {{3,2,{}},NULL},
-    {{3,2,{"+"}},NULL},
-    {{3,2,{"*"}},NULL},
-    {{3,2,{}},NULL},
-    {{3,2,{"+"}},NULL},
-    {{3,2,{"*"}},NULL},
-    {{5,2,{}},NULL},
-    {{5,2,{"+"}},NULL},
-    {{5,2,{"*"}},NULL},
-    {{1,1,{")"}},NULL},
-    {{1,1,{"+"}},NULL},
-    {{5,2,{"+"}},NULL},
-    {{5,2,{"*"}},NULL},
-    {{5,2,{"+"}},NULL},
-    {{5,2,{"*"}},NULL},
-    {{5,2,{"+"}},NULL},
-    {{5,2,{"*"}},NULL},
-    {{2,1,{")"}},NULL},
-    {{2,1,{"+"}},NULL},
-    {{3,1,{")"}},NULL},
-    {{3,1,{"+"}},NULL},
-    {{3,1,{"*"}},NULL},
-    {{2,1,{")"}},NULL},
-    {{2,1,{"+"}},NULL},
-    {{4,1,{")"}},NULL},
-    {{4,1,{"+"}},NULL},
-    {{4,1,{"*"}},NULL},
-    {{5,1,{")"}},NULL},
-    {{5,1,{"+"}},NULL},
-    {{5,1,{"*"}},NULL},
-    {{6,1,{")"}},NULL},
-    {{6,1,{"+"}},NULL},
-    {{6,1,{"*"}},NULL},
-    {{1,3,{}},NULL},
-    {{1,3,{"+"}},NULL},
-    {{3,1,{}},NULL},
-    {{1,3,{}},NULL},
-    {{1,3,{"+"}},NULL},
-    {{1,3,{}},NULL},
-    {{1,3,{"+"}},NULL},
-    {{1,3,{}},NULL},
-    {{1,3,{"+"}},NULL},
-    {{3,3,{}},NULL},
-    {{3,3,{"+"}},NULL},
-    {{3,3,{"*"}},NULL},
-    {{3,3,{}},NULL},
-    {{3,3,{"+"}},NULL},
-    {{3,3,{"*"}},NULL},
-    {{3,3,{}},NULL},
-    {{3,3,{"+"}},NULL},
-    {{3,3,{"*"}},NULL},
-    {{3,3,{}},NULL},
-    {{3,3,{"+"}},NULL},
-    {{3,3,{"*"}},NULL},
-    {{3,3,{}},NULL},
-    {{3,3,{"+"}},NULL},
-    {{3,3,{"*"}},NULL},
-    {{3,3,{}},NULL},
-    {{3,3,{"+"}},NULL},
-    {{3,3,{"*"}},NULL},
-    {{3,3,{}},NULL},
-    {{3,3,{"+"}},NULL},
-    {{3,3,{"*"}},NULL},
-    {{3,3,{}},NULL},
-    {{3,3,{"+"}},NULL},
-    {{3,3,{"*"}},NULL},
-    {{3,3,{}},NULL},
-    {{3,3,{"+"}},NULL},
-    {{3,3,{"*"}},NULL},
-    {{5,3,{}},NULL},
-    {{5,3,{"+"}},NULL},
-    {{5,3,{"*"}},NULL},
-    {{5,3,{}},NULL},
-    {{5,3,{"+"}},NULL},
-    {{5,3,{"*"}},NULL},
-    {{5,3,{}},NULL},
-    {{5,3,{"+"}},NULL},
-    {{5,3,{"*"}},NULL},
-    {{1,2,{")"}},NULL},
-    {{5,3,{}},NULL},
-    {{5,3,{"+"}},NULL},
-    {{5,3,{"*"}},NULL},
-    {{5,3,{}},NULL},
-    {{5,3,{"+"}},NULL},
-    {{5,3,{"*"}},NULL},
-    {{5,3,{}},NULL},
-    {{5,3,{"+"}},NULL},
-    {{5,3,{"*"}},NULL},
-    {{5,3,{}},NULL},
-    {{5,3,{"+"}},NULL},
-    {{5,3,{"*"}},NULL},
-    {{5,3,{}},NULL},
-    {{5,3,{"+"}},NULL},
-    {{5,3,{"*"}},NULL},
-    {{5,3,{}},NULL},
-    {{5,3,{"+"}},NULL},
-    {{5,3,{"*"}},NULL},
-    {{3,2,{")"}},NULL},
-    {{5,2,{")"}},NULL},
-    {{5,2,{")"}},NULL},
-    {{5,2,{")"}},NULL},
-    {{1,3,{")"}},NULL},
-    {{1,3,{"+"}},NULL},
-    {{3,3,{")"}},NULL},
-    {{3,3,{"+"}},NULL},
-    {{3,3,{"*"}},NULL},
-    {{5,3,{")"}},NULL},
-    {{5,3,{"+"}},NULL},
-    {{5,3,{"*"}},NULL},
-    {{5,3,{")"}},NULL},
-    {{5,3,{"+"}},NULL},
-    {{5,3,{"*"}},NULL},
-    {{5,3,{")"}},NULL},
-    {{5,3,{"+"}},NULL},
-    {{5,3,{"*"}},NULL},
-
-  };
-
-  for (int i(0); i< v.size(); i++) {
-    cout << (m.find(v[i]) == m.end() ? "FAIL" : "OK") << endl;
-  }
 }
 
 int main(int argc, char **argv)
@@ -902,9 +666,7 @@ int main(int argc, char **argv)
 
   //testItemSet();
 
-  testCanonical(g);
-
-  //testItemMap();
+  testCanonical(ifG);
 
   return 0;
 }
