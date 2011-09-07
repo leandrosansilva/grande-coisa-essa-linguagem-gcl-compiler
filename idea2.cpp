@@ -13,7 +13,9 @@ typedef enum
 {
   EL,E, T, F,
   
-  D,K,B,H
+  D,K,B,H,
+  
+  SL,S,V
 } NonTerminal;
 
 map<NonTerminal,string> NonTerminalMap 
@@ -25,7 +27,10 @@ map<NonTerminal,string> NonTerminalMap
   {D,"D"},
   {K,"K"},
   {B,"B"},
-  {H,"H"}
+  {H,"H"},
+  {SL,"SL"},
+  {S,"S"},
+  {V,"V"}
 };
 
 struct Symbol
@@ -165,7 +170,7 @@ struct Item
       return false;
     }
 
-    if ((_rule * 2 + _dot) > (other._rule * 2 + other._dot)) {
+    if ((_rule * 1000 + _dot) > (other._rule * 1000 + other._dot)) {
       return true;
     }
     
@@ -272,6 +277,8 @@ struct Grammar
 
   void printItem(const Item &item)
   {
+    cout << "< ";
+    
     // imprime o left side
     cout << NonTerminalMap[_v[item._rule]._leftSide] << " -> ";
 
@@ -288,7 +295,8 @@ struct Grammar
       cout << ". ";
     }
 
-    cout << ", #la: '" << item._s.toString() << "'; ";
+    cout << ">, #la: '" << item._s.toString() << "'; " << endl;
+
   }
 
   void printItemList(const ItemList &s)
@@ -319,25 +327,30 @@ struct Grammar
 
       Item curItem(s[iId]);
 
+      /* não aplico às regras onde o ponto está no final! */
+      if (curItem._dot >= _v[curItem._rule]._production.size()) {
+        continue;
+      }
+
+      /* se o ponto do item não se encntra num não-terminal, nada a ser feito */
+      if (!_v[curItem._rule]._production[curItem._dot].isNonTerminal()) {
+        continue;
+      }
+
       /* concateno todos os símbolos depois do ponto com o lookahead */
       SymbolList withLA(
-        _v[curItem._rule]._production.begin() + curItem._dot,
+        _v[curItem._rule]._production.begin() + curItem._dot + 1,
         _v[curItem._rule]._production.end()
       );
 
       /* concateno o lookahead */
       withLA.push_back(curItem._s);
 
-      /*   */
+      /* O first do conjunto acima diz quais símbolos vêm após ele  */
       SymbolSet f(first(withLA));
 
-      /* limpo o cara que guarda as informações do first: FIXME: side-effect*/
+      /* limpo o cara que guarda as informações do first: FIXME: side-effect */
       _firstChecked.clear();
-
-      /* se o ponto do item não se encntra num não-terminal, nada a ser feito */
-      if (!_v[curItem._rule]._production[curItem._dot].isNonTerminal()) {
-        continue;
-      }
 
       /* comparo o item com todas as regras da gramática  */
       for (int i(0); i < _v.size(); i++) {
@@ -395,51 +408,44 @@ struct Grammar
       f.push_back(s);
       t.pop_front();
 
-      /* nesta iteração, quais símbolos já foram usados? */
-      map<Symbol,bool> usedSymbols;
-
-      /* TODO: isto não precisa acontecer para todos os símbolos da gramática, 
-       * mas só para os do set
-      */
-      for (int i(0); i < _v.size(); i++) {
-        if (usedSymbols.find(Symbol(_v[i]._leftSide)) == usedSymbols.end()) {
-          usedSymbols[Symbol(_v[i]._leftSide)] = false;
-        }
-      }
-
+      /* para cada item no conjunto */
       for (auto item(s->begin()); item != s->end(); item++) {
 
-        // Se o item já foi usado
+
+        // Se o item já foi usado, vou ao próximo
         if (usedItems.find(*item) != usedItems.end()) {
           continue;
         }
 
-        /* Se já foi feito o goto num símbolo, sai  */
-        if (usedSymbols[_v[item->_rule]._production[item->_dot]]) {
-          continue;  
-        }
-
-        usedSymbols[_v[item->_rule]._production[item->_dot]] = true;
-        
         // para cada cara depois do ponto da regra em questão, faz o goto dele
         ItemList j(goTo(*s,_v[item->_rule]._production[item->_dot]));
 
-        /* se o goto aplicado no elemento resultou num novo conjunto, adiciona */
-        if (j.size()) {
-
-          cout << endl << "goto({";
-          printItemList(*s);
-          cout << "}, '" << _v[item->_rule]._production[item->_dot].toString() << "' ) -> " << endl << "  ";
-          printItemList(j);
-
-          cout << endl;
-
-          ItemList *dst(new ItemList(j));
-
-          t.push_back(dst);
-
-          usedItems[*item] = dst;
+        /* se o goto aplicado no elemento não resultou num novo conjunto, saio */
+        if (!j.size()) {
+          continue;
         }
+
+        ItemList *dst(new ItemList(j));
+
+        t.push_back(dst);
+
+        usedItems[*item] = dst;
+
+        if (*item == Item(5,2,{")"})) {
+          cout << item->_rule << " posição" << item->_dot << " bugado: goTo '" << _v[item->_rule]._production[item->_dot].toString() << "'"<< endl;
+          printItem(*item);
+
+          cout << "********" << endl;
+          printItemList(*s);
+          cout << "<><><" << endl;
+          printItemList(j);
+          cout << "=====" << endl;
+        }
+
+        if (usedItems.find(*item) == usedItems.end()) {
+          cout << "{{" << item->_rule << "," << item->_dot << ",{\"" << item->_s.toString() << "\"}},NULL}," << endl;
+        }
+
       }
     }
     return {f,usedItems};
@@ -558,20 +564,54 @@ Grammar gE({
   {E,{{},{"depois do vazio"}},1}
 });
 
+Grammar mCICp66({
+  {SL,{{S}},1},
+  {S,{{V},{"="},{E}},1},
+  {S,{{E}},1},
+  {E,{{V}},1},
+  {V,{{"x"}},1},
+  {V,{{"*"},{E}},1}
+});
+
+Grammar ifG({
+  {EL,{{E}},1},
+  {E,{{"if"},{"("},{V},{")"},{F},{"else"},{T}},1},
+  {E,{{"if"},{"("},{V},{")"},{F}},1},
+  {V,{{"condition"}},1},
+  {F,{{"if_block"}},1},
+  {F,{{E}},1},
+  {T,{{"else_block"}},1},
+  {T,{{E}},1}
+});
+
+Grammar simpleG({
+  {EL,{{E}},1},
+  {E,{{"ai"},{E},{"ia"}},1},
+  {E,{{"ui"}},1}
+});
+
 /*Grammar jsonG({
   {OBJECT,{{"{}"}},1},
   {OBJECT,{{MEMBERS}},1},
-  
 });*/
 
 void testClosure()
 {
-  ItemList s(g.closure({{0,0,{}}}));
+  ItemList s(ifG.closure({{0,0,{}}}));
  
   cout << "closure final" << endl; 
-  g.printItemList(s);
-  
+  ifG.printItemList(s);
+
   cout << endl;
+
+  cout << "goto " << Symbol("if").toString() << endl;
+
+  ifG.printItemList(ifG.goTo(s,{"else"}));
+
+  cout << ifG.goTo(s,{"else"}).size() << endl;
+
+  cout << endl;
+  
 }
 
 void testItemSet()
@@ -602,17 +642,270 @@ void testItemSet()
   TEST(Item(2,3,{"B"}) < Item(1,2,{"C"}),"TRUE");
 }
 
-void testCanonical()
+void testCanonical(Grammar &g)
 {
   CanonicalPair c(g.items());
 
   cout << "nº de closures: " << c.first.size() << " e de itens: " << c.second.size() << endl;
+
+  for (auto s(c.first.begin()); s != c.first.end(); s++) {
+    cout << "new set " << dec << (unsigned long long int)*s << endl;
+    for (auto i((*s)->begin()); i != (*s)->end(); i++) {
+      g.printItem(*i);
+    }
+  }
+
+  cout << "gotos, etc" << endl;
+  
+  for (auto i(c.second.begin()); i != c.second.end(); i++) {
+    cout << dec << (unsigned long long)i->second << endl;
+    g.printItem(i->first);
+    cout << endl;
+  }
+
+  cout << "checagem" << endl;
+
+  for (auto s(c.first.begin()); s != c.first.end(); s++) {
+    cout << "new set " << dec << (unsigned long long int)*s << endl;
+    for (auto i((*s)->begin()); i != (*s)->end(); i++) {
+      if (g._v[i->_rule]._production.size() == i->_dot) {
+        break;
+      }
+
+      if (c.second.find(*i) == c.second.end()) {
+        cout << "não achou" << endl;
+        g.printItem(*i);
+      }
+    }
+  }
+ 
+
+}
+
+void testItemMap()
+{
+  vector<Item> v {
+    {1,2,{}},
+    {1,2,{"+"}},
+    {1,2,{}},
+    {1,2,{"+"}},
+    {3,2,{}},
+    {3,2,{"+"}},
+    {3,2,{"*"}},
+    {3,2,{}},
+    {3,2,{"+"}},
+    {3,2,{"*"}},
+    {3,2,{}},
+    {3,2,{"+"}},
+    {3,2,{"*"}},
+    {5,2,{"+"}},
+    {5,2,{"*"}},
+    {5,2,{"+"}},
+    {5,2,{"*"}},
+    {5,2,{"+"}},
+    {5,2,{"*"}},
+    {5,2,{"+"}},
+    {5,2,{"*"}},
+    {5,2,{")"}},
+    {5,2,{")"}},
+    {5,2,{")"}}
+  };
+
+  map<Item,char *> m {
+{{0,0,{}},NULL},
+{{1,0,{}},NULL},
+{{2,0,{}},NULL},
+{{1,0,{"+"}},NULL},
+{{2,0,{"+"}},NULL},
+{{3,0,{}},NULL},
+{{4,0,{}},NULL},
+{{3,0,{"+"}},NULL},
+{{4,0,{"+"}},NULL},
+{{3,0,{"*"}},NULL},
+{{4,0,{"*"}},NULL},
+{{5,0,{}},NULL},
+{{6,0,{}},NULL},
+{{5,0,{"+"}},NULL},
+{{6,0,{"+"}},NULL},
+{{5,0,{"*"}},NULL},
+{{6,0,{"*"}},NULL},
+{{0,1,{}},NULL},
+{{1,1,{}},NULL},
+{{1,1,{"+"}},NULL},
+{{0,1,{}},NULL},
+{{2,1,{}},NULL},
+{{2,1,{"+"}},NULL},
+{{3,1,{}},NULL},
+{{3,1,{"+"}},NULL},
+{{3,1,{"*"}},NULL},
+{{0,1,{}},NULL},
+{{2,1,{}},NULL},
+{{2,1,{"+"}},NULL},
+{{2,1,{}},NULL},
+{{2,1,{"+"}},NULL},
+{{4,1,{}},NULL},
+{{4,1,{"+"}},NULL},
+{{4,1,{"*"}},NULL},
+{{2,1,{}},NULL},
+{{2,1,{"+"}},NULL},
+{{4,1,{}},NULL},
+{{4,1,{"+"}},NULL},
+{{4,1,{"*"}},NULL},
+{{2,1,{}},NULL},
+{{2,1,{"+"}},NULL},
+{{4,1,{}},NULL},
+{{4,1,{"+"}},NULL},
+{{4,1,{"*"}},NULL},
+{{5,1,{}},NULL},
+{{5,1,{"+"}},NULL},
+{{5,1,{"*"}},NULL},
+{{1,0,{")"}},NULL},
+{{2,0,{")"}},NULL},
+{{3,0,{")"}},NULL},
+{{4,0,{")"}},NULL},
+{{5,0,{")"}},NULL},
+{{6,0,{")"}},NULL},
+{{6,1,{}},NULL},
+{{6,1,{"+"}},NULL},
+{{6,1,{"*"}},NULL},
+{{6,1,{}},NULL},
+{{6,1,{"+"}},NULL},
+{{6,1,{"*"}},NULL},
+{{6,1,{}},NULL},
+{{6,1,{"+"}},NULL},
+{{6,1,{"*"}},NULL},
+{{1,2,{}},NULL},
+{{1,2,{"+"}},NULL},
+{{1,2,{}},NULL},
+{{1,2,{"+"}},NULL},
+{{3,2,{}},NULL},
+{{3,2,{"+"}},NULL},
+{{3,2,{"*"}},NULL},
+{{3,2,{}},NULL},
+{{3,2,{"+"}},NULL},
+{{3,2,{"*"}},NULL},
+{{3,2,{}},NULL},
+{{3,2,{"+"}},NULL},
+{{3,2,{"*"}},NULL},
+{{5,2,{}},NULL},
+{{5,2,{"+"}},NULL},
+{{5,2,{"*"}},NULL},
+{{1,1,{")"}},NULL},
+{{1,1,{"+"}},NULL},
+{{5,2,{"+"}},NULL},
+{{5,2,{"*"}},NULL},
+{{5,2,{"+"}},NULL},
+{{5,2,{"*"}},NULL},
+{{5,2,{"+"}},NULL},
+{{5,2,{"*"}},NULL},
+{{2,1,{")"}},NULL},
+{{2,1,{"+"}},NULL},
+{{3,1,{")"}},NULL},
+{{3,1,{"+"}},NULL},
+{{3,1,{"*"}},NULL},
+{{2,1,{")"}},NULL},
+{{2,1,{"+"}},NULL},
+{{4,1,{")"}},NULL},
+{{4,1,{"+"}},NULL},
+{{4,1,{"*"}},NULL},
+{{5,1,{")"}},NULL},
+{{5,1,{"+"}},NULL},
+{{5,1,{"*"}},NULL},
+{{6,1,{")"}},NULL},
+{{6,1,{"+"}},NULL},
+{{6,1,{"*"}},NULL},
+{{1,3,{}},NULL},
+{{1,3,{"+"}},NULL},
+{{3,1,{}},NULL},
+{{1,3,{}},NULL},
+{{1,3,{"+"}},NULL},
+{{1,3,{}},NULL},
+{{1,3,{"+"}},NULL},
+{{1,3,{}},NULL},
+{{1,3,{"+"}},NULL},
+{{3,3,{}},NULL},
+{{3,3,{"+"}},NULL},
+{{3,3,{"*"}},NULL},
+{{3,3,{}},NULL},
+{{3,3,{"+"}},NULL},
+{{3,3,{"*"}},NULL},
+{{3,3,{}},NULL},
+{{3,3,{"+"}},NULL},
+{{3,3,{"*"}},NULL},
+{{3,3,{}},NULL},
+{{3,3,{"+"}},NULL},
+{{3,3,{"*"}},NULL},
+{{3,3,{}},NULL},
+{{3,3,{"+"}},NULL},
+{{3,3,{"*"}},NULL},
+{{3,3,{}},NULL},
+{{3,3,{"+"}},NULL},
+{{3,3,{"*"}},NULL},
+{{3,3,{}},NULL},
+{{3,3,{"+"}},NULL},
+{{3,3,{"*"}},NULL},
+{{3,3,{}},NULL},
+{{3,3,{"+"}},NULL},
+{{3,3,{"*"}},NULL},
+{{3,3,{}},NULL},
+{{3,3,{"+"}},NULL},
+{{3,3,{"*"}},NULL},
+{{5,3,{}},NULL},
+{{5,3,{"+"}},NULL},
+{{5,3,{"*"}},NULL},
+{{5,3,{}},NULL},
+{{5,3,{"+"}},NULL},
+{{5,3,{"*"}},NULL},
+{{5,3,{}},NULL},
+{{5,3,{"+"}},NULL},
+{{5,3,{"*"}},NULL},
+{{1,2,{")"}},NULL},
+{{5,3,{}},NULL},
+{{5,3,{"+"}},NULL},
+{{5,3,{"*"}},NULL},
+{{5,3,{}},NULL},
+{{5,3,{"+"}},NULL},
+{{5,3,{"*"}},NULL},
+{{5,3,{}},NULL},
+{{5,3,{"+"}},NULL},
+{{5,3,{"*"}},NULL},
+{{5,3,{}},NULL},
+{{5,3,{"+"}},NULL},
+{{5,3,{"*"}},NULL},
+{{5,3,{}},NULL},
+{{5,3,{"+"}},NULL},
+{{5,3,{"*"}},NULL},
+{{5,3,{}},NULL},
+{{5,3,{"+"}},NULL},
+{{5,3,{"*"}},NULL},
+{{3,2,{")"}},NULL},
+{{5,2,{")"}},NULL},
+{{5,2,{")"}},NULL},
+{{5,2,{")"}},NULL},
+{{1,3,{")"}},NULL},
+{{1,3,{"+"}},NULL},
+{{3,3,{")"}},NULL},
+{{3,3,{"+"}},NULL},
+{{3,3,{"*"}},NULL},
+{{5,3,{")"}},NULL},
+{{5,3,{"+"}},NULL},
+{{5,3,{"*"}},NULL},
+{{5,3,{")"}},NULL},
+{{5,3,{"+"}},NULL},
+{{5,3,{"*"}},NULL},
+{{5,3,{")"}},NULL},
+{{5,3,{"+"}},NULL},
+{{5,3,{"*"}},NULL},
+
+  };
+
+  for (int i(0); i< v.size(); i++) {
+    cout << (m.find(v[i]) == m.end() ? "FAIL" : "OK") << endl;
+  }
 }
 
 int main(int argc, char **argv)
 {
-  testCanonical();
-
   //testFirst(gE, EL);
 
   //testFirst(gE, {{EL},{"aia"}});
@@ -624,6 +917,10 @@ int main(int argc, char **argv)
   //cout << endl;
 
   //testItemSet();
+
+  testCanonical(g);
+
+  //testItemMap();
 
   return 0;
 }
