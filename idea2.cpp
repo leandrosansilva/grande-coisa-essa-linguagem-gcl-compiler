@@ -502,7 +502,9 @@ void generateGraph(Grammar &g)
       /* o item impresso */
       edgeLabel += g.itemToString(*item) += "\\n";
 
-      /* se não aponta para lugar algum (ponto no final) */
+      /* se não aponta para lugar algum (ponto no final), 
+       * não devo analisar destinos inexistentes 
+      */
       if (d == canonical.second.end()) {
         continue;
       }
@@ -512,9 +514,9 @@ void generateGraph(Grammar &g)
       dsts += ";\n";
     }
 
-    cout << "  c" << ssMyLabel.str() << " [shaped=rect,label=\"";
+    cout << "  c" << ssMyLabel.str() << " [shape=rect,label=\"";
     cout << edgeLabel;
-    cout << "\"]";
+    cout << "\"];" << endl;
 
     cout << dsts;
   }
@@ -755,7 +757,7 @@ int main(int argc, char **argv)
 
   //testCanonical(ifG);
 
-  generateGraph(g);
+  generateGraph(ifG);
 
   return 0;
 }
