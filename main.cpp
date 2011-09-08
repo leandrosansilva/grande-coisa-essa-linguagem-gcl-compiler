@@ -16,7 +16,7 @@ typedef enum
 
 map<NonTerminal,string> NonTerminalMap 
 {
-  {EL,"EL"},
+  {EL,"E'"},
   {E,"E"},
   {T,"T"},
   {F,"F"},
@@ -29,22 +29,22 @@ map<NonTerminal,string> NonTerminalMap
   {V,"V"}
 };
 
-Grammar<NonTerminal,Terminal>::SymbolToString symbolToString(
-  [&NonTerminalMap](const Grammar<NonTerminal,Terminal>::Symbol &s) -> string {
-    if (s.isTerminal()) {
-      return s._lexema;
-    }
-    if (s.isNonTerminal()) {
-      return NonTerminalMap[s._nT];
-    }
-
-    if (s.isEmpty()) {
-      return "$";
-    }
-  }
-);
-
 typedef Grammar<NonTerminal,Terminal> MyGrammar;
+
+string symbolToString(const MyGrammar::Symbol &s)
+{
+  if (s.isTerminal()) {
+    return s._lexema;
+  }
+  if (s.isNonTerminal()) {
+    return NonTerminalMap[s._nT];
+  }
+
+  if (s.isEmpty()) {
+    return "$";
+  }
+}
+
 
 MyGrammar g(symbolToString,{
   {EL,{{E}},1},
@@ -102,10 +102,10 @@ MyGrammar simpleIfG(symbolToString,{
 
 MyGrammar simpleG(symbolToString,{
   {EL,{{E}},1},
-  {E,{{"ai"},{E},{"ia"}},1},
-  {E,{{"ui"}},1}
+  {E,{{"("},{F},{")"}},1},
+  {F,{{"option"}},1},
+  {F,{{E}},1},
 });
-
 
 int main(int argc, char **argv)
 {

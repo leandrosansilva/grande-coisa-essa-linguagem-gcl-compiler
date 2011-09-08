@@ -256,7 +256,7 @@ struct Grammar
     string out;
     
     // imprime o left side
-    out += _symbolToString(Symbol(_v[item._rule]._leftSide)) + " -> ";
+    out += _symbolToString(Symbol(_v[item._rule]._leftSide)) + " → ";
 
     // imprime a produção
     for (int i(0); i<_v[item._rule]._production.size(); i++) {

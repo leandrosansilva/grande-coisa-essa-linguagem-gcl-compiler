@@ -1,5 +1,52 @@
 #include <grammar.h>
 
+typedef enum
+{
+  EL,E, T, F,
+  
+  D,K,B,H,
+  
+  SL,S,V
+} NonTerminal;
+
+typedef enum
+{
+  IF,THEN,ELSE,LPAR,RPAR,ID
+} Terminal;
+
+map<NonTerminal,string> NonTerminalMap 
+{
+  {EL,"EL"},
+  {E,"E"},
+  {T,"T"},
+  {F,"F"},
+  {D,"D"},
+  {K,"K"},
+  {B,"B"},
+  {H,"H"},
+  {SL,"SL"},
+  {S,"S"},
+  {V,"V"}
+};
+
+
+typedef Grammar<NonTerminal,Terminal> MyGrammar;
+
+string symbolToString(const MyGrammar::Symbol &s)
+{
+  if (s.isTerminal()) {
+    return s._lexema;
+  }
+  if (s.isNonTerminal()) {
+    return NonTerminalMap[s._nT];
+  }
+
+  if (s.isEmpty()) {
+    return "$";
+  }
+}
+
+
 bool TEST(const bool ret, const string &msg)
 {
   cout << msg << ": " << (ret ? "TRUE" : "FALSE") << endl;
@@ -7,14 +54,14 @@ bool TEST(const bool ret, const string &msg)
 
 void testSymbol()
 {
-  Grammar::Symbol s1(E);
-  Grammar::Symbol s2(T);
+  MyGrammar::Symbol s1(E);
+  MyGrammar::Symbol s2(T);
 
   /* dois vazios */
-  Grammar::Symbol v1, v2;
+  MyGrammar::Symbol v1, v2;
 
-  Grammar::Symbol s3("primeiro");
-  Grammar::Symbol s4("segundo");
+  MyGrammar::Symbol s3("primeiro");
+  MyGrammar::Symbol s4("segundo");
 
   TEST(s1 < s2, "TRUE");
   TEST(s3 < s4, "TRUE");
@@ -35,24 +82,24 @@ void testSymbol()
   TEST(s1 == v1,"FALSE");
   TEST(s1 != v1,"TRUE");
 
-  Grammar::SymbolList list { {"a"}, {E}, {}, {"b"}, {EL}, {E}, {"zaza"}, {}, {"a"}, {T}, {}, {}};
+  MyGrammar::SymbolList list { {"a"}, {E}, {}, {"b"}, {EL}, {E}, {"zaza"}, {}, {"a"}, {T}, {}, {}};
 
   std::sort(list.begin(), list.end());
     
   for (int i(0); i< list.size(); i++) {
-    cout << list[i].toString() << ", ";
+    cout << symbolToString(list[i]) << ", ";
   }
   cout << endl;
 }
 
 void testItem()
 {
-  Grammar::Item i1(2,2,Grammar::Symbol("a"));
-  Grammar::Item i2(2,2,Grammar::Symbol("b"));
-  Grammar::Item i3(2,2,Grammar::Symbol(E));
-  Grammar::Item i4(2,3,Grammar::Symbol("b"));
-  Grammar::Item i5(3,2,Grammar::Symbol("b"));
-  Grammar::Item i6(2,2,Grammar::Symbol(EL));
+  MyGrammar::Item i1(2,2,MyGrammar::Symbol("a"));
+  MyGrammar::Item i2(2,2,MyGrammar::Symbol("b"));
+  MyGrammar::Item i3(2,2,MyGrammar::Symbol(E));
+  MyGrammar::Item i4(2,3,MyGrammar::Symbol("b"));
+  MyGrammar::Item i5(3,2,MyGrammar::Symbol("b"));
+  MyGrammar::Item i6(2,2,MyGrammar::Symbol(EL));
 
   TEST(i1 < i2,"TRUE");
   TEST(i1 != i1,"FALSE");
@@ -63,36 +110,36 @@ void testItem()
   TEST(i6 < i3,"TRUE");
 }
 
-void testFirst(Grammar &g, const Grammar::Symbol &s)
+void testFirst(MyGrammar &g, const MyGrammar::Symbol &s)
 {
-  Grammar::SymbolSet a(g.first(s));
+  MyGrammar::SymbolSet a(g.first(s));
 
   for (auto i(a.begin()); i != a.end(); i++) {
-    cout << i->toString() << ", ";
+    cout << symbolToString(*i) << ", ";
   }
   cout << endl;
 }
 
-void testFirst(Grammar &g, const Grammar::SymbolList &s)
+void testFirst(MyGrammar &g, const MyGrammar::SymbolList &s)
 {
-  Grammar::SymbolSet a(g.first(s));
+  MyGrammar::SymbolSet a(g.first(s));
 
   for (auto i(a.begin()); i != a.end(); i++) {
-    cout << i->toString() << ", ";
+    cout << symbolToString(*i) << ", ";
   }
   cout << endl;
 }
 
-void testClosure(Grammar &g)
+void testClosure(MyGrammar &g)
 {
-  Grammar::ItemList s(g.closure({{0,0,{}}}));
+  MyGrammar::ItemList s(g.closure({{0,0,{}}}));
  
   cout << "closure final" << endl; 
   g.printItemList(s);
 
   cout << endl;
 
-  cout << "goto " << Grammar::Symbol("if").toString() << endl;
+  cout << "goto " << symbolToString(MyGrammar::Symbol("if")) << endl;
 
   g.printItemList(g.goTo(s,{"else"}));
 
@@ -104,35 +151,35 @@ void testClosure(Grammar &g)
 
 void testItemSet()
 {
-  set<Grammar::Item> a;
+  set<MyGrammar::Item> a;
 
   a.insert({1,2,{"C"}});
   a.insert({2,3,{"B"}});
-  //a.insert({2,3,{"C"}});
-  //a.insert({1,2,{"B"}});
+  a.insert({2,3,{"C"}});
+  a.insert({1,2,{"B"}});
 
   for (auto i(a.begin()); i != a.end(); i++) {
-    cout << i->_rule << ", " << i->_dot << ", " << i->_s.toString() << endl;
+    cout << i->_rule << ", " << i->_dot << ", " << symbolToString(i->_s) << endl;
   }
 
-  //TEST(a.find({2,3,{"C"}}) == a.end(),"FALSE");
+  TEST(a.find({2,3,{"C"}}) == a.end(),"FALSE");
   TEST(a.find({2,3,{"B"}}) != a.end(),"TRUE");
   TEST(a.find({3,2,{"B"}}) == a.end(),"TRUE");
-  //TEST(a.find({1,2,{"B"}}) == a.end(),"FALSE");
-  //TEST(a.find({1,2,{"C"}}) == a.end(),"FALSE");
-  //TEST(a.find({1,3,{"C"}}) == a.end(),"TRUE");
-  //TEST(Item(2,3,{"C"}) == Item(2,3,{"C"}),"TRUE");
-  //TEST(Item(2,3,{"B"}) > Item(3,3,{"C"}),"FALSE");
-  //TEST(Item(2,3,{"C"}) > Item(2,3,{"B"}),"TRUE");
-  TEST(Grammar::Item(1,2,{"B"}) == Grammar::Item(1,2,{"C"}),"FALSE");
-  TEST(Grammar::Item(1,2,{"C"}) == Grammar::Item(1,2,{"B"}),"FALSE");
-  TEST(Grammar::Item(2,3,{"B"}) > Grammar::Item(1,2,{"C"}),"FALSE");
-  TEST(Grammar::Item(2,3,{"B"}) < Grammar::Item(1,2,{"C"}),"TRUE");
+  TEST(a.find({1,2,{"B"}}) == a.end(),"FALSE");
+  TEST(a.find({1,2,{"C"}}) == a.end(),"FALSE");
+  TEST(a.find({1,3,{"C"}}) == a.end(),"TRUE");
+  TEST(MyGrammar::Item(2,3,{"C"}) == MyGrammar::Item(2,3,{"C"}),"TRUE");
+  TEST(MyGrammar::Item(2,3,{"B"}) > MyGrammar::Item(3,3,{"C"}),"FALSE");
+  TEST(MyGrammar::Item(2,3,{"C"}) > MyGrammar::Item(2,3,{"B"}),"TRUE");
+  TEST(MyGrammar::Item(1,2,{"B"}) == MyGrammar::Item(1,2,{"C"}),"FALSE");
+  TEST(MyGrammar::Item(1,2,{"C"}) == MyGrammar::Item(1,2,{"B"}),"FALSE");
+  TEST(MyGrammar::Item(2,3,{"B"}) > MyGrammar::Item(1,2,{"C"}),"FALSE");
+  TEST(MyGrammar::Item(2,3,{"B"}) < MyGrammar::Item(1,2,{"C"}),"TRUE");
 }
 
-void testCanonical(Grammar &g)
+void testCanonical(MyGrammar &g)
 {
-  Grammar::CanonicalPair c(g.items());
+  MyGrammar::CanonicalPair c(g.items());
 
   cout << "nº de closures: " << c.first.size() << " e de itens: " << c.second.size() << endl;
 
@@ -154,4 +201,16 @@ void testCanonical(Grammar &g)
 
 int main(int argc, char **argv)
 {
+  MyGrammar g(symbolToString,{
+    {EL,{{E}},1},
+    {E,{{E},{"+"},{T}},1},
+    {E,{{T}},1},
+    {T,{{T},{"*"},{F}},1},
+    {T,{{F}},1},
+    {F,{{"("},{E},{")"}},1},
+    {F,{{"id"}},1}
+  });
+
+  testSymbol();
+
 }
