@@ -486,7 +486,9 @@ void generateGraph(Grammar &g)
         labels[dst] = label;
       }
 
-      cout << "  c" << myLabel << " -> c" << label << ";" <<  endl;
+      cout << "  c" << myLabel << " -> c" << label;
+      cout << " [label=\"" << g._v[item->_rule]._production[item->_dot].toString() << "\"]";
+      cout << ";" <<  endl;
     }
     
       }
@@ -718,7 +720,7 @@ int main(int argc, char **argv)
 
   //testCanonical(ifG);
 
-  generateGraph(simpleG);
+  generateGraph(ifG);
 
   return 0;
 }
