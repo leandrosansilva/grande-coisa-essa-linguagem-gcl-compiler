@@ -6,6 +6,7 @@
 #include <functional>
 #include <set>
 #include <list>
+#include <sstream>
 
 using namespace std;
 
@@ -83,7 +84,7 @@ struct Symbol
     }
   
     if (isEmpty()) {
-      return "<EMPTY>";
+      return "$";
     }
 
     return NonTerminalMap[_nT]; 
@@ -276,28 +277,34 @@ struct Grammar
     return f;
   }
 
-  void printItem(const Item &item)
+  string itemToString(const Item &item)
   {
-    cout << "< ";
+    string out;
     
     // imprime o left side
-    cout << NonTerminalMap[_v[item._rule]._leftSide] << " -> ";
+    out += NonTerminalMap[_v[item._rule]._leftSide] + " -> ";
 
     // imprime a produção
     for (int i(0); i<_v[item._rule]._production.size(); i++) {
       if (i == item._dot) {
-        cout << ". ";
+        out += ". ";
       }
-      cout << _v[item._rule]._production[i].toString() << " ";
+      out += _v[item._rule]._production[i].toString() + " ";
     }
 
     // no caso de o ponto estar no final
     if (item._dot == _v[item._rule]._production.size()) {
-      cout << ". ";
+      out += ". ";
     }
 
-    cout << ">, #la: '" << item._s.toString() << "'; " << endl;
+    out += ", #'" + item._s.toString() + "'";
 
+    return out;
+  }
+
+  void printItem(const Item &item)
+  {
+    cout << itemToString(item) << endl;
   }
 
   void printItemList(const ItemList &s)
@@ -386,9 +393,9 @@ struct Grammar
     ItemList j;
 
     for (auto it(items.begin()); it != items.end(); it++) {
-
-      /* se o ponto está no fim, não devo aplicar */
-      if (_v[it->_rule]._production.size() == it->_dot) {
+      /* se o ponto está no fim ou a produção é vazia, não devo aplicar */
+      if (_v[it->_rule]._production.size() == it->_dot || 
+          _v[it->_rule]._production.size() == 0) {
         continue;
       }
 
@@ -463,15 +470,18 @@ void generateGraph(Grammar &g)
       myLabel = labels[*s];
     }
 
+    string edgeLabel;
+
+    string dsts;
+
+    stringstream ssMyLabel;
+    ssMyLabel << myLabel;
+
     /* para cada item */
     for (auto item((*s)->begin()); item != (*s)->end(); item++) {
 
       auto d(canonical.second.find(*item));
     
-      /* se não aponta para lugar algum (ponto no final) */
-      if (d == canonical.second.end()) {
-      }
-
       /* pra onde goto deste item leva? */
       ItemList *dst(d->second);
 
@@ -486,12 +496,28 @@ void generateGraph(Grammar &g)
         labels[dst] = label;
       }
 
-      cout << "  c" << myLabel << " -> c" << label;
-      cout << " [label=\"" << g._v[item->_rule]._production[item->_dot].toString() << "\"]";
-      cout << ";" <<  endl;
-    }
-    
+      stringstream ssLabel;
+      ssLabel << label;
+
+      /* o item impresso */
+      edgeLabel += g.itemToString(*item) += "\\n";
+
+      /* se não aponta para lugar algum (ponto no final) */
+      if (d == canonical.second.end()) {
+        continue;
       }
+    
+      dsts += "  c" + ssMyLabel.str()   + " -> c" + ssLabel.str();
+      dsts += " [label=\"" + g._v[item->_rule]._production[item->_dot].toString() + "\"]";
+      dsts += ";\n";
+    }
+
+    cout << "  c" << ssMyLabel.str() << " [shaped=rect,label=\"";
+    cout << edgeLabel;
+    cout << "\"]";
+
+    cout << dsts;
+  }
   cout << "}" << endl;
 }
 
@@ -624,6 +650,15 @@ Grammar ifG({
   {T,{{E}},1}
 });
 
+Grammar simpleIfG({
+  {EL,{{E}},1},
+  {E,{{"if"},{"("},{V},{")"},{E},{"else"},{E}},1},
+  {V,{{"true"}},1},
+  {V,{{"false"}},1},
+  {E,{{"block"}},1}
+});
+
+
 Grammar simpleG({
   {EL,{{E}},1},
   {E,{{"ai"},{E},{"ia"}},1},
@@ -720,7 +755,7 @@ int main(int argc, char **argv)
 
   //testCanonical(ifG);
 
-  generateGraph(ifG);
+  generateGraph(g);
 
   return 0;
 }
