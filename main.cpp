@@ -24,7 +24,7 @@ map<NonTerminal,string> NonTerminalMap
   {K,"K"},
   {B,"B"},
   {H,"H"},
-  {SL,"SL"},
+  {SL,"S'"},
   {S,"S"},
   {V,"V"}
 };
@@ -57,6 +57,7 @@ MyGrammar g(symbolToString,{
 });
 
 MyGrammar gt(symbolToString,{
+  {EL,{{F}},1},
   {F,{{D}},1},
   {F,{{K}},1},
   {D,{{"a"},{B}},1},
@@ -73,7 +74,7 @@ MyGrammar gE(symbolToString,{
 });
 
 MyGrammar mCICp66(symbolToString,{
-  {SL,{{S}},1},
+  {SL,{{S},{"EOF"}},1},
   {S,{{V},{"="},{E}},1},
   {S,{{E}},1},
   {E,{{V}},1},
@@ -104,12 +105,26 @@ MyGrammar simpleG(symbolToString,{
   {EL,{{E}},1},
   {E,{{"("},{F},{")"}},1},
   {F,{{"option"}},1},
+  {F,{{"noitpo"}},1},
   {F,{{E}},1},
 });
 
+void testCanonical(MyGrammar &g)
+{
+  MyGrammar::CanonicalPair p(g.items());
+
+  for (auto s(p.first.begin()); s!= p.first.end(); s++) {
+    cerr << "one more" << endl;
+    for (auto i((*s)->begin()); i != (*s)->end(); i++) {
+      cerr << g.itemToString(*i) << endl;
+    }
+  }
+}
+
 int main(int argc, char **argv)
 {
-  simpleG.generateGraph();
-
+  gt.generateGraph();
+  testCanonical(gt);
+  
   return 0;
 }

@@ -1,3 +1,6 @@
+#ifndef GRAMMAR_H
+#define GRAMMAR_H
+
 #include <vector>
 #include <string>
 #include <map>
@@ -362,11 +365,11 @@ struct Grammar
     return s;
   }
 
-  ItemList goTo(const ItemList &items,const Symbol &x)
+  ItemList goTo(const ItemList &its,const Symbol &x)
   {
     ItemList j;
 
-    for (auto it(items.begin()); it != items.end(); it++) {
+    for (auto it(its.begin()); it != its.end(); it++) {
 
       /* se o ponto está no fim ou a produção é vazia, não devo aplicar */
       if (_v[it->_rule]._production.size() == it->_dot || 
@@ -384,7 +387,7 @@ struct Grammar
 
   CanonicalPair items()
   {
-    list<ItemList *> f, t({new ItemList(closure({{0,0,{}}}))});
+    list<ItemList *> f, t({new ItemList(closure({{0,0,{"?"}}}))});
 
     /* guarda os items que eu já usei para fazer goto e para onde levam*/
     map<Item,ItemList *> usedItems;
@@ -397,11 +400,24 @@ struct Grammar
       f.push_back(s);
       t.pop_front();
 
+      /* símbolos já usados no item atual */
+      SymbolSet usedSymbols;
+
       /* para cada item no conjunto */
       for (auto item(s->begin()); item != s->end(); item++) {
 
+        /* se o ponto está no final, não faz nada */
+        if (item->_dot == _v[item->_rule]._production.size()) {
+          continue;
+        }
+
         // Se o item já foi usado, vou ao próximo
         if (usedItems.find(*item) != usedItems.end()) {
+          continue;
+        }
+
+        /* se o símbolo já foi usado para goto, não devi fazẽ-lo novamente */
+        if (usedSymbols.find(_v[item->_rule]._production[item->_dot]) != usedSymbols.end()) {
           continue;
         }
 
@@ -413,11 +429,17 @@ struct Grammar
           continue;
         }
 
+        /* alocação dinâmica... :-( */
         ItemList *dst(new ItemList(j));
 
+        /* insere a closure no conjunto final de closures */
         t.push_back(dst);
 
+        /* define o item como já usado */
         usedItems[*item] = dst;
+
+        /* define o símbolo como já usado */
+        usedSymbols.insert(_v[item->_rule]._production[item->_dot]);
       }
     }
     return {f,usedItems};
@@ -428,29 +450,33 @@ struct Grammar
     cout << "digraph MyGrammar { " << endl;
     CanonicalPair canonical(items());
 
-    map<ItemList*,int> labels;    
+    map<ItemList*,int> labels;
 
     int lCount(0);
 
-    for (auto s(canonical.first.begin()); s!= canonical.first.end(); s++) {
-      int myLabel;
-      
+    /* dado um ItemList, retorna sua label */
+    function<string(ItemList *)> getLabel([&lCount,&labels](ItemList *itemList) -> string {
+      stringstream ssLabel;
+
       /* não encontrei a closure no mapa */
-      if (labels.find(*s) == labels.end()) {
-        labels[*s] = lCount;
-        myLabel = lCount;
+      if (labels.find(itemList) == labels.end()) {
+        labels[itemList] = lCount;
+        ssLabel << "c" << lCount;
         lCount++;
-      } else {
-        myLabel = labels[*s];
+      } else { 
+        // se encontrei, pego seu valor
+        ssLabel << "c" << labels[itemList];
       }
 
-      string edgeLabel;
+      return ssLabel.str();
+    });
+
+    for (auto s(canonical.first.begin()); s!= canonical.first.end(); s++) {
 
       string dsts;
 
-      stringstream ssMyLabel;
-      ssMyLabel << myLabel;
-
+      cout << "  " << getLabel(*s) << " [shape=rect,label=\"";
+      
       /* para cada item */
       for (auto item((*s)->begin()); item != (*s)->end(); item++) {
 
@@ -459,22 +485,8 @@ struct Grammar
         /* pra onde goto deste item leva? */
         ItemList *dst(d->second);
 
-        /* se o destino já foi nomeado, usa este nome */
-        int label;
-
-        if (labels.find(dst) != labels.end()) {
-          label = labels[dst];  
-        } else {
-          lCount++;
-          label = lCount;
-          labels[dst] = label;
-        }
-
-        stringstream ssLabel;
-        ssLabel << label;
-
         /* o item impresso */
-        edgeLabel += itemToString(*item) += "\\n";
+        cout << itemToString(*item) << "\\n";
 
         /* se não aponta para lugar algum (ponto no final), 
          * não devo analisar destinos inexistentes 
@@ -483,20 +495,17 @@ struct Grammar
           continue;
         }
       
-        dsts += "  c" + ssMyLabel.str()   + " -> c" + ssLabel.str();
-        dsts += " [label=\"" + _symbolToString(_v[item->_rule]._production[item->_dot]) + "\"]";
-        dsts += ";\n";
+        dsts += "  " + getLabel(*s) + " -> " + getLabel(dst);
+        dsts += " [label=\"" + _symbolToString(_v[item->_rule]._production[item->_dot]) + "\"];";
       }
 
-      cout << "  c" << ssMyLabel.str() << " [shape=rect,label=\"";
-      cout << edgeLabel;
       cout << "\"];" << endl;
 
       cout << dsts;
     }
+
     cout << "}" << endl;
   }
 
 };
-
-
+#endif
