@@ -1,51 +1,4 @@
-#include <grammar.h>
-
-typedef enum
-{
-  EL,E, T, F,
-  
-  D,K,B,H,
-  
-  SL,S,V
-} NonTerminal;
-
-typedef enum
-{
-  IF,THEN,ELSE,LPAR,RPAR,ID
-} Terminal;
-
-map<NonTerminal,string> NonTerminalMap 
-{
-  {EL,"EL"},
-  {E,"E"},
-  {T,"T"},
-  {F,"F"},
-  {D,"D"},
-  {K,"K"},
-  {B,"B"},
-  {H,"H"},
-  {SL,"SL"},
-  {S,"S"},
-  {V,"V"}
-};
-
-
-typedef Grammar<NonTerminal,Terminal> MyGrammar;
-
-string symbolToString(const MyGrammar::Symbol &s)
-{
-  if (s.isTerminal()) {
-    return s._lexema;
-  }
-  if (s.isNonTerminal()) {
-    return NonTerminalMap[s._nT];
-  }
-
-  if (s.isEmpty()) {
-    return "$";
-  }
-}
-
+#include <mygrammar.h>
 
 bool TEST(const bool ret, const string &msg)
 {
@@ -60,8 +13,8 @@ void testSymbol()
   /* dois vazios */
   MyGrammar::Symbol v1, v2;
 
-  MyGrammar::Symbol s3("primeiro");
-  MyGrammar::Symbol s4("segundo");
+  MyGrammar::Symbol s3(ID);
+  MyGrammar::Symbol s4(TIMES);
 
   TEST(s1 < s2, "TRUE");
   TEST(s3 < s4, "TRUE");
@@ -82,7 +35,7 @@ void testSymbol()
   TEST(s1 == v1,"FALSE");
   TEST(s1 != v1,"TRUE");
 
-  MyGrammar::SymbolList list { {"a"}, {E}, {}, {"b"}, {EL}, {E}, {"zaza"}, {}, {"a"}, {T}, {}, {}};
+  MyGrammar::SymbolList list { {ID}, {E}, {}, {PLUS}, {EL}, {E}, {ATTR}, {}, {IF}, {T}, {}, {}};
 
   std::sort(list.begin(), list.end());
     
@@ -94,11 +47,11 @@ void testSymbol()
 
 void testItem()
 {
-  MyGrammar::Item i1(2,2,MyGrammar::Symbol("a"));
-  MyGrammar::Item i2(2,2,MyGrammar::Symbol("b"));
+  MyGrammar::Item i1(2,2,MyGrammar::Symbol(IF));
+  MyGrammar::Item i2(2,2,MyGrammar::Symbol(THEN));
   MyGrammar::Item i3(2,2,MyGrammar::Symbol(E));
-  MyGrammar::Item i4(2,3,MyGrammar::Symbol("b"));
-  MyGrammar::Item i5(3,2,MyGrammar::Symbol("b"));
+  MyGrammar::Item i4(2,3,MyGrammar::Symbol(ELSE));
+  MyGrammar::Item i5(3,2,MyGrammar::Symbol(EQUAL));
   MyGrammar::Item i6(2,2,MyGrammar::Symbol(EL));
 
   TEST(i1 < i2,"TRUE");
@@ -139,52 +92,48 @@ void testClosure(MyGrammar &g)
 
   cout << endl;
 
-  cout << "goto " << symbolToString(MyGrammar::Symbol("if")) << endl;
+  cout << "goto " << symbolToString({V}) << endl;
 
-  g.printItemList(g.goTo(s,{"else"}));
+  g.printItemList(g.goTo(s,{V}));
 
-  cout << g.goTo(s,{"else"}).size() << endl;
+  cout << g.goTo(s,{V}).size() << endl;
 
   cout << endl;
-  
 }
 
 void testItemSet()
 {
   set<MyGrammar::Item> a;
 
-  a.insert({1,2,{"C"}});
-  a.insert({2,3,{"B"}});
-  a.insert({2,3,{"C"}});
-  a.insert({1,2,{"B"}});
+  a.insert({1,2,{IF}});
+  a.insert({2,3,{THEN}});
+  a.insert({2,3,{ELSE}});
+  a.insert({1,2,{ID}});
 
   for (auto i(a.begin()); i != a.end(); i++) {
     cout << i->_rule << ", " << i->_dot << ", " << symbolToString(i->_s) << endl;
   }
 
-  TEST(a.find({2,3,{"C"}}) == a.end(),"FALSE");
-  TEST(a.find({2,3,{"B"}}) != a.end(),"TRUE");
-  TEST(a.find({3,2,{"B"}}) == a.end(),"TRUE");
-  TEST(a.find({1,2,{"B"}}) == a.end(),"FALSE");
-  TEST(a.find({1,2,{"C"}}) == a.end(),"FALSE");
-  TEST(a.find({1,3,{"C"}}) == a.end(),"TRUE");
-  TEST(MyGrammar::Item(2,3,{"C"}) == MyGrammar::Item(2,3,{"C"}),"TRUE");
-  TEST(MyGrammar::Item(2,3,{"B"}) > MyGrammar::Item(3,3,{"C"}),"FALSE");
-  TEST(MyGrammar::Item(2,3,{"C"}) > MyGrammar::Item(2,3,{"B"}),"TRUE");
-  TEST(MyGrammar::Item(1,2,{"B"}) == MyGrammar::Item(1,2,{"C"}),"FALSE");
-  TEST(MyGrammar::Item(1,2,{"C"}) == MyGrammar::Item(1,2,{"B"}),"FALSE");
-  TEST(MyGrammar::Item(2,3,{"B"}) > MyGrammar::Item(1,2,{"C"}),"FALSE");
-  TEST(MyGrammar::Item(2,3,{"B"}) < MyGrammar::Item(1,2,{"C"}),"TRUE");
+  TEST(a.find({2,3,{ELSE}}) == a.end(),"FALSE");
+  TEST(a.find({2,3,{THEN}}) != a.end(),"TRUE");
+  TEST(a.find({3,2,{RPAR}}) == a.end(),"TRUE");
+  TEST(a.find({2,3,{ELSE}}) == a.end(),"FALSE");
+  TEST(a.find({1,2,{ID}}) == a.end(),"FALSE");
+  TEST(a.find({1,3,{V}}) == a.end(),"TRUE");
+  TEST(MyGrammar::Item(2,3,{ID}) == MyGrammar::Item(2,3,{ID}),"TRUE");
+  TEST(MyGrammar::Item(2,3,{IF}) > MyGrammar::Item(3,3,{ID}),"FALSE");
+  TEST(MyGrammar::Item(2,3,{ATTR}) > MyGrammar::Item(2,3,{PLUS}),"TRUE");
+  TEST(MyGrammar::Item(1,2,{IF}) == MyGrammar::Item(1,2,{ELSE}),"FALSE");
 }
 
 void testCanonical(MyGrammar &g)
 {
-  MyGrammar::CanonicalPair c(g.items());
+  MyGrammar::CanonicalItems c(g.items());
 
   cout << "nº de closures: " << c.first.size() << " e de itens: " << c.second.size() << endl;
 
   for (auto s(c.first.begin()); s != c.first.end(); s++) {
-    cout << "new set " << dec << (unsigned long long int)*s << endl;
+    cout << endl << "new set " << dec << (unsigned long long int)*s << endl;
     for (auto i((*s)->begin()); i != (*s)->end(); i++) {
       g.printItem(*i);
     }
@@ -199,18 +148,30 @@ void testCanonical(MyGrammar &g)
   }
 }
 
+MyGrammar g(symbolToString,{
+  {EL,{{E}},1},
+  {E,{{E},{PLUS},{T}},1},
+  {E,{{T}},1},
+  {T,{{T},{TIMES},{F}},1},
+  {T,{{F}},1},
+  {F,{{LPAR},{E},{RPAR}},1},
+  {F,{{ID}},1}
+},TEOF,INVALID);
+
+MyGrammar mCICp66(symbolToString,{
+  {SL,{{S},{TEOF}},1},
+  {S,{{V},{ATTR},{E}},1},
+  {S,{{E}},1},
+  {E,{{V}},1},
+  {V,{{ID}},1},
+  {V,{{PLUS},{E}},1}
+},TEOF,INVALID);
+
+
 int main(int argc, char **argv)
 {
-  MyGrammar g(symbolToString,{
-    {EL,{{E}},1},
-    {E,{{E},{"+"},{T}},1},
-    {E,{{T}},1},
-    {T,{{T},{"*"},{F}},1},
-    {T,{{F}},1},
-    {F,{{"("},{E},{")"}},1},
-    {F,{{"id"}},1}
-  });
-
-  testSymbol();
-
+  //testSymbol();
+  //testItemSet();
+  //testClosure(mCICp66);
+  testCanonical(mCICp66);
 }

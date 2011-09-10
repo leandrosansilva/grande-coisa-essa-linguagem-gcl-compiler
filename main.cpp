@@ -1,117 +1,27 @@
-#include <grammar.h>
-
-typedef enum
-{
-  EL,E, T, F,
-  
-  D,K,B,H,
-  
-  SL,S,V
-} NonTerminal;
-
-typedef enum
-{
-  IF,THEN,ELSE,LPAR,RPAR,ID
-} Terminal;
-
-map<NonTerminal,string> NonTerminalMap 
-{
-  {EL,"E'"},
-  {E,"E"},
-  {T,"T"},
-  {F,"F"},
-  {D,"D"},
-  {K,"K"},
-  {B,"B"},
-  {H,"H"},
-  {SL,"S'"},
-  {S,"S"},
-  {V,"V"}
-};
-
-typedef Grammar<NonTerminal,Terminal> MyGrammar;
-
-string symbolToString(const MyGrammar::Symbol &s)
-{
-  if (s.isTerminal()) {
-    return s._lexema;
-  }
-  if (s.isNonTerminal()) {
-    return NonTerminalMap[s._nT];
-  }
-
-  if (s.isEmpty()) {
-    return "$";
-  }
-}
-
+#include <mygrammar.h>
 
 MyGrammar g(symbolToString,{
   {EL,{{E}},1},
-  {E,{{E},{"+"},{T}},1},
+  {E,{{E},{PLUS},{T}},1},
   {E,{{T}},1},
-  {T,{{T},{"*"},{F}},1},
+  {T,{{T},{TIMES},{F}},1},
   {T,{{F}},1},
-  {F,{{"("},{E},{")"}},1},
-  {F,{{"id"}},1}
-});
-
-MyGrammar gt(symbolToString,{
-  {EL,{{F}},1},
-  {F,{{D}},1},
-  {F,{{K}},1},
-  {D,{{"a"},{B}},1},
-  {D,{},1},
-  {K,{{"c"},{H}},1},
-  {H,{{"h"}},1}
-});
-
-MyGrammar gE(symbolToString,{
-  {EL,{{E}},1},
-  {E,{{E}},1},
-  {E,{{"lal"}},1},
-  {E,{{},{"depois do vazio"}},1}
-});
+  {F,{{LPAR},{E},{RPAR}},1},
+  {F,{{ID}},1}
+},TEOF,INVALID);
 
 MyGrammar mCICp66(symbolToString,{
-  {SL,{{S},{"EOF"}},1},
-  {S,{{V},{"="},{E}},1},
+  {SL,{{S},{TEOF}},1},
+  {S,{{V},{ATTR},{E}},1},
   {S,{{E}},1},
   {E,{{V}},1},
-  {V,{{"x"}},1},
-  {V,{{"*"},{E}},1}
-});
-
-MyGrammar ifG(symbolToString,{
-  {EL,{{E}},1},
-  {E,{{"if"},{"("},{V},{")"},{F},{"else"},{T}},1},
-  {E,{{"if"},{"("},{V},{")"},{F}},1},
-  {V,{{"condition"}},1},
-  {F,{{"if_block"}},1},
-  {F,{{E}},1},
-  {T,{{"else_block"}},1},
-  {T,{{E}},1}
-});
-
-MyGrammar simpleIfG(symbolToString,{
-  {EL,{{E}},1},
-  {E,{{"if"},{"("},{V},{")"},{E},{"else"},{E}},1},
-  {V,{{"true"}},1},
-  {V,{{"false"}},1},
-  {E,{{"block"}},1}
-});
-
-MyGrammar simpleG(symbolToString,{
-  {EL,{{E}},1},
-  {E,{{"("},{F},{")"}},1},
-  {F,{{"option"}},1},
-  {F,{{"noitpo"}},1},
-  {F,{{E}},1},
-});
+  {V,{{ID}},1},
+  {V,{{PLUS},{E}},1}
+},TEOF,INVALID);
 
 void testCanonical(MyGrammar &g)
 {
-  MyGrammar::CanonicalPair p(g.items());
+  MyGrammar::CanonicalItems p(g.items());
 
   for (auto s(p.first.begin()); s!= p.first.end(); s++) {
     cerr << "one more" << endl;
@@ -123,8 +33,9 @@ void testCanonical(MyGrammar &g)
 
 int main(int argc, char **argv)
 {
-  gt.generateGraph();
-  testCanonical(gt);
-  
+  mCICp66.generateGraph();
+
+  testCanonical(mCICp66);
+
   return 0;
 }

@@ -18,13 +18,13 @@ struct Grammar
 {
   struct Symbol
   {
-    typedef enum { TERMINAL, NONTERMINAL, ENDMARK, EMPTY} Type;
+    typedef enum { TERMINAL, NONTERMINAL, ENDMARK, EMPTY, LITERAL} Type;
 
     Type _type;
 
-    string _lexema;
+    NonTerminalT _nonTerminal;
 
-    NonTerminalT _nT;
+    TerminalT _terminal;
 
     bool isEndMark() const
     {
@@ -46,11 +46,11 @@ struct Grammar
       return _type == NONTERMINAL;
     }
 
-    Symbol(const string &tok): _type(TERMINAL),_lexema(tok)
+    Symbol(const NonTerminalT &nT): _type(NONTERMINAL),_nonTerminal(nT)
     {
     }
-    
-    Symbol(const NonTerminalT &nT): _type(NONTERMINAL),_nT(nT)
+
+    Symbol(const TerminalT &t): _type(TERMINAL), _terminal(t)
     {
     }
 
@@ -61,8 +61,8 @@ struct Grammar
 
     bool operator<(const Symbol &other) const
     {
-      bool t(other.isTerminal() && isTerminal() && _lexema < other._lexema);
-      bool n(other.isNonTerminal() && isNonTerminal() && _nT < other._nT);
+      bool t(other.isTerminal() && isTerminal() && _terminal < other._terminal);
+      bool n(other.isNonTerminal() && isNonTerminal() && _nonTerminal < other._nonTerminal);
 
       /* se os dois são diferentes, terminal é sempre menor que não terminal */
       bool d(other.isNonTerminal() && isTerminal());
@@ -87,9 +87,9 @@ struct Grammar
     bool operator==(const Symbol &other) const
     {
       /* TODO: reescrever com operador ternário */
-      bool t(other.isTerminal() && isTerminal() && _lexema == other._lexema);
+      bool t(other.isTerminal() && isTerminal() && _terminal == other._terminal);
 
-      bool n(other.isNonTerminal() && isNonTerminal() && _nT == other._nT);
+      bool n(other.isNonTerminal() && isNonTerminal() && _nonTerminal == other._nonTerminal);
 
       bool e(isEmpty() && other.isEmpty());
 
@@ -169,15 +169,23 @@ struct Grammar
 
   typedef set<Symbol> SymbolSet;
 
-  typedef pair<list<ItemList *>,map<Item,ItemList *>> CanonicalPair;
+  typedef pair<list<ItemList *>,map<Item,ItemList *>> CanonicalItems;
 
   typedef vector<Rule<NonTerminalT,SymbolList,int>> RuleVector;
 
   RuleVector _v;
 
-  Grammar(const SymbolToString symbolToString, const RuleVector &v):
+  /* token que representa fim de arquivo */
+  TerminalT _EOF;
+  
+  /* token que representa caractere sem importância */
+  TerminalT _invalid;
+
+  Grammar(const SymbolToString symbolToString, const RuleVector &v, const TerminalT &eof, const TerminalT &invalid):
   _v(v),
-  _symbolToString(symbolToString)
+  _symbolToString(symbolToString),
+  _invalid(invalid),
+  _EOF(eof)
   {
   }
 
@@ -195,7 +203,7 @@ struct Grammar
     /* para cada produção do símbolo, vai adicionando o first dele em f */
     for (int i(0); i<_v.size(); i++) {
       /* é uma produção do símbolo em questão  */  
-      if (_v[i]._leftSide == symbol._nT) {
+      if (_v[i]._leftSide == symbol._nonTerminal) {
 
         /* se o tamanho da produção é 0, significa que produz vazio */
         if (!_v[i]._production.size()) {
@@ -274,7 +282,7 @@ struct Grammar
       out += ". ";
     }
 
-    /* impeime o lookahead  */
+    /* imprime o lookahead  */
     out += ", #'" + _symbolToString(item._s) + "'";
 
     return out;
@@ -341,7 +349,7 @@ struct Grammar
       for (int i(0); i < _v.size(); i++) {
 
         /* só aplico às regras cuja símbolo da esquerda seja igual ao que tenho em mãos */
-        if (_v[i]._leftSide != _v[curItem._rule]._production[curItem._dot]._nT) {
+        if (_v[i]._leftSide != _v[curItem._rule]._production[curItem._dot]._nonTerminal) {
           continue;
         }
 
@@ -385,9 +393,9 @@ struct Grammar
     return closure(j);
   }
 
-  CanonicalPair items()
+  CanonicalItems items()
   {
-    list<ItemList *> f, t({new ItemList(closure({{0,0,{"?"}}}))});
+    list<ItemList *> f, t({new ItemList(closure({{0,0,{_invalid}}}))});
 
     /* guarda os items que eu já usei para fazer goto e para onde levam*/
     map<Item,ItemList *> usedItems;
@@ -448,7 +456,7 @@ struct Grammar
   void generateGraph()
   {
     cout << "digraph MyGrammar { " << endl;
-    CanonicalPair canonical(items());
+    CanonicalItems canonical(items());
 
     map<ItemList*,int> labels;
 
