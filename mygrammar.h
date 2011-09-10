@@ -26,12 +26,12 @@ map<Terminal,string> TerminalMap
   {ELSE,"else"},
   {LPAR,"("},
   {RPAR,")"},
-  {ID,"id"},
+  {ID,"x"},
   {PLUS,"+"},
   {TIMES,"*"},
   {EQUAL,"=="},
   {ATTR,"="},
-  {TEOF,"EOF"},
+  {TEOF,"$"},
   {INVALID,"?"}
 };
 

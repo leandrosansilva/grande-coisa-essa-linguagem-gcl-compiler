@@ -16,7 +16,7 @@ MyGrammar mCICp66(symbolToString,{
   {S,{{E}},1},
   {E,{{V}},1},
   {V,{{ID}},1},
-  {V,{{PLUS},{E}},1}
+  {V,{{TIMES},{E}},1}
 },TEOF,INVALID);
 
 void testCanonical(MyGrammar &g)
@@ -25,7 +25,7 @@ void testCanonical(MyGrammar &g)
 
   for (auto s(p.first.begin()); s!= p.first.end(); s++) {
     cerr << "one more" << endl;
-    for (auto i((*s)->begin()); i != (*s)->end(); i++) {
+    for (auto i(s->begin()); i != s->end(); i++) {
       cerr << g.itemToString(*i) << endl;
     }
   }
@@ -35,7 +35,7 @@ int main(int argc, char **argv)
 {
   mCICp66.generateGraph();
 
-  testCanonical(mCICp66);
+  //testCanonical(mCICp66);
 
   return 0;
 }

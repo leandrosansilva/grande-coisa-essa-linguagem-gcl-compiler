@@ -169,7 +169,7 @@ struct Grammar
 
   typedef set<Symbol> SymbolSet;
 
-  typedef pair<list<ItemList *>,map<Item,ItemList *>> CanonicalItems;
+  typedef pair<list<ItemList>,map<Item,ItemList *>> CanonicalItems;
 
   typedef vector<Rule<NonTerminalT,SymbolList,int>> RuleVector;
 
@@ -395,59 +395,56 @@ struct Grammar
 
   CanonicalItems items()
   {
-    list<ItemList *> f, t({new ItemList(closure({{0,0,{_invalid}}}))});
+    list<ItemList> f, t({closure({{0,0,{_invalid}}})});
 
     /* guarda os items que eu já usei para fazer goto e para onde levam*/
     map<Item,ItemList *> usedItems;
 
+    bool firstTime(true);
+
     /* enquanto houver elementos na lista, remove e joga na lista final */
-    while (t.size()) {
+    while (t.size() || firstTime) {
 
       /* pega o primeiro da lista, remove-o e insere na lista final */
-      ItemList *s(t.front());
-      f.push_back(s);
+      ItemList s(t.front());
       t.pop_front();
 
-      /* símbolos já usados no item atual */
-      SymbolSet usedSymbols;
+      /* de o conjunto já foi produzido, sai */
+      auto found(find(f.begin(),f.end(),s));
+
+      if (found != f.end() && !firstTime) {
+        continue;
+      }
+  
+      f.push_back(s);
+
+      firstTime = false;
 
       /* para cada item no conjunto */
-      for (auto item(s->begin()); item != s->end(); item++) {
+      for (auto item(s.begin()); item != s.end(); item++) {
 
         /* se o ponto está no final, não faz nada */
         if (item->_dot == _v[item->_rule]._production.size()) {
           continue;
         }
 
-        // Se o item já foi usado, vou ao próximo
-        if (usedItems.find(*item) != usedItems.end()) {
-          continue;
-        }
-
-        /* se o símbolo já foi usado para goto, não devi fazẽ-lo novamente */
-        if (usedSymbols.find(_v[item->_rule]._production[item->_dot]) != usedSymbols.end()) {
-          continue;
-        }
-
         // para cada cara depois do ponto da regra em questão, faz o goto dele
-        ItemList j(goTo(*s,_v[item->_rule]._production[item->_dot]));
+        ItemList j(goTo(s,_v[item->_rule]._production[item->_dot]));
 
         /* se o goto aplicado no elemento não resultou num novo conjunto, saio */
         if (!j.size()) {
           continue;
         }
 
-        /* alocação dinâmica... :-( */
-        ItemList *dst(new ItemList(j));
+        /* de o conjunto já foi produzido, sai */
+        auto dst(find(f.begin(),f.end(),j));
+
+        if (dst != f.end()) {
+          continue;
+        }
 
         /* insere a closure no conjunto final de closures */
-        t.push_back(dst);
-
-        /* define o item como já usado */
-        usedItems[*item] = dst;
-
-        /* define o símbolo como já usado */
-        usedSymbols.insert(_v[item->_rule]._production[item->_dot]);
+        t.push_back(j);
       }
     }
     return {f,usedItems};
@@ -462,11 +459,10 @@ struct Grammar
 
     int lCount(0);
 
-    /* dado um ItemList, retorna sua label */
+    //dado um ItemList, retorna sua label
     function<string(ItemList *)> getLabel([&lCount,&labels](ItemList *itemList) -> string {
       stringstream ssLabel;
 
-      /* não encontrei a closure no mapa */
       if (labels.find(itemList) == labels.end()) {
         labels[itemList] = lCount;
         ssLabel << "c" << lCount;
@@ -483,28 +479,29 @@ struct Grammar
 
       string dsts;
 
-      cout << "  " << getLabel(*s) << " [shape=rect,label=\"";
+      //cout << "  " << getLabel(*s) << " [shape=rect,label=\"";
+      cout << "  " << "c" << lCount++  << " [shape=rect,label=\"";
       
-      /* para cada item */
-      for (auto item((*s)->begin()); item != (*s)->end(); item++) {
+      //para cada item
+      for (auto item(s->begin()); item != s->end(); item++) {
 
         auto d(canonical.second.find(*item));
       
-        /* pra onde goto deste item leva? */
+        //pra onde goto deste item leva?
         ItemList *dst(d->second);
 
-        /* o item impresso */
+        // o item impresso
         cout << itemToString(*item) << "\\n";
 
-        /* se não aponta para lugar algum (ponto no final), 
-         * não devo analisar destinos inexistentes 
-        */
+        //se não aponta para lugar algum (ponto no final), 
+        // não devo analisar destinos inexistentes 
+        //
         if (d == canonical.second.end()) {
           continue;
         }
       
-        dsts += "  " + getLabel(*s) + " -> " + getLabel(dst);
-        dsts += " [label=\"" + _symbolToString(_v[item->_rule]._production[item->_dot]) + "\"];";
+        //dsts += "  " + getLabel(*s) + " -> " + getLabel(dst);
+        //dsts += " [label=\"" + _symbolToString(_v[item->_rule]._production[item->_dot]) + "\"];";
       }
 
       cout << "\"];" << endl;
