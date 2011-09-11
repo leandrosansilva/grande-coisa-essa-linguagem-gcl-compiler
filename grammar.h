@@ -433,6 +433,11 @@ struct Grammar
         // Símbolo da transição
         Symbol edgeSymbol(_v[item->_rule]._production[item->_dot]);
 
+        // se o símbolo que estou analisando for o de final de arquivo, salto pro final
+        if (edgeSymbol == Symbol(_EOF)) {
+          continue;
+        }
+
         /* já foi usado */
         if (used.find(edgeSymbol) != used.end()) {
           continue;

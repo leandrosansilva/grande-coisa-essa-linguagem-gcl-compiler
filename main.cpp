@@ -35,8 +35,6 @@ void testCanonical(MyGrammar &g)
       cout << g.itemToString(*i) << endl;
     }
   }
-
-
 }
 
 int main(int argc, char **argv)
