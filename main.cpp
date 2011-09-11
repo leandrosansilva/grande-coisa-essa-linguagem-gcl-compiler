@@ -23,12 +23,20 @@ void testCanonical(MyGrammar &g)
 {
   MyGrammar::CanonicalItems p(g.items());
 
+  for (auto e(p.second.begin()); e != p.second.end(); e++) {
+    cout << e->first.first << " to " << e->first.second << " s " 
+         << g._symbolToString(e->second) << endl;
+  }
+
   for (auto s(p.first.begin()); s!= p.first.end(); s++) {
-    cerr << "one more" << endl;
+    cout << "set " << distance(p.first.begin(),s) << endl;
+
     for (auto i(s->begin()); i != s->end(); i++) {
-      cerr << g.itemToString(*i) << endl;
+      cout << g.itemToString(*i) << endl;
     }
   }
+
+
 }
 
 int main(int argc, char **argv)

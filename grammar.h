@@ -169,7 +169,9 @@ struct Grammar
 
   typedef set<Symbol> SymbolSet;
 
-  typedef pair<list<ItemList>,map<Item,ItemList *>> CanonicalItems;
+  typedef map<pair<int,int>,Symbol> EdgeMap;
+
+  typedef pair<vector<ItemList>,EdgeMap> CanonicalItems;
 
   typedef vector<Rule<NonTerminalT,SymbolList,int>> RuleVector;
 
@@ -293,11 +295,19 @@ struct Grammar
     cout << itemToString(item) << endl;
   }
 
+  string itemListToString(const ItemList &s)
+  {
+    string out;
+    for (auto i(s.begin()); i != s.end(); i++) {
+      out += itemToString(*i) + "\n";
+    }
+    return out;
+  }
+
+
   void printItemList(const ItemList &s)
   {
-    for (int i(0); i< s.size(); i++) {
-      printItem(s[i]);
-    }
+    cout << itemListToString(s) << endl;
   }
 
   template <typename T>
@@ -395,10 +405,11 @@ struct Grammar
 
   CanonicalItems items()
   {
-    list<ItemList> f, t({closure({{0,0,{_invalid}}})});
+    vector<ItemList> f;
 
-    /* guarda os items que eu já usei para fazer goto e para onde levam*/
-    map<Item,ItemList *> usedItems;
+    list<ItemList> t({closure({{0,0,{_invalid}}})});
+
+    EdgeMap edges;
 
     bool firstTime(true);
 
@@ -412,12 +423,22 @@ struct Grammar
       /* de o conjunto já foi produzido, sai */
       auto found(find(f.begin(),f.end(),s));
 
-      if (found != f.end() && !firstTime) {
+      // qual o índice do elemento no conjundo final
+      int itemIndex;
+
+      if (found != f.end()) {
+        itemIndex = distance(f.begin(),found);
         continue;
       }
+
+      /* se o elemento é novo, seu índice é o tamanho do vetor */
+      itemIndex = f.size();
   
       f.push_back(s);
 
+      //cout << "Índice " << itemIndex << ":" << endl;
+      //printItemList(s);
+      
       firstTime = false;
 
       /* para cada item no conjunto */
@@ -428,85 +449,76 @@ struct Grammar
           continue;
         }
 
+        // Símbolo da transição
+        Symbol edgeSymbol(_v[item->_rule]._production[item->_dot]);
+
         // para cada cara depois do ponto da regra em questão, faz o goto dele
-        ItemList j(goTo(s,_v[item->_rule]._production[item->_dot]));
+        ItemList j(goTo(s,edgeSymbol));
 
         /* se o goto aplicado no elemento não resultou num novo conjunto, saio */
         if (!j.size()) {
           continue;
         }
 
+        int dstIndex;
+
         /* de o conjunto já foi produzido, sai */
         auto dst(find(f.begin(),f.end(),j));
 
         if (dst != f.end()) {
+          dstIndex = distance(f.begin(),dst);
+
+          // Insiro no mapa de vértices
+          //edges[pair<int,int>(itemIndex,dstIndex)] = edgeSymbol; 
+
           continue;
         }
 
         /* insere a closure no conjunto final de closures */
         t.push_back(j);
+
+        dstIndex = t.size();
+
+        // Insiro no mapa de vértices
+        edges[pair<int,int>(itemIndex,dstIndex)] = edgeSymbol; 
+
       }
+
+      break;
     }
-    return {f,usedItems};
+    return {f,edges};
   }
 
   void generateGraph()
   {
     cout << "digraph MyGrammar { " << endl;
-    CanonicalItems canonical(items());
+    CanonicalItems cItems(items());
 
     map<ItemList*,int> labels;
 
     int lCount(0);
 
-    //dado um ItemList, retorna sua label
-    function<string(ItemList *)> getLabel([&lCount,&labels](ItemList *itemList) -> string {
-      stringstream ssLabel;
-
-      if (labels.find(itemList) == labels.end()) {
-        labels[itemList] = lCount;
-        ssLabel << "c" << lCount;
-        lCount++;
-      } else { 
-        // se encontrei, pego seu valor
-        ssLabel << "c" << labels[itemList];
-      }
-
-      return ssLabel.str();
-    });
-
-    for (auto s(canonical.first.begin()); s!= canonical.first.end(); s++) {
+    for (auto s(cItems.first.begin()); s!= cItems.first.end(); s++, lCount++) {
 
       string dsts;
 
-      //cout << "  " << getLabel(*s) << " [shape=rect,label=\"";
-      cout << "  " << "c" << lCount++  << " [shape=rect,label=\"";
+      cout << "  " << "c" << lCount << " [shape=rect,label=\"";
       
       //para cada item
       for (auto item(s->begin()); item != s->end(); item++) {
-
-        auto d(canonical.second.find(*item));
-      
-        //pra onde goto deste item leva?
-        ItemList *dst(d->second);
-
         // o item impresso
         cout << itemToString(*item) << "\\n";
-
-        //se não aponta para lugar algum (ponto no final), 
-        // não devo analisar destinos inexistentes 
-        //
-        if (d == canonical.second.end()) {
-          continue;
-        }
-      
-        //dsts += "  " + getLabel(*s) + " -> " + getLabel(dst);
-        //dsts += " [label=\"" + _symbolToString(_v[item->_rule]._production[item->_dot]) + "\"];";
       }
 
       cout << "\"];" << endl;
 
       cout << dsts;
+    }
+
+    for (auto e(cItems.second.begin()); e != cItems.second.end(); e++ ) {
+      cout << "  c" << e->first.first << " -> c" 
+           << e->first.second << " [label=\"" 
+           << _symbolToString(e->second) << "\"]; "<< endl;
     }
 
     cout << "}" << endl;
