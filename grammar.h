@@ -105,6 +105,8 @@ struct Grammar
 
   typedef vector<Symbol> SymbolList;
 
+  typedef set<Symbol> SymbolSet;
+
   template<typename LeftSide,typename Production, typename Action>
   struct Rule
   {
@@ -124,6 +126,8 @@ struct Grammar
   {
     int _rule;
     int _dot;
+
+    // uma lista de símbolos que formam
     Symbol _s;
     Item(int ruleNumber,int dot, const Symbol &s):
     _rule(ruleNumber),
@@ -166,8 +170,6 @@ struct Grammar
   };
 
   typedef vector<Item> ItemList;
-
-  typedef set<Symbol> SymbolSet;
 
   typedef map<pair<int,int>,Symbol> EdgeMap;
 
@@ -285,7 +287,7 @@ struct Grammar
     }
 
     /* imprime o lookahead  */
-    out += ", #'" + _symbolToString(item._s) + "'";
+    out += "  '" + _symbolToString(item._s) + "'";
 
     return out;
   }
@@ -405,41 +407,20 @@ struct Grammar
 
   CanonicalItems items()
   {
-    vector<ItemList> f;
-
-    list<ItemList> t({closure({{0,0,{_invalid}}})});
+    vector<ItemList> f {closure({{0,0,{_invalid}}})};
 
     EdgeMap edges;
 
     bool firstTime(true);
 
     /* enquanto houver elementos na lista, remove e joga na lista final */
-    while (t.size() || firstTime) {
+    for (int itemIndex(0); itemIndex<f.size(); itemIndex++ ) {
 
       /* pega o primeiro da lista, remove-o e insere na lista final */
-      ItemList s(t.front());
-      t.pop_front();
+      ItemList s(f[itemIndex]);
 
-      /* de o conjunto já foi produzido, sai */
-      auto found(find(f.begin(),f.end(),s));
-
-      // qual o índice do elemento no conjundo final
-      int itemIndex;
-
-      if (found != f.end()) {
-        itemIndex = distance(f.begin(),found);
-        continue;
-      }
-
-      /* se o elemento é novo, seu índice é o tamanho do vetor */
-      itemIndex = f.size();
-  
-      f.push_back(s);
-
-      //cout << "Índice " << itemIndex << ":" << endl;
-      //printItemList(s);
-      
-      firstTime = false;
+      /* símbolos já usados para goto */
+      SymbolSet used;
 
       /* para cada item no conjunto */
       for (auto item(s.begin()); item != s.end(); item++) {
@@ -448,11 +429,19 @@ struct Grammar
         if (item->_dot == _v[item->_rule]._production.size()) {
           continue;
         }
-
+        
         // Símbolo da transição
         Symbol edgeSymbol(_v[item->_rule]._production[item->_dot]);
 
-        // para cada cara depois do ponto da regra em questão, faz o goto dele
+        /* já foi usado */
+        if (used.find(edgeSymbol) != used.end()) {
+          continue;
+        }
+
+        // defino como símbolo usado
+        used.insert(edgeSymbol);
+
+        // faço o goto com o símbolo
         ItemList j(goTo(s,edgeSymbol));
 
         /* se o goto aplicado no elemento não resultou num novo conjunto, saio */
@@ -460,31 +449,30 @@ struct Grammar
           continue;
         }
 
-        int dstIndex;
-
-        /* de o conjunto já foi produzido, sai */
+        // o iterator do destino
         auto dst(find(f.begin(),f.end(),j));
 
+        /* o índice do conjunto destino */
+        int dstIndex;
+
+        // se o elemento destino foi encontrado na lista dos finais, pega seu índice
         if (dst != f.end()) {
           dstIndex = distance(f.begin(),dst);
 
           // Insiro no mapa de vértices
-          //edges[pair<int,int>(itemIndex,dstIndex)] = edgeSymbol; 
+          edges[pair<int,int>(itemIndex,dstIndex)] = edgeSymbol; 
 
           continue;
         }
 
-        /* insere a closure no conjunto final de closures */
-        t.push_back(j);
+        dstIndex = f.size();
 
-        dstIndex = t.size();
+        /* insere a closure no conjunto final de closures */
+        f.push_back(j);
 
         // Insiro no mapa de vértices
         edges[pair<int,int>(itemIndex,dstIndex)] = edgeSymbol; 
-
       }
-
-      break;
     }
     return {f,edges};
   }
