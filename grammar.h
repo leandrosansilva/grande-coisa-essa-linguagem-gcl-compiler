@@ -11,6 +11,10 @@
 #include <list>
 #include <sstream>
 
+#include <tuple>
+
+#include <table.h>
+
 using namespace std;
 
 template<typename NonTerminalT, typename TerminalT>
@@ -171,11 +175,20 @@ struct Grammar
 
   typedef vector<Item> ItemList;
 
-  typedef map<pair<int,int>,Symbol> EdgeMap;
+  /* origem, símbolo, destino  */
+  typedef map<pair<int,Symbol>,int> EdgeMap;
 
-  typedef pair<vector<ItemList>,EdgeMap> CanonicalItems;
+  /* índice do item, lookahead e regra */
+  typedef tuple<int,Symbol,int> ReduceAction;
+
+  typedef set<ReduceAction> ReduceActions;
+
+  typedef tuple<vector<ItemList>,EdgeMap,ReduceActions> CanonicalItems;
 
   typedef vector<Rule<NonTerminalT,SymbolList,int>> RuleVector;
+
+  typedef Table<Symbol> LR1Table;
+  typedef pair<int,Symbol> LR1Key;
 
   RuleVector _v;
 
@@ -413,6 +426,8 @@ struct Grammar
 
     bool firstTime(true);
 
+    ReduceActions reduceActions;
+
     /* enquanto houver elementos na lista, remove e joga na lista final */
     for (int itemIndex(0); itemIndex<f.size(); itemIndex++ ) {
 
@@ -425,8 +440,9 @@ struct Grammar
       /* para cada item no conjunto */
       for (auto item(s.begin()); item != s.end(); item++) {
 
-        /* se o ponto está no final, não faz nada */
+        /* se o ponto está no final, é uma ação de redução */
         if (item->_dot == _v[item->_rule]._production.size()) {
+          reduceActions.insert(ReduceAction(itemIndex,item->_s,item->_rule));
           continue;
         }
         
@@ -465,7 +481,7 @@ struct Grammar
           dstIndex = distance(f.begin(),dst);
 
           // Insiro no mapa de vértices
-          edges[pair<int,int>(itemIndex,dstIndex)] = edgeSymbol; 
+          edges[pair<int,Symbol>(itemIndex,edgeSymbol)] = dstIndex; 
 
           continue;
         }
@@ -476,26 +492,30 @@ struct Grammar
         f.push_back(j);
 
         // Insiro no mapa de vértices
-        edges[pair<int,int>(itemIndex,dstIndex)] = edgeSymbol; 
+        edges[pair<int,Symbol>(itemIndex,edgeSymbol)] = dstIndex; 
       }
     }
-    return {f,edges};
+    
+    return CanonicalItems(f,edges,reduceActions);
   }
 
   void generateGraph()
   {
-    cout << "digraph MyGrammar { " << endl;
     CanonicalItems cItems(items());
+
+    cout << "digraph MyGrammar { " << endl;
 
     map<ItemList*,int> labels;
 
     int lCount(0);
 
-    for (auto s(cItems.first.begin()); s!= cItems.first.end(); s++, lCount++) {
+    for (auto s(get<0>(cItems).begin()); s != get<0>(cItems).end(); s++, lCount++) {
 
       string dsts;
 
       cout << "  " << "c" << lCount << " [shape=rect,label=\"";
+      
+      cout << lCount << "\\n";
       
       //para cada item
       for (auto item(s->begin()); item != s->end(); item++) {
@@ -508,14 +528,36 @@ struct Grammar
       cout << dsts;
     }
 
-    for (auto e(cItems.second.begin()); e != cItems.second.end(); e++ ) {
+    for (auto e(get<1>(cItems).begin()); e != get<1>(cItems).end(); e++ ) {
       cout << "  c" << e->first.first << " -> c" 
-           << e->first.second << " [label=\"" 
-           << _symbolToString(e->second) << "\"]; "<< endl;
+           << e->second << " [label=\"" 
+           << _symbolToString(e->first.second) << "\"]; "<< endl;
     }
 
     cout << "}" << endl;
   }
 
+  LR1Table createTable()
+  {
+    LR1Table table;
+
+    CanonicalItems cItems(items());
+
+    EdgeMap edges(get<1>(cItems));
+    
+    ReduceActions reduceActions(get<2>(cItems));
+
+    for (auto e(edges.begin()); e != edges.end(); e++) {
+      if (e->first.second.isNonTerminal()) {
+        /* se é um não terminal, faz goto */
+        table[LR1Key(e->first.first,e->second)] = {GOTO,e->second};
+      } else if (e->first.second.isTerminal()) {
+        /* se é um terminal, faz shift */
+        table[LR1Key(e->first.first,e->second)] = {SHIFT,e->second};
+      }
+    }
+
+    return table; 
+  }
 };
 #endif

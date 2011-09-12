@@ -10,6 +10,15 @@ MyGrammar g(symbolToString,{
   {F,{{ID}},1}
 },TEOF,INVALID);
 
+MyGrammar ifG(symbolToString,{
+  {EL,{{E}},1},
+  {E,{{IF},{LPAR},{ID},{RPAR},{THEN},{V}},1},
+  {E,{{IF},{LPAR},{ID},{RPAR},{THEN},{V},{ELSE},{V}},1},
+  {V,{{E}},1},
+  {V,{{ID}},1},
+  {V,{},1}
+},TEOF,INVALID);
+
 MyGrammar mCICp66(symbolToString,{
   {SL,{{S},{TEOF}},1},
   {S,{{V},{ATTR},{E}},1},
@@ -23,25 +32,35 @@ void testCanonical(MyGrammar &g)
 {
   MyGrammar::CanonicalItems p(g.items());
 
-  for (auto e(p.second.begin()); e != p.second.end(); e++) {
-    cout << e->first.first << " to " << e->first.second << " s " 
-         << g._symbolToString(e->second) << endl;
+  for (auto r(get<2>(p).begin()); r != get<2>(p).end(); r++) {
+    cerr << "Item " << get<0>(*r) << ", la: " << g._symbolToString(get<1>(*r)) 
+         << ", rule " << get<2>(*r) << endl;
   }
 
-  for (auto s(p.first.begin()); s!= p.first.end(); s++) {
-    cout << "set " << distance(p.first.begin(),s) << endl;
+  for (auto e(get<1>(p).begin()); e != get<1>(p).end(); e++) {
+    cerr << get<0>(*e).first << " to " << get<1>(*e) << " s "
+         << g._symbolToString(get<0>(*e).second) << endl;
+  }
+
+  for (auto s(get<0>(p).begin()); s != get<0>(p).end(); s++) {
+    cerr << "set " << distance(get<0>(p).begin(),s) << endl;
 
     for (auto i(s->begin()); i != s->end(); i++) {
-      cout << g.itemToString(*i) << endl;
+      cerr << g.itemToString(*i) << endl;
     }
   }
 }
 
+void testTable(MyGrammar &g)
+{
+  MyGrammar::LR1Table table(g.createTable()); 
+}
+
 int main(int argc, char **argv)
 {
-  mCICp66.generateGraph();
+  testCanonical(mCICp66);
 
-  //testCanonical(mCICp66);
+  mCICp66.generateGraph();
 
   return 0;
 }

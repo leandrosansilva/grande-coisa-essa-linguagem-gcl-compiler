@@ -8,4 +8,6 @@ include_directories(${CMAKE_SOURCE_DIR})
 
 add_executable(main main.cpp)
 
+add_executable(table_tests table_tests.cpp)
+
 #add_executable(tests tests.cpp)
