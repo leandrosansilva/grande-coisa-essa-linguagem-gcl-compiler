@@ -1,6 +1,6 @@
 project(grande-coisa-essa-linguagem)
 
-add_definitions("-std=c++0x")
+add_definitions("-D__GXX_EXPERIMENTAL_CXX0X__ -std=c++0x")
 
 cmake_minimum_required(VERSION 2.6)
 
