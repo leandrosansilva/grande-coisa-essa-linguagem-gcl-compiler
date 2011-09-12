@@ -175,8 +175,10 @@ struct Grammar
 
   typedef vector<Item> ItemList;
 
+  typedef pair<int,Symbol> Edge;
+
   /* origem, símbolo, destino  */
-  typedef map<pair<int,Symbol>,int> EdgeMap;
+  typedef map<Edge,int> EdgeMap;
 
   /* índice do item, lookahead e regra */
   typedef tuple<int,Symbol,int> ReduceAction;
@@ -550,12 +552,15 @@ struct Grammar
     for (auto e(edges.begin()); e != edges.end(); e++) {
       if (e->first.second.isNonTerminal()) {
         /* se é um não terminal, faz goto */
-        table[LR1Key(e->first.first,e->second)] = {GOTO,e->second};
+        table[LR1Key(e->first.first,e->first.second)] = {GOTO,e->second};
+
       } else if (e->first.second.isTerminal()) {
         /* se é um terminal, faz shift */
-        table[LR1Key(e->first.first,e->second)] = {SHIFT,e->second};
+        table[LR1Key(e->first.first,e->first.second)] = {SHIFT,e->second};
       }
     }
+
+    /* TODO: inserir as regras de ACEPT e REDUCE */
 
     return table; 
   }

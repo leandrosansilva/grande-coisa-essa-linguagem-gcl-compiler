@@ -3,8 +3,6 @@
 
 #include <map>
 
-#include <tuple>
-
 #include <iostream>
 
 using namespace std;
@@ -36,7 +34,7 @@ struct TableAction
 };
 
 template<typename SymbolT>
-struct Table: public map<tuple<int,SymbolT>,TableAction>
+struct Table: public map<pair<int,SymbolT>,TableAction>
 {
 };
 
