@@ -11,6 +11,8 @@
 
 using namespace std;
 
+namespace Syntatical {
+
 typedef enum {
   GOTO, ACCEPT, ERROR, SHIFT, REDUCE
 } Action;
@@ -53,5 +55,7 @@ struct Table: public map<tuple<int,SymbolT>,TableAction>
     return ActionToString[action];
   }
 };
+
+}
 
 #endif

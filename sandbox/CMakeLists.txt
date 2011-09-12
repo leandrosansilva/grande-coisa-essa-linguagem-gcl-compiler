@@ -7,3 +7,5 @@ target_link_libraries(table gcl-lexical)
 
 add_executable(comment comentario.cpp)
 target_link_libraries(comment gcl-lexical)
+
+add_executable(gramar_examples gramar_examples.cpp)

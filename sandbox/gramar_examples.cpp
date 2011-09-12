@@ -1,4 +1,4 @@
-#include <mygrammar.h>
+#include "mygrammar.h"
 
 MyGrammar g(symbolToString,{
   {EL,{{E}},1},

@@ -1,6 +1,8 @@
-#include <table.h>
+#include <src/syntatic/table.h>
 
 #include <string>
+
+using namespace Syntatical;
 
 int main(int argc, char **argv)
 {

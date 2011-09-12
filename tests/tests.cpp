@@ -1,4 +1,4 @@
-#include <mygrammar.h>
+#include "mygrammar.h"
 
 bool TEST(const bool ret, const string &msg)
 {

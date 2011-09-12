@@ -13,9 +13,11 @@
 
 #include <tuple>
 
-#include <table.h>
+#include "table.h"
 
 using namespace std;
+
+namespace Syntatical {
 
 template<typename NonTerminalT, typename TerminalT>
 struct Grammar
@@ -569,4 +571,6 @@ struct Grammar
     return table; 
   }
 };
+
+}
 #endif

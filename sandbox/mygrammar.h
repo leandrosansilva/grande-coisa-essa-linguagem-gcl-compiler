@@ -1,7 +1,9 @@
 #ifndef MYGRAMMAR_H
 #define MYGRAMMAR_H
 
-#include <grammar.h>
+#include <src/syntatic/grammar.h>
+
+using namespace Syntatical;
 
 typedef enum
 {
