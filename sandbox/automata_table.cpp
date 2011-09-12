@@ -3,122 +3,195 @@
 #include <lexical/filereader.h>
 #include <lexical/analyser.h>
 
+#include <iostream>
+
 using namespace Lexical;
 using namespace Common;
 
-typedef String State;
+using namespace std;
 
-//typedef enum {
-  State
+typedef enum {
   /* Estado inválido */
-  invalid("invalid"),
+  invalid,
   
   /* Estado inicial */
-  start("start"),
+  start,
   
   /* Final genérico e obrigatório, só para finalizar o autômato */
-  final("final"),
+  final,
   
   /* Estados intermediários */
-  a1("a1"), a2("a2"),
-  b1("b1"), b2("b2"), b3("b3"), b4("b4"),
-  c1("c1"), c2("c2"), c3("c3"),
-  d1("d1"), d2("d2"), d3("d3"),
-  e1("e1"), e2("e2"),
-  f1("f1"), f2("f2"),
-  g1("g1"), g2("g2"),
-  h1("h1"), h2("h2"),
-  i1("i1"), i2("i2"),
-  J1("J1"),
-  k1("k1"),
-  l1("l1"),
-  m1("m1"),m2("m2"),
-  n1("n1"),
-  o1("o1"),
-  p1("p1"),
-  q1("q1"),
-  r1("r1"),
-  s1("s1"),
-  t1("t1"),
-  u1("u1"),
-  v1("v1"),
-  w1("w1"),
-  sp1("sp1");
-//} State;
+  a1, a2,
+  b1, b2, b3, b4,
+  c1, c2, c3,
+  d1, d2, d3,
+  e1, e2,
+  f1, f2,
+  g1, g2,
+  h1, h2,
+  i1, i2,
+  J1,
+  k1,
+  l1,
+  m1,m2,
+  n1,
+  o1,
+  p1,
+  q1,
+  r1,
+  s1,
+  t1,
+  u1,
+  v1,
+  w1,
+  sp1
+} State;
 
-typedef String TokenType;
-
-/* Tokens de teste */
-TokenType
-  TkId("Id"),
+typedef enum {
+  /* Tokens de teste */
+  TkId,
   
-  TkString("String"),
-  TkInteger("Integer"),
-  TkReal("Real"),
+  TkString,
+  TkInteger,
+  TkReal,
   
-  TkComment("Comment"),
-  TkSpaces("Spaces"),
+  TkComment,
+  TkSpaces,
   
-  TkAssign("Assign"),
-  TkSymbol("Symbol"),
-  TkThen("Then"),
-  TkEnd("EndCommand"),
-  TkTwoDots("TwoDots"),
-  TkDot("Dot"),
-  TkRBracket("RBracket"),
-  TkLBracket("LBracket"),
-  TkElse("Else"),
-  TkLThan("LesserThan"),
-  TkGThan("GreaterThan"),
-  TkLEThan("LesserEqualThan"),
-  TkGEThan("GreaterEqualThan"),
-  TkLParentesis("LParentesis"),
-  TkRParentesis("RParentesis"),
-  TkSharp("Sharp"),
-  TkComma("Comma"),
-  TkEqual("Equal"),
+  TkAssign,
+  TkSymbol,
+  TkThen,
+  TkEnd,
+  TkTwoDots,
+  TkDot,
+  TkRBracket,
+  TkLBracket,
+  TkGuarded,
+  TkLThan,
+  TkGThan,
+  TkLEThan,
+  TkGEThan,
+  TkLParentesis,
+  TkRParentesis,
+  TkSharp,
+  TkComma,
+  TkEqual,
   
   /* Lógicos */
-  TkAnd("And"),
-  TkOr("Or"),
-  TkNot("Not"),
+  TkAnd,
+  TkOr,
+  TkNot,
   
   /* Operações matemáticas */
-  TkMinus("Minus"),
-  TkPlus("Plus"),
-  TkTimes("Times"),
-  TkDiv("Div"),
-  TkRem("Rem"),
+  TkMinus,
+  TkPlus,
+  TkTimes,
+  TkDiv,
+  TkRem,
   
   /* Palavras reservadas */
-  TkModule("Module"),
-  TkPrivate("Private"),
-  TkEndWord("EndWord"),
-  TkConst("Const"),
-  TkBoolean("Boolean"),
-  TkIntegerWord("IntegerWord"),
-  TkRealWord("RealWord"),
-  TkBegin("Begin"),
-  TkTypedef("Typedef"),
-  TkArray("Array"),
-  TkRange("Range"),
-  TkProc("Proc"),
-  TkVal("Val"),
-  TkRef("Ref"),
-  TkReturn("Return"),
-  TkWrite("Write"),
-  TkRead("Read"),
-  TkIf("If"),
-  TkFi("Fi"),
-  TkDo("Do"),
-  TkOd("Od"),
-  TkTrue("True"),
-  TkFalse("False"),
-  TkForall("Forall"),
-  TkLlarof("Llarof"),
-  TkSkip("Skip"),
+  TkModule,
+  TkPrivate,
+  TkEndWord,
+  TkConst,
+  TkBoolean,
+  TkIntegerWord,
+  TkRealWord,
+  TkBegin,
+  TkTypedef,
+  TkArray,
+  TkRange,
+  TkProc,
+  TkVal,
+  TkRef,
+  TkReturn,
+  TkWrite,
+  TkRead,
+  TkIf,
+  TkFi,
+  TkDo,
+  TkOd,
+  TkTrue,
+  TkFalse,
+  TkForall,
+  TkLlarof,
+  TkSkip,
   
-  TkNone("None");
+  TkNone
+} TokenType;
+
+map<TokenType,string> tokenToString {
+  /* Tokens de teste */
+  {TkId,"TkId"},
+    
+  {TkString,"TkString"},
+  {TkInteger,"TkInteger"},
+  {TkReal,"TkReal"},
+    
+  {TkComment,"TkComment"},
+  {TkSpaces,"TkSpaces"},
+    
+  {TkAssign,"TkAssign"},
+  {TkSymbol,"TkSymbol"},
+  {TkThen,"TkThen"},
+  {TkEnd,"TkEnd"},
+  {TkTwoDots,"TkTwoDots"},
+  {TkDot,"TkDot"},
+  {TkRBracket,"TkRBracket"},
+  {TkLBracket,"TkLBracket"},
+  {TkGuarded,"TkGuarded"},
+  {TkLThan,"TkLThan"},
+  {TkGThan,"TkGThan"},
+  {TkLEThan,"TkLEThan"},
+  {TkGEThan,"TkGEThan"},
+  {TkLParentesis,"TkLParentesis"},
+  {TkRParentesis,"TkRParentesis"},
+  {TkSharp,"TkSharp"},
+  {TkComma,"TkComma"},
+  {TkEqual,"TkEqual"},
+    
+  /* Lógicos */
+  {TkAnd,"TkAnd"},
+  {TkOr,"TkOr"},
+  {TkNot,"TkNot"},
+    
+  /* Operações matemáticas */
+  {TkMinus,"TkMinus"},
+  {TkPlus,"TkPlus"},
+  {TkTimes,"TkTimes"},
+  {TkDiv,"TkDiv"},
+  {TkRem,"TkRem"},
+    
+  /* Palavras reservadas */
+  {TkModule,"TkModule"},
+  {TkPrivate,"TkPrivate"},
+  {TkEndWord,"TkEndWord"},
+  {TkConst,"TkConst"},
+  {TkBoolean,"TkBoolean"},
+  {TkIntegerWord,"TkIntegerWord"},
+  {TkRealWord,"TkRealWord"},
+  {TkBegin,"TkBegin"},
+  {TkTypedef,"TkTypedef"},
+  {TkArray,"TkArray"},
+  {TkRange,"TkRange"},
+  {TkProc,"TkProc"},
+  {TkVal,"TkVal"},
+  {TkRef,"TkRef"},
+  {TkReturn,"TkReturn"},
+  {TkWrite,"TkWrite"},
+  {TkRead,"TkRead"},
+  {TkIf,"TkIf"},
+  {TkFi,"TkFi"},
+  {TkDo,"TkDo"},
+  {TkOd,"TkOd"},
+  {TkTrue,"TkTrue"},
+  {TkFalse,"TkFalse"},
+  {TkForall,"TkForall"},
+  {TkLlarof,"TkLlarof"},
+  {TkSkip,"TkSkip"},
+    
+  {TkNone,"TkNone"} 
+};
   
 int main(int argc, char **argv)
 {
@@ -126,6 +199,9 @@ int main(int argc, char **argv)
   const String digits("0123456789");
   const String letters("abcdefghijklmnopqrstuvxwyzABCDEFGHIJKLMNOPQRSTUVXWYZ");
   const String symbols(":.=-,;()[]#<>&|~+-*/\\.");
+  
+  /* outros caracteres que podem aparecer em textos corridos */
+  const String others("!@$%{}");
   
   /* aspas (quotes) e apóstrofos (apostrophes) */
   const String quotes("\'\"");
@@ -138,7 +214,7 @@ int main(int argc, char **argv)
   const String separators(symbols + spaces);
   
   /* qualquer caractere! */
-  const String any(digits + letters + separators + quotes);
+  const String any(digits + letters + separators + quotes + others);
   
   TransitionTable<State,TokenType> automata(start,invalid,final);
   
@@ -174,7 +250,7 @@ int main(int argc, char **argv)
   automata.addTransition(start,"[",g1);
   automata.addTransition(g1,"]",g2);
   automata.addFinalTransition(g1,any,TkLBracket);
-  automata.addFinalTransition(g2,any,TkElse);
+  automata.addFinalTransition(g2,any,TkGuarded);
   automata.addTransition(start,"]",l1);
   automata.addFinalTransition(l1,any,TkRBracket);
   
@@ -333,7 +409,7 @@ int main(int argc, char **argv)
   {
     Token<TokenType> t(lexer.getToken());
     std::cout << "'" << t.getLexema() << "' => "
-              << t.getType() << " na linha: " << t.getLine() << std::endl;
+              << tokenToString[t.getType()] << " na linha: " << t.getLine() << std::endl;
   }
   
   return 0;
