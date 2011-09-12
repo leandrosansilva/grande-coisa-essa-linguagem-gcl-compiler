@@ -6,7 +6,7 @@ int main(int argc, char **argv)
 {
   Table<string> table;
 
-  typedef pair<int,string> Key; 
+  typedef tuple<int,string> Key; 
 
   table[Key(4,"tr")] = {REDUCE,90};
   table[Key(1,"a")] = {REDUCE,1};
@@ -17,7 +17,7 @@ int main(int argc, char **argv)
   table[Key(3,"Manoel")] = {REDUCE,5};
 
   for (auto e(table.begin()); e != table.end(); e++) {
-    cout << e->first.first << " " << e->first.second 
+    cout << get<0>(e->first) << " " << get<1>(e->first) 
          << " " << e->second._action << " " << e->second._state << endl;
   }
 }

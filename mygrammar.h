@@ -19,7 +19,7 @@ typedef enum
   TEOF,INVALID
 } Terminal;
 
-map<Terminal,string> TerminalMap 
+static map<Terminal,string> TerminalMap 
 {
   {IF,"if"},
   {THEN,"then"},
@@ -35,7 +35,7 @@ map<Terminal,string> TerminalMap
   {INVALID,"?"}
 };
 
-map<NonTerminal,string> NonTerminalMap 
+static map<NonTerminal,string> NonTerminalMap 
 {
   {EL,"E'"},
   {E,"E"},

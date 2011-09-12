@@ -3,13 +3,25 @@
 
 #include <map>
 
+#include <tuple>
+
 #include <iostream>
+
+#include <string>
 
 using namespace std;
 
 typedef enum {
   GOTO, ACCEPT, ERROR, SHIFT, REDUCE
 } Action;
+
+static map<Action,string> ActionToString {
+  {GOTO,"GOTO"},
+  {ACCEPT,"ACCEPT"},
+  {ERROR,"ERROR"},
+  {SHIFT,"SHIFT"},
+  {REDUCE,"REDUCE"}
+};
 
 struct TableAction
 {
@@ -34,8 +46,12 @@ struct TableAction
 };
 
 template<typename SymbolT>
-struct Table: public map<pair<int,SymbolT>,TableAction>
+struct Table: public map<tuple<int,SymbolT>,TableAction>
 {
+  string actionToString(const Action action)
+  {
+    return ActionToString[action];
+  }
 };
 
 #endif

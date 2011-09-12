@@ -190,6 +190,7 @@ struct Grammar
   typedef vector<Rule<NonTerminalT,SymbolList,int>> RuleVector;
 
   typedef Table<Symbol> LR1Table;
+
   typedef pair<int,Symbol> LR1Key;
 
   RuleVector _v;
@@ -552,15 +553,18 @@ struct Grammar
     for (auto e(edges.begin()); e != edges.end(); e++) {
       if (e->first.second.isNonTerminal()) {
         /* se é um não terminal, faz goto */
-        table[LR1Key(e->first.first,e->first.second)] = {GOTO,e->second};
+        table[LR1Key(get<0>(*e).first,get<0>(*e).second)] = {GOTO,get<1>(*e)};
 
       } else if (e->first.second.isTerminal()) {
         /* se é um terminal, faz shift */
-        table[LR1Key(e->first.first,e->first.second)] = {SHIFT,e->second};
+        table[LR1Key(get<0>(*e).first,get<0>(*e).second)] = {SHIFT,get<1>(*e)};
       }
     }
 
-    /* TODO: inserir as regras de ACEPT e REDUCE */
+    /* insiro as regras de ACCEPT e REDUCE */
+    for (auto r(reduceActions.begin()); r != reduceActions.end(); r++) {
+      table[LR1Key(get<0>(*r),get<1>(*r))] = {REDUCE,get<2>(*r)};
+    }
 
     return table; 
   }

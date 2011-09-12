@@ -53,12 +53,20 @@ void testCanonical(MyGrammar &g)
 
 void testTable(MyGrammar &g)
 {
-  MyGrammar::LR1Table table(g.createTable()); 
+  MyGrammar::LR1Table table(g.createTable());
+
+  for (auto r(table.begin()); r != table.end(); r++) {
+    cerr << get<0>(r->first) << " " << g._symbolToString(get<1>(r->first))
+         << " " << table.actionToString(r->second._action) << " " << r->second._state << endl;
+
+  }
 }
 
 int main(int argc, char **argv)
 {
-  testCanonical(mCICp66);
+  //testCanonical(mCICp66);
+
+  testTable(mCICp66);
 
   mCICp66.generateGraph();
 
