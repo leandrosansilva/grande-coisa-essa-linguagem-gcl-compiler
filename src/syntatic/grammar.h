@@ -568,7 +568,7 @@ struct Grammar
       table[LR1Key(get<0>(*r),get<1>(*r))] = {REDUCE,get<2>(*r)};
     }
 
-    /* Por fim, inclui o estado de aceitação */
+    /* Por fim, inclui o estado de aceitação, que é sempre quando, em 1, acaba o arquivo */
     table[LR1Key(1,_EOF)] = {ACCEPT};
 
     return table; 

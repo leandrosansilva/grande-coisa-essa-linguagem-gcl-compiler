@@ -28,6 +28,15 @@ MyGrammar mCICp66(symbolToString,{
   {V,{{TIMES},{E}},1}
 },TEOF,INVALID);
 
+/* uma gramática com um monte de parenteses abrindo e fechando */
+MyGrammar parG(symbolToString,{
+  {EL,{{V},{TEOF}},1},
+  {V,{{E}},1},
+  {E,{{LPAR},{F},{RPAR}},1},
+  {F,{E},1},
+  {F,{},1}
+},TEOF,INVALID);
+
 void testCanonical(MyGrammar &g)
 {
   MyGrammar::CanonicalItems p(g.items());
@@ -66,9 +75,9 @@ int main(int argc, char **argv)
 {
   //testCanonical(mCICp66);
 
-  testTable(ifG);
+  testTable(parG);
 
-  ifG.generateGraph();
+  parG.generateGraph();
 
   return 0;
 }

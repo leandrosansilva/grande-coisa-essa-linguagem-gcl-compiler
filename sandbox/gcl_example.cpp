@@ -615,7 +615,13 @@ GCLGrammar grammar(symbolToString,{
 int main(int argc, char **argv)
 {
   //grammar.generateGraph();
-  grammar.printTable();
+  //grammar.printTable();
+
+  GCLGrammar::CanonicalItems items(grammar.items());
+
+  cout << "Quantidade de estados: " << get<0>(items).size() << endl;
+  cout << "Quantidade de tokens: " << TerminalMap.size() << endl;
+  cout << "Quantidade de Não-terminais: " << NonTerminalMap.size() << endl;
 
   return 0;
 
