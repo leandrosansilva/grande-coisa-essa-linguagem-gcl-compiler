@@ -568,7 +568,21 @@ struct Grammar
       table[LR1Key(get<0>(*r),get<1>(*r))] = {REDUCE,get<2>(*r)};
     }
 
+    /* Por fim, inclui o estado de aceitação */
+    table[LR1Key(1,_EOF)] = {ACCEPT};
+
     return table; 
+  }
+
+  void printTable()
+  {
+    LR1Table table(createTable());
+
+    for (auto r(table.begin()); r != table.end(); r++) {
+      cerr << get<0>(r->first) << " " << _symbolToString(get<1>(r->first))
+           << " " << table.actionToString(r->second._action) << " " << r->second._state << endl;
+
+    }
   }
 };
 

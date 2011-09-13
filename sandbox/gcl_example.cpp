@@ -223,17 +223,21 @@ typedef enum {
   ProcedureDef,          
   ParamPart,             
   ParamDef,              
+  ParamDefList,              
   StatementPart,         
   Statement,             
   EmptyStatement,        
   ReadStatement,         
   VariableAccessList,    
+  VariableAccessList2,    
   WriteStatement,        
   WriteItem,             
   ExpressionList,        
+  ExpressionList2,        
   AssignStatement,       
   IfStatement,           
   GuardedCommandList,    
+  GuardedCommandList2,    
   GuardedCommand,        
   DoStatement,           
   ForStatement,          
@@ -245,7 +249,9 @@ typedef enum {
   RelationalExpression,  
   RelationalOperator,    
   SimpleExpression,      
+  SimpleExpressionExt,      
   Term,                  
+  TermExt,                  
   Factor,                
   AddingOperator,        
   MultiplyOperator,      
@@ -258,7 +264,8 @@ typedef enum {
   BooleanConstant,
   IdList,
   ArrayTypeList,
-
+  WriteItemList,
+  BoolRelList,
   EL
 } NonTerminal;
 
@@ -283,17 +290,21 @@ static map<NonTerminal,string> NonTerminalMap {
   {ProcedureDef,"procedureDef"},          
   {ParamPart,"paramPart"},             
   {ParamDef,"paramDef"},              
+  {ParamDefList,"paramDefList"},              
   {StatementPart,"statementPart"},         
   {Statement,"statement"},             
   {EmptyStatement,"emptyStatement"},        
   {ReadStatement,"readStatement"},         
   {VariableAccessList,"variableAccessList"},    
+  {VariableAccessList2,"variableAccessList2"},    
   {WriteStatement,"writeStatement"},        
   {WriteItem,"writeItem"},             
   {ExpressionList,"expressionList"},        
+  {ExpressionList2,"expressionList2"},        
   {AssignStatement,"assignStatement"},       
   {IfStatement,"ifStatement"},           
   {GuardedCommandList,"guardedCommandList"},    
+  {GuardedCommandList2,"guardedCommandList2"},    
   {GuardedCommand,"guardedCommand"},        
   {DoStatement,"doStatement"},           
   {ForStatement,"forStatement"},          
@@ -305,7 +316,9 @@ static map<NonTerminal,string> NonTerminalMap {
   {RelationalExpression,"relationalExpression"},  
   {RelationalOperator,"relationalOperator"},    
   {SimpleExpression,"simpleExpression"},      
+  {SimpleExpressionExt,"simpleExpressionExt"},      
   {Term,"term"},                  
+  {TermExt,"termExt"},                  
   {Factor,"factor"},                
   {AddingOperator,"addingOperator"},        
   {MultiplyOperator,"multiplyOperator"},      
@@ -318,6 +331,8 @@ static map<NonTerminal,string> NonTerminalMap {
   {BooleanConstant,"booleanConstant"},
   {IdList,"IdList"},
   {ArrayTypeList,"ArrayTypeList"},
+  {WriteItemList,"WriteItemList"},
+  {BoolRelList,"BoolRelList"},
   {EL,"E'"} 
 };
 
@@ -340,75 +355,246 @@ static string symbolToString(const GCLGrammar::Symbol &s)
 GCLGrammar grammar(symbolToString,{
   {EL,{{Program},{TEOF}},1},
 
-  /* um programa é uma lista de módulos */
+  // <program>       <module> {<module>}
   {Program,{{ModuleList}},1},
 
-  /* ModuleList pode ter um ou mais módulos */
+  // <module>        "module" "identifier" <definitionPart> 
+  //      [ "private"  <block> ] "."  
   {ModuleList,{{Module},{ModuleList}},1},
   {ModuleList,{},1},
-
-  /* um módulo pode ter uma seção private block opcional */
   {Module,{{TkModule},{TkId},{DefinitionPart},{TkDot}},1},
   {Module,{{TkModule},{TkId},{DefinitionPart},{TkPrivate},{Block},{TkDot}},1},
 
-  /* Uma definitionPart é opcional  */
+  // <block>        <definitionPart> "begin" <statementPart> "end"
+  {Block,{{DefinitionPart},{TkBegin},{StatementPart},{TkEndWord}},1},
+
+  // <definitionPart>   {<definition> ";"}  
   {DefinitionPart,{{Definition},{TkEnd}},1},
   {DefinitionPart,{},1},
 
-  /* há vários tipos de definição */
+  //<definition>      <constantDef> | <variableDef> | <procedureDef> 
+  //      | <typedef> |<procedureDecl> 
   {Definition,{{ConstantDef}},1},
   {Definition,{{VariableDef}},1},
   {Definition,{{ProcedureDef}},1},
   {Definition,{{Typedef}},1},
   {Definition,{{ProcedureDecl}},1},
 
+  // <constantDef>       "const" <constantName> "=" <constant> 
   {ConstantDef,{{TkConst},{ConstantName},{TkEqual},{Constant}},1},
   
+  // <variableDef>    <type> <variableList>
   {VariableDef,{{Type},{VariableList}},1},
-  
+ 
+  // <type>     <typeSymbol> [ <arraytype> | <rangetype> ] | <tupletype>
   {Type,{{TypeSymbol}},1},
   {Type,{{TypeSymbol},{Arraytype}},1},
   {Type,{{TypeSymbol},{Rangetype}},1},
   {Type,{{Tupletype}},1},
 
-  /* Adicionei real e string */
+  // <typeSymbol>       "integer" | "Boolean"  | "identifier"
   {TypeSymbol,{{TkInteger},},1},
   {TypeSymbol,{{TkBoolean},},1},
   {TypeSymbol,{{TkReal},},1},
   {TypeSymbol,{{TkString},},1},
   {TypeSymbol,{{TkId},},1},
 
-  /* especificamente para tupla */
+  // <tupletype>    "[" <typeSymbol> { "," <typeSymbol> } "]"
   {Tupletype,{{TkLBracket},{TypeSymbol},{TypeSymbolList},{TkRBracket}},1},
   {TypeSymbolList,{{TkComma},{TypeSymbol},{TypeSymbolList}},1},
   {TypeSymbolList,{},1},
 
-  /* definir um tipo array, podendo ter dimensões sucessivas */
+  // <arraytype>    "array" "[" "identifier" "]" 
+  //      {"[" "identifier" "]"}
   {Arraytype,{{TkArray},{TkLBracket},{TkId},{TkRBracket},{ArrayTypeList}},1},
   {ArrayTypeList,{{TkLBracket},{TkId},{TkRBracket},{ArrayTypeList}},1},
   {ArrayTypeList,{},1},
 
+  // <rangetype>    "range" "[" <constant> ".." <constant>  "]"
   {Rangetype,{{TkRange},{TkLBracket},{Constant},{TkTwoDots},{Constant},{TkRBracket}},1},
 
-  /* VariableList é uma lista de identificadores separados por vírgula */ 
+  // <variableList>   "identifier" {"," "identifier"}
   {VariableList,{{TkId},{IdList}},1},
   {IdList,{{TkComma},{TkId},{IdList}},1},
   {IdList,{},1},
 
+  // <typedef>    "typedef" <type> "identifier" 
   {Typedef,{{TkTypedef},{Type},TkId},1}, 
 
-  /* declaração de procedimento */
+  // <procedureDecl>  "proc" "identifier" [<paramPart>]
   {ProcedureDecl,{{TkProc},{TkId}},1},
   {ProcedureDecl,{{TkProc},{TkId},{ParamPart}},1},
 
+  // <procedureDef>   <procedureDecl> <block>  
   {ProcedureDef,{{ProcedureDecl},{Block}},1},
 
-  {ParamPart,{{TkLParentesis},{TkRParentesis}},1} // sem parâmetros
+  // <paramPart>    "(" [ <paramDef> { ";" <paramDef> } ] )" 
+  {ParamPart,{{TkLParentesis},{ParamDef},{ParamDefList},{TkRParentesis}},1},
+  {ParamDefList,{{TkEnd},{ParamDef},{ParamDefList}},1},
+  {ParamDefList,{},1},
+
+  // <paramDef>     ( "val" | "ref" ) <variableDef> 
+  {ParamDef,{{TkVal},{VariableDef}},1},
+  {ParamDef,{{TkRef},{VariableDef}},1},
+
+  // <statementPart>  { <statement> ";"} 
+  {StatementPart,{{Statement},{TkEnd}},1},
+
+  // <statement>    <emptyStatement> | <readStatement> | <writeStatement> 
+  //      | <assignStatement> | <returnStatement> | <callStatement>
+  //      | <ifStatement> | <doStatement> | <forStatement>
+  {Statement,{{EmptyStatement}},1},
+  {Statement,{{ReadStatement}},1},
+  {Statement,{{WriteStatement}},1},
+  {Statement,{{AssignStatement}},1},
+  {Statement,{{ReturnStatement}},1},
+  {Statement,{{CallStatement}},1},
+  {Statement,{{IfStatement}},1},
+  {Statement,{{DoStatement}},1},
+  {Statement,{{ForStatement}},1},
+
+  // <emptyStatement>     "skip"
+  {EmptyStatement,{{TkSkip}},1},
+
+  // <readStatement>      "read" <variableAccessList>
+  {ReadStatement,{{TkRead},{VariableAccessList}},1},
+
+  // <variableAccessList>  <variableAccess> {"," <variableAccess> }
+  {VariableAccessList,{{VariableAccess},{VariableAccessList2}},1},
+  {VariableAccessList2,{{TkComma},{VariableAccess},{VariableAccessList2}},1},
+  {VariableAccessList2,{},1},
+  
+  // <writeStatement>  "write" <writeItem> {"," <writeItem> } 
+  {WriteStatement,{{TkWrite},{WriteItem},{WriteItemList}},1},
+  {WriteItemList,{{TkComma},{WriteItem},{WriteItemList}},1},
+  {WriteItemList,{},1},
+
+  // <writeItem>       "stringconst" | <expression>  FIXME: is this Ok? Stringconst?
+  {WriteItem,{{TkString}},1},
+  {WriteItem,{{Expression}},1},
+  
+  // <expressionList>      <expression> { "," <expression> }  
+  {ExpressionList,{{Expression},{ExpressionList2}},1},
+  {ExpressionList2,{{TkComma},{Expression},{ExpressionList2}},1},
+  {ExpressionList2,{},1},
+
+  // <assignStatement>     <variableAccessList> ":=" <expressionList>  
+  {AssignStatement,{{VariableAccessList},{TkAssign},{ExpressionList}},1},
+
+  // <ifStatement>         "if" <guardedCommandList> "fi"  
+  {IfStatement,{{TkIf},{GuardedCommandList},{TkFi}},1},  
+
+  // <guardedCommandList>  <guardedCommand> {"[]" <guardedCommand>}  
+  {GuardedCommandList,{{GuardedCommand},{GuardedCommandList2}},1},
+  {GuardedCommandList2,{{TkGuarded},{GuardedCommand},{GuardedCommandList2}},1},
+  {GuardedCommandList2,{},1},
+
+  // <guardedCommand>  <expression> "->" <statementPart>  
+  {GuardedCommand,{{Expression},{TkThen},{StatementPart}},1},
+
+  // <doStatement>         "do" <guardedCommandList> "od" 
+  {DoStatement,{{TkDo},{GuardedCommandList},{TkOd}},1},  
+
+  // <forStatement>    "forall" <variableAccess> "->" <statementPart> "llarof"
+  {ForStatement,{{TkForall},{VariableAccess},{TkThen},{StatementPart},{TkLlarof}},1},
+  
+  // <returnStatement> "return" <expression>
+  {ReturnStatement,{TkReturn},1},
+
+  // <callStatement>   "identifier" ["." "identifier"] <argumentList>
+  {CallStatement,{{TkId},{TkDot},{TkId},{ArgumentList}},1},
+  {CallStatement,{{TkId},{ArgumentList}},1},
+  
+  // <argumentList>    "(" [ <expressionList> ] ")"
+  {ArgumentList,{{TkLParentesis},{ExpressionList},{TkRParentesis}},1},
+  {ArgumentList,{{TkLParentesis},{TkRParentesis}},1},
+ 
+  // <expression>    <relationalExpression> {<booleanOperator> <relationalExpression>}
+  {Expression,{{RelationalExpression},{BoolRelList}},1},
+  {BoolRelList,{{BooleanOperator},{RelationalExpression}},1},
+  {BoolRelList,{},1},
+
+  // <booleanOperator> "&" | "|" 
+  {BooleanOperator,{{TkAnd}},1},
+  {BooleanOperator,{{TkOr}},1},
+    
+  // <relationalExpression>  <simpleExpression> [<relationalOperator> <simpleExpression>] 
+  {RelationalExpression,{{SimpleExpression}},1},
+  {RelationalExpression,{{SimpleExpression},{RelationalOperator},{SimpleExpression}},1},
+  
+  // <relationalOperator>  "<" | "=" | ">" | "<=" | ">=" | "#" 
+  {RelationalOperator,{{TkLThan}},1},
+  {RelationalOperator,{{TkEqual}},1},
+  {RelationalOperator,{{TkGThan}},1},
+  {RelationalOperator,{{TkLEThan}},1},
+  {RelationalOperator,{{TkGEThan}},1},
+  {RelationalOperator,{{TkSharp}},1},
+
+  // <simpleExpression>  ( "+" | "-" )  <term> { <addingOperator> <term>} | <term> { <addingOperator> <term>}  
+  {SimpleExpression,{{SimpleExpression},{TkPlus},{Term},{SimpleExpressionExt}},1}, 
+  {SimpleExpression,{{SimpleExpression},{TkMinus},{Term},{SimpleExpressionExt}},1}, 
+  {SimpleExpressionExt,{{AddingOperator},{Term}},1},
+  {SimpleExpressionExt,{{Term},{AddingOperator}},1},
+  {SimpleExpressionExt,{},1},
+
+  // <term>      <factor> {<multiplyOperator> <factor>}  
+  {Term,{{Factor},{TermExt}},1},
+  {TermExt,{{MultiplyOperator},{Factor}},1},
+  {TermExt,{},1},
+  
+  // <factor>    <variableAccess> | "number" | <booleanConstant> 
+  //        | "[" <expressionList> "]" 
+  //        | "(" <expression> ")" | "~" <factor> 
+  {Factor,{{VariableAccess}},1},
+  {Factor,{{TkInteger}},1},
+  {Factor,{{BooleanConstant}},1},
+  {Factor,{{TkLBracket},{ExpressionList},{TkRBracket}},1},
+  {Factor,{{TkLParentesis},{Expression},{TkRParentesis}},1},
+  {Factor,{{TkNot},{Factor}},1},
+
+  // <addingOperator>  "+" | "-"  
+  {AddingOperator,{{TkPlus}},1},
+  {AddingOperator,{{TkMinus}},1},
+
+  // <multiplyOperator>    "*" | "/" | "\" 
+  {MultiplyOperator,{{TkPlus},{TkDiv},{TkRem}},1},
+
+  // <constantName>        "identifier"  
+  {ConstantName,{{TkId}},1},
+
+  // <variableAccess>      "identifier" <variableMore>  
+  {VariableAccess,{{TkId},{VariableMore}},1},
+
+  // <variableMore>        ""  |  "[" <expression> "]"  <indexorcomp>
+  //          | "." <nextitem>  <indexorcomp>
+  {VariableMore,{},1},  
+  {VariableMore,{{TkLBracket},{Expression},{TkRBracket},{Indexorcomp}},1},
+  {VariableMore,{{TkDot},{Nextitem},{Indexorcomp}},1},
+
+  // <nextitem>      "number" | "identifier" // XXX: adicionei string e real
+  {Nextitem,{{TkInteger}},1},
+  {Nextitem,{{TkReal}},1},
+  {Nextitem,{{TkId}},1},
+  {Nextitem,{{TkString}},1},
+
+  // <indexorcomp>   { "."  "number" | "[" <expression> "]" } // TODO: este number pode ser uma variável?
+  {Indexorcomp,{},1},
+  {Indexorcomp,{{TkDot},{TkInteger}},1},
+  {Indexorcomp,{{TkLBracket},{Expression},{TkRBracket}},1},
+  
+  // <constant>      <expression>
+  {Constant,{{Expression}},1},
+
+  // <booleanConstant>     "true" | "false" 
+  {BooleanConstant,{{TkTrue}},1},
+  {BooleanConstant,{{TkFalse}},1}
+  
 },TEOF,INVALID);
 
 int main(int argc, char **argv)
 {
-  grammar.generateGraph();
+  //grammar.generateGraph();
+  grammar.printTable();
 
   return 0;
 
