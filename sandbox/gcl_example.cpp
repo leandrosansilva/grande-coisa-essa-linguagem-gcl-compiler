@@ -13,6 +13,27 @@ using namespace Syntatical;
 
 using namespace std;
 
+/* defino o conjunto de caracteres permitidos na linguagem */
+const String digits("0123456789");
+const String letters("abcdefghijklmnopqrstuvxwyzABCDEFGHIJKLMNOPQRSTUVXWYZ");
+const String symbols(":.=-,;()[]#<>&|~+-*/\\.");
+
+/* outros caracteres que podem aparecer em textos corridos */
+const String others("!@$%{}");
+
+/* aspas (quotes) e apóstrofos (apostrophes) */
+const String quotes("\'\"");
+
+const String blanks(" \t");
+const String breakline("\n");
+
+const String spaces(blanks + breakline);
+
+const String separators(symbols + spaces);
+
+/* qualquer caractere! */
+const String any(digits + letters + separators + quotes + others);
+
 typedef enum {
   /* Estado inválido */
   invalid,
@@ -598,27 +619,6 @@ int main(int argc, char **argv)
 
   return 0;
 
-  /* defino o conjunto de caracteres permitidos na linguagem */
-  const String digits("0123456789");
-  const String letters("abcdefghijklmnopqrstuvxwyzABCDEFGHIJKLMNOPQRSTUVXWYZ");
-  const String symbols(":.=-,;()[]#<>&|~+-*/\\.");
-  
-  /* outros caracteres que podem aparecer em textos corridos */
-  const String others("!@$%{}");
-  
-  /* aspas (quotes) e apóstrofos (apostrophes) */
-  const String quotes("\'\"");
-  
-  const String blanks(" \t");
-  const String breakline("\n");
-  
-  const String spaces(blanks + breakline);
-  
-  const String separators(symbols + spaces);
-  
-  /* qualquer caractere! */
-  const String any(digits + letters + separators + quotes + others);
-  
   TransitionTable<LexState,TokenType> automata(start,invalid,final);
   
   /* Consome espaços em branco */
