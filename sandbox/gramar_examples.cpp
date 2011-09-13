@@ -66,9 +66,9 @@ int main(int argc, char **argv)
 {
   //testCanonical(mCICp66);
 
-  testTable(mCICp66);
+  testTable(ifG);
 
-  mCICp66.generateGraph();
+  ifG.generateGraph();
 
   return 0;
 }

@@ -1,12 +1,15 @@
 #include <lexical/transitiontable.h>
 #include <common/tokentype.h>
 #include <lexical/filereader.h>
+
 #include <lexical/analyser.h>
+#include <syntatic/grammar.h>
 
 #include <iostream>
 
 using namespace Lexical;
 using namespace Common;
+using namespace Syntatical;
 
 using namespace std;
 
@@ -45,7 +48,7 @@ typedef enum {
   v1,
   w1,
   sp1
-} State;
+} LexState;
 
 typedef enum {
   /* Tokens de teste */
@@ -117,10 +120,12 @@ typedef enum {
   TkLlarof,
   TkSkip,
   
-  TkNone
+  TkNone,
+
+  TEOF,INVALID
 } TokenType;
 
-map<TokenType,string> tokenToString {
+static map<TokenType,string> TerminalMap {
   /* Tokens de teste */
   {TkId,"TkId"},
     
@@ -190,11 +195,223 @@ map<TokenType,string> tokenToString {
   {TkLlarof,"TkLlarof"},
   {TkSkip,"TkSkip"},
     
-  {TkNone,"TkNone"} 
+  {TkNone,"TkNone"},
+
+  {TEOF,"$"},
+
+  {INVALID,"?"}
 };
+
+typedef enum {
+  Program,
+  ModuleList,            
+  Module,                
+  Block,                 
+  DefinitionPart,        
+  Definition,            
+  ConstantDef,           
+  VariableDef,           
+  Type,                  
+  TypeSymbol,            
+  TypeSymbolList,            
+  Tupletype,             
+  Arraytype,             
+  Rangetype,             
+  VariableList,          
+  Typedef,               
+  ProcedureDecl,         
+  ProcedureDef,          
+  ParamPart,             
+  ParamDef,              
+  StatementPart,         
+  Statement,             
+  EmptyStatement,        
+  ReadStatement,         
+  VariableAccessList,    
+  WriteStatement,        
+  WriteItem,             
+  ExpressionList,        
+  AssignStatement,       
+  IfStatement,           
+  GuardedCommandList,    
+  GuardedCommand,        
+  DoStatement,           
+  ForStatement,          
+  ReturnStatement,       
+  CallStatement,         
+  ArgumentList,          
+  Expression,            
+  BooleanOperator,       
+  RelationalExpression,  
+  RelationalOperator,    
+  SimpleExpression,      
+  Term,                  
+  Factor,                
+  AddingOperator,        
+  MultiplyOperator,      
+  ConstantName,          
+  VariableAccess,        
+  VariableMore,          
+  Nextitem,              
+  Indexorcomp,           
+  Constant,              
+  BooleanConstant,
+  IdList,
+  ArrayTypeList,
+
+  EL
+} NonTerminal;
+
+static map<NonTerminal,string> NonTerminalMap {
+  {Program,"program"},
+  {ModuleList,"moduleList"},
+  {Module,"module"},                
+  {Block,"block"},                 
+  {DefinitionPart,"definitionPart"},        
+  {Definition,"definition"},            
+  {ConstantDef,"constantDef"},           
+  {VariableDef,"variableDef"},           
+  {Type,"type"},                  
+  {TypeSymbol,"typeSymbol"},            
+  {TypeSymbolList,"typeSymbolList"},            
+  {Tupletype,"tupletype"},             
+  {Arraytype,"arraytype"},             
+  {Rangetype,"rangetype"},             
+  {VariableList,"variableList"},          
+  {Typedef,"typedef"},               
+  {ProcedureDecl,"procedureDecl"},         
+  {ProcedureDef,"procedureDef"},          
+  {ParamPart,"paramPart"},             
+  {ParamDef,"paramDef"},              
+  {StatementPart,"statementPart"},         
+  {Statement,"statement"},             
+  {EmptyStatement,"emptyStatement"},        
+  {ReadStatement,"readStatement"},         
+  {VariableAccessList,"variableAccessList"},    
+  {WriteStatement,"writeStatement"},        
+  {WriteItem,"writeItem"},             
+  {ExpressionList,"expressionList"},        
+  {AssignStatement,"assignStatement"},       
+  {IfStatement,"ifStatement"},           
+  {GuardedCommandList,"guardedCommandList"},    
+  {GuardedCommand,"guardedCommand"},        
+  {DoStatement,"doStatement"},           
+  {ForStatement,"forStatement"},          
+  {ReturnStatement,"returnStatement"},       
+  {CallStatement,"callStatement"},         
+  {ArgumentList,"argumentList"},          
+  {Expression,"expression"},            
+  {BooleanOperator,"booleanOperator"},       
+  {RelationalExpression,"relationalExpression"},  
+  {RelationalOperator,"relationalOperator"},    
+  {SimpleExpression,"simpleExpression"},      
+  {Term,"term"},                  
+  {Factor,"factor"},                
+  {AddingOperator,"addingOperator"},        
+  {MultiplyOperator,"multiplyOperator"},      
+  {ConstantName,"constantName"},          
+  {VariableAccess,"variableAccess"},        
+  {VariableMore,"variableMore"},          
+  {Nextitem,"nextitem"},              
+  {Indexorcomp,"indexorcomp"},           
+  {Constant,"constant"},              
+  {BooleanConstant,"booleanConstant"},
+  {IdList,"IdList"},
+  {ArrayTypeList,"ArrayTypeList"},
+  {EL,"E'"} 
+};
+
+typedef Grammar<NonTerminal,TokenType> GCLGrammar;
+
+static string symbolToString(const GCLGrammar::Symbol &s)
+{
+  if (s.isTerminal()) {
+    return TerminalMap[s._terminal];
+  }
+  if (s.isNonTerminal()) {
+    return NonTerminalMap[s._nonTerminal];
+  }
+
+  if (s.isEmpty()) {
+    return "$";
+  }
+}
+
+GCLGrammar grammar(symbolToString,{
+  {EL,{{Program},{TEOF}},1},
+
+  /* um programa é uma lista de módulos */
+  {Program,{{ModuleList}},1},
+
+  /* ModuleList pode ter um ou mais módulos */
+  {ModuleList,{{Module},{ModuleList}},1},
+  {ModuleList,{},1},
+
+  /* um módulo pode ter uma seção private block opcional */
+  {Module,{{TkModule},{TkId},{DefinitionPart},{TkDot}},1},
+  {Module,{{TkModule},{TkId},{DefinitionPart},{TkPrivate},{Block},{TkDot}},1},
+
+  /* Uma definitionPart é opcional  */
+  {DefinitionPart,{{Definition},{TkEnd}},1},
+  {DefinitionPart,{},1},
+
+  /* há vários tipos de definição */
+  {Definition,{{ConstantDef}},1},
+  {Definition,{{VariableDef}},1},
+  {Definition,{{ProcedureDef}},1},
+  {Definition,{{Typedef}},1},
+  {Definition,{{ProcedureDecl}},1},
+
+  {ConstantDef,{{TkConst},{ConstantName},{TkEqual},{Constant}},1},
   
+  {VariableDef,{{Type},{VariableList}},1},
+  
+  {Type,{{TypeSymbol}},1},
+  {Type,{{TypeSymbol},{Arraytype}},1},
+  {Type,{{TypeSymbol},{Rangetype}},1},
+  {Type,{{Tupletype}},1},
+
+  /* Adicionei real e string */
+  {TypeSymbol,{{TkInteger},},1},
+  {TypeSymbol,{{TkBoolean},},1},
+  {TypeSymbol,{{TkReal},},1},
+  {TypeSymbol,{{TkString},},1},
+  {TypeSymbol,{{TkId},},1},
+
+  /* especificamente para tupla */
+  {Tupletype,{{TkLBracket},{TypeSymbol},{TypeSymbolList},{TkRBracket}},1},
+  {TypeSymbolList,{{TkComma},{TypeSymbol},{TypeSymbolList}},1},
+  {TypeSymbolList,{},1},
+
+  /* definir um tipo array, podendo ter dimensões sucessivas */
+  {Arraytype,{{TkArray},{TkLBracket},{TkId},{TkRBracket},{ArrayTypeList}},1},
+  {ArrayTypeList,{{TkLBracket},{TkId},{TkRBracket},{ArrayTypeList}},1},
+  {ArrayTypeList,{},1},
+
+  {Rangetype,{{TkRange},{TkLBracket},{Constant},{TkTwoDots},{Constant},{TkRBracket}},1},
+
+  /* VariableList é uma lista de identificadores separados por vírgula */ 
+  {VariableList,{{TkId},{IdList}},1},
+  {IdList,{{TkComma},{TkId},{IdList}},1},
+  {IdList,{},1},
+
+  {Typedef,{{TkTypedef},{Type},TkId},1}, 
+
+  /* declaração de procedimento */
+  {ProcedureDecl,{{TkProc},{TkId}},1},
+  {ProcedureDecl,{{TkProc},{TkId},{ParamPart}},1},
+
+  {ProcedureDef,{{ProcedureDecl},{Block}},1},
+
+  {ParamPart,{{TkLParentesis},{TkRParentesis}},1} // sem parâmetros
+},TEOF,INVALID);
+
 int main(int argc, char **argv)
 {
+  grammar.generateGraph();
+
+  return 0;
+
   /* defino o conjunto de caracteres permitidos na linguagem */
   const String digits("0123456789");
   const String letters("abcdefghijklmnopqrstuvxwyzABCDEFGHIJKLMNOPQRSTUVXWYZ");
@@ -216,7 +433,7 @@ int main(int argc, char **argv)
   /* qualquer caractere! */
   const String any(digits + letters + separators + quotes + others);
   
-  TransitionTable<State,TokenType> automata(start,invalid,final);
+  TransitionTable<LexState,TokenType> automata(start,invalid,final);
   
   /* Consome espaços em branco */
   automata.addTransition(start,spaces,sp1);
@@ -384,10 +601,11 @@ int main(int argc, char **argv)
       {"forall",TkForall},
       {"llarof",TkLlarof},
       {"skip",TkSkip} 
-    });
+    }
+  );
   
   /* Analisador léxico */
-  Analyser<State,TokenType> lexer(reader,automata,reservedWords);
+  Analyser<LexState,TokenType> lexer(reader,automata,reservedWords);
   
   // os identificadores devem ser comparados na tabela de palavras reservadas
   lexer.addTokenToCompareWithReserved({TkId});
@@ -409,7 +627,7 @@ int main(int argc, char **argv)
   {
     Token<TokenType> t(lexer.getToken());
     std::cout << "'" << t.getLexema() << "' => "
-              << tokenToString[t.getType()] << " na linha: " << t.getLine() << std::endl;
+              << TerminalMap[t.getType()] << " na linha: " << t.getLine() << std::endl;
   }
   
   return 0;
