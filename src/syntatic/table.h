@@ -29,7 +29,7 @@ struct TableAction
 {
   Action _action;
 
-  int _state;
+  int _value;
 
   /* para estados accept e error */
   TableAction(Action action): _action(action)
@@ -37,12 +37,12 @@ struct TableAction
   }
 
   /* para shift, goto e reduce */
-  TableAction(Action action, int state): _action(action), _state(state)
+  TableAction(Action action, int value): _action(action), _value(value)
   {
   }
 
   /* só para satisfazer o compilador */
-  TableAction(): _action(ERROR), _state(0)
+  TableAction(): _action(ERROR), _value(0)
   {
   }
 };

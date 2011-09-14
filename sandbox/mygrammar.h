@@ -2,6 +2,7 @@
 #define MYGRAMMAR_H
 
 #include <src/syntatic/grammar.h>
+#include <src/syntatic/automata.h>
 
 using namespace Syntatical;
 
@@ -53,6 +54,7 @@ static map<NonTerminal,string> NonTerminalMap
 };
 
 typedef Grammar<NonTerminal,Terminal> MyGrammar;
+typedef Automata<NonTerminal,Terminal> MyAutomata;
 
 string symbolToString(const MyGrammar::Symbol &s)
 {

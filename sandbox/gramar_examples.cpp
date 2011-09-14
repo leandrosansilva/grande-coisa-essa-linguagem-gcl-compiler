@@ -32,8 +32,8 @@ MyGrammar mCICp66(symbolToString,{
 MyGrammar parG(symbolToString,{
   {EL,{{V},{TEOF}},1},
   {V,{{E}},1},
-  {E,{{LPAR},{F},{RPAR}},1},
-  {F,{E},1},
+  {E,{{LPAR},{F},{RPAR},{ID}},1},
+  {F,{{E},{IF}},1},
   {F,{},1}
 },TEOF,INVALID);
 
@@ -66,7 +66,7 @@ void testTable(MyGrammar &g)
 
   for (auto r(table.begin()); r != table.end(); r++) {
     cerr << get<0>(r->first) << " " << g._symbolToString(get<1>(r->first))
-         << " " << table.actionToString(r->second._action) << " " << r->second._state << endl;
+         << " " << table.actionToString(r->second._action) << " " << r->second._value << endl;
 
   }
 }
@@ -75,9 +75,11 @@ int main(int argc, char **argv)
 {
   //testCanonical(mCICp66);
 
-  testTable(parG);
+  //testTable(mCICp66);
 
-  parG.generateGraph();
+  //mCICp66.generateGraph();
+
+  MyAutomata automata(parG);
 
   return 0;
 }

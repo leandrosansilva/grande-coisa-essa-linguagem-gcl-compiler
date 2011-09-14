@@ -4,6 +4,7 @@
 
 #include <lexical/analyser.h>
 #include <syntatic/grammar.h>
+#include <syntatic/automata.h>
 
 #include <iostream>
 
@@ -614,17 +615,6 @@ GCLGrammar grammar(symbolToString,{
 
 int main(int argc, char **argv)
 {
-  //grammar.generateGraph();
-  //grammar.printTable();
-
-  GCLGrammar::CanonicalItems items(grammar.items());
-
-  cout << "Quantidade de estados: " << get<0>(items).size() << endl;
-  cout << "Quantidade de tokens: " << TerminalMap.size() << endl;
-  cout << "Quantidade de Não-terminais: " << NonTerminalMap.size() << endl;
-
-  return 0;
-
   TransitionTable<LexState,TokenType> automata(start,invalid,final);
   
   /* Consome espaços em branco */
@@ -813,13 +803,13 @@ int main(int argc, char **argv)
    * estes caracteres correspondem às aspas e apóstrofos
    */
   lexer.setTokenPadding(TkString,1,1);
+
+  Automata<NonTerminal,TokenType> syntaticAutomata(grammar);  
   
   /* Laço principal do analisador sintático, ainda não implementado */
   while (lexer.canReadToken())
   {
-    Token<TokenType> t(lexer.getToken());
-    std::cout << "'" << t.getLexema() << "' => "
-              << TerminalMap[t.getType()] << " na linha: " << t.getLine() << std::endl;
+    syntaticAutomata.readToken(lexer.getToken());
   }
   
   return 0;
