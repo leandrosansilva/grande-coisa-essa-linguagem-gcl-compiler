@@ -7,6 +7,7 @@
 #include <syntatic/automata.h>
 
 #include <iostream>
+#include <functional>
 
 using namespace Lexical;
 using namespace Common;
@@ -613,6 +614,16 @@ GCLGrammar grammar(symbolToString,{
   
 },TEOF,INVALID);
 
+GCLGrammar ifG(symbolToString,{
+  {EL,{{Program},{TEOF}},1},
+  {Program,{{Module},{TkId}},1},
+  {Module,{{TkIf},{TkLParentesis},{BooleanConstant},{TkRParentesis},{TkThen},{Definition},{TkFi}},1},
+  {BooleanConstant,{{TkTrue}},1},
+  {BooleanConstant,{{TkFalse}},1},
+  {Module,{{TkId}},1},
+  {Definition,{{Module}},1}
+},TEOF,INVALID);
+
 int main(int argc, char **argv)
 {
   TransitionTable<LexState,TokenType> automata(start,invalid,final);
@@ -804,13 +815,22 @@ int main(int argc, char **argv)
    */
   lexer.setTokenPadding(TkString,1,1);
 
-  Automata<NonTerminal,TokenType> syntaticAutomata(grammar);  
+  function<Token<TokenType>()> getToken([&lexer](){
+    return lexer.getToken();
+  });
+
+  Automata<NonTerminal,TokenType> syntaticAutomata(ifG,getToken);
+
+  ifG.printTable();
+
+  syntaticAutomata.run(); 
+
+  //ifG.generateGraph();
   
   /* Laço principal do analisador sintático, ainda não implementado */
-  while (lexer.canReadToken())
-  {
-    syntaticAutomata.readToken(lexer.getToken());
-  }
+  //while (lexer.canReadToken())
+  //{
+  //}
   
   return 0;
 }

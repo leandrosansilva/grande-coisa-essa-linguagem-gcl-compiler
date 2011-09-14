@@ -20,6 +20,6 @@ int main(int argc, char **argv)
 
   for (auto e(table.begin()); e != table.end(); e++) {
     cout << get<0>(e->first) << " " << get<1>(e->first) 
-         << " " << e->second._action << " " << e->second._state << endl;
+         << " " << e->second._action << " " << e->second._value << endl;
   }
 }

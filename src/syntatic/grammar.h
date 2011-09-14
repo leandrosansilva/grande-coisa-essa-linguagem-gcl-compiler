@@ -580,7 +580,7 @@ struct Grammar
 
     for (auto r(table.begin()); r != table.end(); r++) {
       cerr << get<0>(r->first) << " " << _symbolToString(get<1>(r->first))
-           << " " << table.actionToString(r->second._action) << " " << r->second._state << endl;
+           << " " << table.actionToString(r->second._action) << " " << r->second._value << endl;
 
     }
   }

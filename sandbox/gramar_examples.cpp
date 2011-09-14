@@ -79,7 +79,7 @@ int main(int argc, char **argv)
 
   //mCICp66.generateGraph();
 
-  MyAutomata automata(parG);
+  //MyAutomata automata(parG);
 
   return 0;
 }
