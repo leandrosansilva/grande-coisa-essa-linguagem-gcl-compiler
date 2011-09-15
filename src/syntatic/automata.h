@@ -54,20 +54,13 @@ struct Automata
     Token<TerminalT> token(_getNextToken());
 
     while (true) {
-      /* antes de tudo, minha pilha de símbolos vale */
-      cerr << "o topo estados é "
-           << _stateStack.back()
-           << " e símbolos: ";
-      for (auto i(_symbolStack.begin()); i != _symbolStack.end(); i++) {
-        cerr << _grammar._symbolToString(*i) << ", ";
-      }
-      cerr << endl;
-
       // Ação a ser executada: Reduce, error, goto, accept
       typename LR1Table::iterator action(_table.find(LR1Key(_stateStack.back(),{token.getType()})));
 
       if (action == _table.end()) {
         cerr << "Erro no parser!" << endl;
+        cerr << "Topo estado: " << _stateStack.back() << " e topo symbol"
+             << _grammar._symbolToString(_symbolStack.back()) << endl;
         return;
       }
 
@@ -87,6 +80,8 @@ struct Automata
       
         /* pega o próximo token */
         token = _getNextToken();
+
+        cerr << "Li o token " << _grammar._symbolToString(token.getType()) << endl;
         continue;
       }
 
@@ -94,16 +89,9 @@ struct Automata
       if (action->second._action == REDUCE) {
         int popSize(_grammar._v[action->second._value]._production.size());
 
-        // o lado esquerdo da produção do reduce 
-        Symbol leftSide(_grammar._v[action->second._value]._leftSide);
-
-        cerr << "Preciso remover da pilha pela regra " << action->second._value 
-             << " " << popSize 
-             << ", size pilha de símbolos  " << _symbolStack.size()
-             << " e size estados " << _stateStack.size() << endl;
-
+        /* conjunto que será passado para a ação semântica  */
         typename Grammar<NonTerminalT,TerminalT>::SymbolList symbolList;
-        
+
         /* desempilho x elementos  */
         for (int i(0); i<popSize; i++) {
           symbolList.push_back(_symbolStack.back());
@@ -111,19 +99,32 @@ struct Automata
           _stateStack.pop_back();
         }
 
+        // o lado esquerdo da produção do reduce 
+        Symbol leftSide(_grammar._v[action->second._value]._leftSide);
+
+        /* para que estado devo fazer GOTO? */
+        cerr << "TABLE[" << _stateStack.back() << ","
+             << _grammar._symbolToString(leftSide) << "] == ";
+
+        TableAction gAction(_table[LR1Key(_stateStack.back(),leftSide)]);
+
+        int gDst(gAction._value);
+        cerr << "<" << _table.actionToString(gAction._action) 
+               << "," << gDst << ">" << endl;
+        
         cerr << "reduzi: ";
         for (auto i(symbolList.rbegin()); i != symbolList.rend(); i++) {
           cerr << _grammar._symbolToString(*i) << ", ";
         }
-        cerr << " para " << _grammar._symbolToString(leftSide) << endl;
+
+        cerr << " para " << _grammar._symbolToString(leftSide) 
+             << " e empilhei estado " << gDst << endl;
 
         /* insere na pilha o lado esquerdo (A) da produção */
         _symbolStack.push_back(leftSide);
 
-        cerr << "Inseri " << _grammar._symbolToString(token.getType()) << endl;
-
-        /* insere na pilha o GOTO[topo,A]. TODO: pode dar erro?  */ 
-        _stateStack.push_back(_table[LR1Key(_stateStack.back(),leftSide)]._value);
+        /* insere na pilha o GOTO[topo,A]. TODO: pode dar erro?  */
+        _stateStack.push_back(gDst);
       }
     } 
   }
