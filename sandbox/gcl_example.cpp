@@ -617,10 +617,15 @@ GCLGrammar grammar(symbolToString,{
 GCLGrammar ifG(symbolToString,{
   {EL,{{Program},{TEOF}},1},
   {Program,{{Module},{TkId}},1},
-  {Module,{{TkIf},{TkLParentesis},{BooleanConstant},{TkRParentesis},{TkThen},{Definition},{TkFi}},1},
+  {Module,{{TkIf},{TkLParentesis},{Block},{TkRParentesis},{Definition}},1},
+  {Module,{{TkIf},{TkLParentesis},{Block},{TkRParentesis},{Definition},{TkGuarded},{Definition}},1},
+  {Block,{{TkString}},1},
+  {Block,{{BooleanConstant}},1},
+  {Block,{{Nextitem}},1},
+  {Nextitem,{},1},
+  {Module,{{TkId}},1},
   {BooleanConstant,{{TkTrue}},1},
   {BooleanConstant,{{TkFalse}},1},
-  {Module,{{TkId}},1},
   {Definition,{{Module}},1}
 },TEOF,INVALID);
 
@@ -825,7 +830,7 @@ int main(int argc, char **argv)
 
   syntaticAutomata.run(); 
 
-  //ifG.generateGraph();
+  ifG.generateGraph();
   
   /* Laço principal do analisador sintático, ainda não implementado */
   //while (lexer.canReadToken())

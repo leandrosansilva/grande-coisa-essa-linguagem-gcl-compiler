@@ -102,16 +102,12 @@ struct Automata
         // o lado esquerdo da produção do reduce 
         Symbol leftSide(_grammar._v[action->second._value]._leftSide);
 
-        /* para que estado devo fazer GOTO? */
-        cerr << "TABLE[" << _stateStack.back() << ","
-             << _grammar._symbolToString(leftSide) << "] == ";
+        int topState(_stateStack.back());
 
         TableAction gAction(_table[LR1Key(_stateStack.back(),leftSide)]);
 
         int gDst(gAction._value);
-        cerr << "<" << _table.actionToString(gAction._action) 
-               << "," << gDst << ">" << endl;
-        
+
         cerr << "reduzi: ";
         for (auto i(symbolList.rbegin()); i != symbolList.rend(); i++) {
           cerr << _grammar._symbolToString(*i) << ", ";
@@ -119,6 +115,14 @@ struct Automata
 
         cerr << " para " << _grammar._symbolToString(leftSide) 
              << " e empilhei estado " << gDst << endl;
+
+        /* para que estado devo fazer GOTO? */
+        cerr << "TABLE[" << topState << ","
+             << _grammar._symbolToString(leftSide) << "] == ";
+
+                cerr << "<" << _table.actionToString(gAction._action) 
+               << "," << gDst << ">" << endl;
+
 
         /* insere na pilha o lado esquerdo (A) da produção */
         _symbolStack.push_back(leftSide);
