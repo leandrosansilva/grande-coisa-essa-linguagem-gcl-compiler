@@ -13,7 +13,7 @@
 
 /* Para usar enum... */
 typedef enum {s, a1, a2, a3, a4, invalid, final, s1, s2 } State;
-typedef enum {comment, space, TKif, TKinvalid, TKfor} Token;
+typedef enum {comment, space, TKif, TKinvalid, TKfor, TEOF} Token;
 
 int main(int argc, char** argv) {
   Lexical::TokenHash<Token> Hash(TKinvalid);
@@ -32,7 +32,7 @@ int main(int argc, char** argv) {
   
   Lexical::FileReader file(argv[1]);
   
-  Lexical::Analyser<State,Token> analyser(file,table,Hash);
+  Lexical::Analyser<State,Token> analyser(file,table,Hash, TEOF);
   
   analyser.ignoreToken({space});
 

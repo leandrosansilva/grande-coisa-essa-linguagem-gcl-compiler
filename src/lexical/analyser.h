@@ -34,6 +34,9 @@ using namespace Common;
 template<typename StateType, typename TokenType>
 class Analyser
 {
+  /* qual o token de final de arquivo? */
+  TokenType _TEOF;
+  
   /* De onde vêm os caracteres? */
   Input &_input;
   
@@ -184,11 +187,12 @@ public:
    * de um automato (tabela de transição),
    * e de uma tabela de palavras reservadas
    */
-  Analyser(Input &file, TransitionTable<StateType,TokenType> &table, TokenHash<TokenType> &reserved):
+  Analyser(Input &file, TransitionTable<StateType,TokenType> &table, TokenHash<TokenType> &reserved, const TokenType &TEOF):
   _input(file),
   _table(table),
   _reserved(reserved),
-  _canRead(true)
+  _canRead(true),
+  _TEOF(TEOF)
   {
   }
   
@@ -221,12 +225,18 @@ public:
   Token<TokenType> getToken()
   {
     Token<TokenType> token;
-    
+
     /* Lê token até achar um que não possa ser descartado */
     do {
       token = _privGetToken();
     } while (_ignore.find(token.getType()) && canReadToken());
-    
+
+    /* FIXME: gambi - se não consegue ler do arquivo e o token é inválido ou para ser descartado, é bug do final do arquivo */
+    if (!canReadToken() && (token.getType() == _reserved.getNone() || _ignore.find(token.getType()))) {
+      token.setType(_TEOF);
+      return token;
+    }
+
     /* se foi pego como identificador, vejo se é uma palavra reservada */
     if (_compare.find(token.getType())) {
         
@@ -250,6 +260,7 @@ public:
     if (it != _paddings.end()) {
       token.setPadding(it->second);
     }
+
     
     /* Retorna o token, seja ele válido ou inválido */
     return token;

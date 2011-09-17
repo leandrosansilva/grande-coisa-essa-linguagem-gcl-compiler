@@ -1,6 +1,6 @@
 #include "mygrammar.h"
 
-MyGrammar g(symbolToString,{
+/*MyGrammar g(symbolToString,{
   {EL,{{E}},1},
   {E,{{E},{PLUS},{T}},1},
   {E,{{T}},1},
@@ -28,14 +28,14 @@ MyGrammar mCICp66(symbolToString,{
   {V,{{TIMES},{E}},1}
 },TEOF,INVALID);
 
-/* uma gramática com um monte de parenteses abrindo e fechando */
+// uma gramática com um monte de parenteses abrindo e fechando
 MyGrammar parG(symbolToString,{
   {EL,{{V},{TEOF}},1},
   {V,{{E}},1},
   {E,{{LPAR},{F},{RPAR},{ID}},1},
   {F,{{E},{IF}},1},
   {F,{},1}
-},TEOF,INVALID);
+},TEOF,INVALID);*/
 
 void testCanonical(MyGrammar &g)
 {

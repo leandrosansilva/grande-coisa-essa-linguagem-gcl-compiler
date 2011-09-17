@@ -3,6 +3,8 @@
 
 #include "grammar.h"
 
+#include "tree.h"
+
 #include <src/common/token.h>
 
 #include <list>
@@ -29,7 +31,16 @@ struct Automata
 
   list<int> _stateStack;
   
-  list<Symbol> _symbolStack;
+  /* uma pilha (in fact a list) de árvores */
+  list<Tree<Symbol>> _symbolStack;
+
+  /* a árvore final */
+  Tree<Symbol> _tree;
+
+  Tree<Symbol> getTree() const
+  {
+    return _tree;
+  }
 
   function<Token<TerminalT>()> _getNextToken;
 
@@ -37,7 +48,7 @@ struct Automata
 
   /* o autômato recebe uma uma gramática e uma função getToken*/
   Automata(Grammar<NonTerminalT,TerminalT> &grammar, const function<Token<TerminalT>()> &getToken):
-  /* e já gera a tabela de ações/goto -> processo demorado */
+  /* e já gera a tabela de ações/goto -> FIXME: processo demorado */
   _table(grammar.createTable()),
 
   /* inicialmente possuo o estado 0 na pilha */
@@ -48,7 +59,7 @@ struct Automata
   {
   }
 
-  void run()
+  bool parse() 
   {
     /* pega o primeiro token */
     Token<TerminalT> token(_getNextToken());
@@ -57,17 +68,22 @@ struct Automata
       // Ação a ser executada: Reduce, error, goto, accept
       typename LR1Table::iterator action(_table.find(LR1Key(_stateStack.back(),{token.getType()})));
 
+      /* estado de erro! */
       if (action == _table.end()) {
         cerr << "Erro no parser!" << endl;
         cerr << "Topo estado: " << _stateStack.back() << " e topo symbol"
              << _grammar._symbolToString(_symbolStack.back()) << endl;
-        return;
+        return false;
       }
 
       // aceitação, casou tudo
       if (action->second._action == ACCEPT) {
         cerr << "Aceitou!" << endl;
-        return;
+  
+        /* o próprio topo da pilha */
+        _tree = _symbolStack.back();
+
+        return true;
       }
 
       // ação de shift
@@ -76,7 +92,7 @@ struct Automata
              << " e " << _grammar._symbolToString(token.getType())
              << endl;
         _stateStack.push_back(action->second._value);
-        _symbolStack.push_back(token.getType());
+        _symbolStack.push_back({token.getType()});
       
         /* pega o próximo token */
         token = _getNextToken();
@@ -90,7 +106,7 @@ struct Automata
         int popSize(_grammar._v[action->second._value]._production.size());
 
         /* conjunto que será passado para a ação semântica  */
-        typename Grammar<NonTerminalT,TerminalT>::SymbolList symbolList;
+        list<Tree<Symbol>> symbolList;
 
         /* desempilho x elementos  */
         for (int i(0); i<popSize; i++) {
@@ -101,6 +117,21 @@ struct Automata
 
         // o lado esquerdo da produção do reduce 
         Symbol leftSide(_grammar._v[action->second._value]._leftSide);
+
+        function<Tree<Symbol>(
+          const Symbol &, 
+          const list<Tree<Symbol>> &
+        )> createTree([](const Symbol &head, const list<Tree<Symbol>> &list) {
+          /* FIXME: implementar! */
+          for (auto i(list.rbegin()); i != list.rend(); i++) {
+            cout <<  (i->isLeaf() ? "Folha " : "Nó ");
+          }
+          cout << endl;
+          return head;
+        });
+
+        /* a árvore que será empilhada */
+        Tree<Symbol> pushedTree(createTree(leftSide,symbolList));
 
         int topState(_stateStack.back());
 
@@ -125,7 +156,7 @@ struct Automata
 
 
         /* insere na pilha o lado esquerdo (A) da produção */
-        _symbolStack.push_back(leftSide);
+        _symbolStack.push_back(pushedTree);
 
         /* insere na pilha o GOTO[topo,A]. TODO: pode dar erro?  */
         _stateStack.push_back(gDst);

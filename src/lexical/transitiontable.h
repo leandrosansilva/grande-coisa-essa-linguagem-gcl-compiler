@@ -58,7 +58,7 @@ template<typename StateType, typename TokenType>
 class TransitionTable
 {
   /* uma lista de todas as transições possíveis */
-  typedef std::vector< Transition<StateType> > TransitionVector;
+  typedef std::vector<Transition<StateType>> TransitionVector;
   
   /* um mapa que diz que, saindo por um estado, que token casou */
   typedef std::map<StateType,TokenType> StateTokenMap;

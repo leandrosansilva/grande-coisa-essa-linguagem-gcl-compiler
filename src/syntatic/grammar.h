@@ -15,6 +15,8 @@
 
 #include "table.h"
 
+#include "tree.h"
+
 using namespace std;
 
 namespace Syntatical {
@@ -113,14 +115,14 @@ struct Grammar
 
   typedef set<Symbol> SymbolSet;
 
-  template<typename LeftSide,typename Production, typename Action>
+  template<typename LeftSide,typename Production, typename ActionT>
   struct Rule
   {
     LeftSide _leftSide; 
     Production _production; 
-    Action _action;
+    ActionT _action;
 
-    Rule(const LeftSide &ls, const Production &prod, const Action &act):
+    Rule(const LeftSide &ls, const Production &prod, const ActionT &act):
     _leftSide(ls),
     _production(prod),
     _action(act)
@@ -189,7 +191,15 @@ struct Grammar
 
   typedef tuple<vector<ItemList>,EdgeMap,ReduceActions> CanonicalItems;
 
-  typedef vector<Rule<NonTerminalT,SymbolList,int>> RuleVector;
+  typedef Tree<Symbol> SymbolTree;
+  
+  /* uma lista de árvores */
+  typedef list<SymbolTree> TreeList;
+
+  typedef function<Tree<Symbol>(const Symbol &, const TreeList &)> SemanticAction;
+
+  /* uma regra é um não terminal à esquerda, uma lista de símbolos e uma ação semântica */
+  typedef vector<Rule<NonTerminalT,SymbolList,SemanticAction>> RuleVector;
 
   typedef Table<Symbol> LR1Table;
 
