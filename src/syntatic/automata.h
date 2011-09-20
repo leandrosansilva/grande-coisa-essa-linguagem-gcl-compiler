@@ -118,7 +118,7 @@ struct Automata
         // o lado esquerdo da produção do reduce 
         Symbol leftSide(_grammar._v[action->second._value]._leftSide);
 
-        function<Tree<Symbol>(
+        static function<Tree<Symbol>(
           const Symbol &, 
           const list<Tree<Symbol>> &
         )> createTree([](const Symbol &head, const list<Tree<Symbol>> &list) {

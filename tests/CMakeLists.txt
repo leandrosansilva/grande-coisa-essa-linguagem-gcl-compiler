@@ -13,3 +13,5 @@ add_executable(string_test string_test.cpp)
 # add_executable(grammar_test tests.cpp)
 
 add_executable(syntatic_table table_tests.cpp)
+
+add_executable(tree_test tree_test.cpp)
