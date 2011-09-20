@@ -2,6 +2,7 @@
 
 #include <string>
 #include <map>
+#include <iostream>
 
 using namespace Syntatical;
 using namespace Common;
@@ -12,8 +13,8 @@ int main()
   Token<string> token;
 
   Tree<string,int>::TreeMap treeMap ({
-    {1,new Tree<string,int>(token)},
-    {3,new Tree<string,int>(token)}
+    {35,new Tree<string,int>(token)},
+    {17,new Tree<string,int>(token)}
   });
 
   Tree<string,int> tree(token);
@@ -21,10 +22,12 @@ int main()
   Tree<string,int> tree2(2,treeMap);
 
   Tree<string,int>::TreeMap treeMap2 ({
-    {1,new Tree<string,int>(tree)},
-    {3,new Tree<string,int>(tree2)}
+    {42,new Tree<string,int>(tree)},
+    {69,new Tree<string,int>(tree2)}
   });
 
   Tree<string,int> tree3(2,treeMap2);
+
+  cout << tree3.toString() << endl;
 
 }
