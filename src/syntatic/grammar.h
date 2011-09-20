@@ -115,17 +115,15 @@ struct Grammar
 
   typedef set<Symbol> SymbolSet;
 
-  template<typename LeftSide,typename Production, typename ActionT>
+  template<typename LeftSide,typename Production>
   struct Rule
   {
     LeftSide _leftSide; 
     Production _production; 
-    ActionT _action;
 
-    Rule(const LeftSide &ls, const Production &prod, const ActionT &act):
+    Rule(const LeftSide &ls, const Production &prod):
     _leftSide(ls),
-    _production(prod),
-    _action(act)
+    _production(prod)
     {
     }
   };
@@ -191,15 +189,16 @@ struct Grammar
 
   typedef tuple<vector<ItemList>,EdgeMap,ReduceActions> CanonicalItems;
 
-  typedef Tree<Symbol> SymbolTree;
+  typedef Tree<TerminalT,Symbol> SymbolTree;
   
   /* uma lista de árvores */
   typedef list<SymbolTree> TreeList;
 
-  typedef function<Tree<Symbol>(const Symbol &, const TreeList &)> SemanticAction;
+  /* Uma ação semântica é uma função que pega uma lista de árvores e transforma numa só */
+  typedef function<SymbolTree(const Symbol &, const TreeList &)> SemanticAction;
 
   /* uma regra é um não terminal à esquerda, uma lista de símbolos e uma ação semântica */
-  typedef vector<Rule<NonTerminalT,SymbolList,SemanticAction>> RuleVector;
+  typedef vector<Rule<NonTerminalT,SymbolList>> RuleVector;
 
   typedef Table<Symbol> LR1Table;
 

@@ -617,66 +617,16 @@ static string symbolToString(const GCLGrammar::Symbol &s)
 TransitionTable<LexState,TokenType> automata(start,invalid,final);
 
 GCLGrammar ifG(symbolToString,{
-  {EL,
-    {{Program},{TEOF}},
-    [](const GCLGrammar::Symbol &symbol, const GCLGrammar::TreeList &list){
-      return GCLGrammar::SymbolTree(symbol);
-    }
-  },
-  {Program,
-    {{Module},{TkId}},
-    [](const GCLGrammar::Symbol &symbol, const GCLGrammar::TreeList &list){
-      return GCLGrammar::SymbolTree(symbol);
-    }
-  },
-  {Module,
-    {{TkIf},{TkLParentesis},{Block},{TkRParentesis},{Definition}},
-    [](const GCLGrammar::Symbol &symbol, const GCLGrammar::TreeList &list){
-      return GCLGrammar::SymbolTree(symbol);
-    }
-  },
-  {Module,
-    {{TkIf},{TkLParentesis},{Block},{TkRParentesis},{Definition},{TkGuarded},{Definition}},
-    [](const GCLGrammar::Symbol &symbol, const GCLGrammar::TreeList &list){
-      return GCLGrammar::SymbolTree(symbol);
-    }
-  },
-  {Block,
-    {{TkString}},
-    [](const GCLGrammar::Symbol &symbol, const GCLGrammar::TreeList &list){
-      return GCLGrammar::SymbolTree(symbol);
-    }
-  },
-  {Block,
-    {{BooleanConstant}},
-    [](const GCLGrammar::Symbol &symbol, const GCLGrammar::TreeList &list){
-      return GCLGrammar::SymbolTree(symbol);
-    }
-  },
-  {Module,
-    {{TkId}},
-    [](const GCLGrammar::Symbol &symbol, const GCLGrammar::TreeList &list){
-      return GCLGrammar::SymbolTree(symbol);
-    }
-  },
-  {BooleanConstant,
-    {{TkTrue}},
-    [](const GCLGrammar::Symbol &symbol, const GCLGrammar::TreeList &list){
-      return GCLGrammar::SymbolTree(symbol);
-    }
-  },
-  {BooleanConstant,
-    {{TkFalse}},
-    [](const GCLGrammar::Symbol &symbol, const GCLGrammar::TreeList &list){
-      return GCLGrammar::SymbolTree(symbol);
-    }
-  },
-  {Definition,
-    {{Module}},
-    [](const GCLGrammar::Symbol &symbol, const GCLGrammar::TreeList &list){
-      return GCLGrammar::SymbolTree(symbol);
-    }
-  }
+  {EL,{{Program},{TEOF}}},
+  {Program,{{Module},{TkId}}},
+  {Module,{{TkIf},{TkLParentesis},{Block},{TkRParentesis},{Definition}}},
+  {Module,{{TkIf},{TkLParentesis},{Block},{TkRParentesis},{Definition},{TkGuarded},{Definition}}},
+  {Block,{{TkString}}},
+  {Block,{{BooleanConstant}}},
+  {Module,{{TkId}}},
+  {BooleanConstant,{{TkTrue}}},
+  {BooleanConstant,{{TkFalse}}},
+  {Definition,{{Module}}}
 },TEOF,INVALID);
 
 int main(int argc, char **argv)
@@ -876,14 +826,16 @@ int main(int argc, char **argv)
 
   ifG.printTable();
 
-  syntaticAutomata.parse(); 
+  if (!syntaticAutomata.parse()) {
+    cerr << "Erro!" << endl;
+  }
+
+  Tree<TokenType,GCLGrammar::Symbol> tree(syntaticAutomata.getTree());
+
+  cerr << tree.toString<function<string(const GCLGrammar::Symbol &)>>(symbolToString) << endl;
 
   //ifG.generateGraph();
   
-  /* Laço principal do analisador sintático, ainda não implementado */
-  //while (lexer.canReadToken())
-  //{
-  //}
   
   return 0;
 }

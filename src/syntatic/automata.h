@@ -17,6 +17,20 @@ using namespace Common;
 
 namespace Syntatical {
 
+template <typename TokenTypeT, typename SymbolT>
+Tree<TokenTypeT,SymbolT> createTree(const SymbolT &head, const list<Tree<TokenTypeT,SymbolT>> &list) 
+{
+  typename Tree<TokenTypeT,SymbolT>::TreeMap treeMap;
+
+  /* FIXME: preencher a árvore com as subárvores */
+  for (auto i(list.begin()); i != list.end(); i++) {
+    treeMap[i->getHead()] = new Tree<TokenTypeT,SymbolT>(*i);
+  }
+  
+  /* retorna uma árvore  */
+  return {head,treeMap};
+}
+
 template<typename NonTerminalT, typename TerminalT>
 struct Automata
 {
@@ -32,12 +46,12 @@ struct Automata
   list<int> _stateStack;
   
   /* uma pilha (in fact a list) de árvores */
-  list<Tree<Symbol>> _symbolStack;
+  list<Tree<TerminalT,Symbol>> _symbolStack;
 
   /* a árvore final */
-  Tree<Symbol> _tree;
+  Tree<TerminalT,Symbol> _tree;
 
-  Tree<Symbol> getTree() const
+  Tree<TerminalT,Symbol> getTree() const
   {
     return _tree;
   }
@@ -46,12 +60,13 @@ struct Automata
 
   Grammar<NonTerminalT,TerminalT> _grammar;
 
-  /* o autômato recebe uma uma gramática e uma função getToken*/
+  /* o autômato recebe uma uma gramática e uma função getToken */
   Automata(Grammar<NonTerminalT,TerminalT> &grammar, const function<Token<TerminalT>()> &getToken):
+
   /* e já gera a tabela de ações/goto -> FIXME: processo demorado */
   _table(grammar.createTable()),
 
-  /* inicialmente possuo o estado 0 na pilha */
+  /* inicialmente possuo o estado 0 na pilha de estados */
   _stateStack({0}),
   _grammar(grammar),
   
@@ -64,6 +79,7 @@ struct Automata
     /* pega o primeiro token */
     Token<TerminalT> token(_getNextToken());
 
+    /* while true é do mal */
     while (true) {
       // Ação a ser executada: Reduce, error, goto, accept
       typename LR1Table::iterator action(_table.find(LR1Key(_stateStack.back(),{token.getType()})));
@@ -92,9 +108,9 @@ struct Automata
              << " e " << _grammar._symbolToString(token.getType())
              << endl;
         _stateStack.push_back(action->second._value);
-        _symbolStack.push_back({token.getType()});
+        _symbolStack.push_back(token);
       
-        /* pega o próximo token */
+        // pega o próximo token
         token = _getNextToken();
 
         cerr << "Li o token " << _grammar._symbolToString(token.getType()) << endl;
@@ -105,33 +121,22 @@ struct Automata
       if (action->second._action == REDUCE) {
         int popSize(_grammar._v[action->second._value]._production.size());
 
-        /* conjunto que será passado para a ação semântica  */
-        list<Tree<Symbol>> symbolList;
+        // conjunto que será passado para a ação semântica
+        list<Tree<TerminalT,Symbol>> symbolList;
 
-        /* desempilho x elementos  */
+        // desempilho x elementos
         for (int i(0); i<popSize; i++) {
           symbolList.push_back(_symbolStack.back());
           _symbolStack.pop_back();
           _stateStack.pop_back();
         }
 
+        
         // o lado esquerdo da produção do reduce 
         Symbol leftSide(_grammar._v[action->second._value]._leftSide);
 
-        static function<Tree<Symbol>(
-          const Symbol &, 
-          const list<Tree<Symbol>> &
-        )> createTree([](const Symbol &head, const list<Tree<Symbol>> &list) {
-          /* FIXME: implementar! */
-          for (auto i(list.rbegin()); i != list.rend(); i++) {
-            cout <<  (i->isLeaf() ? "Folha " : "Nó ");
-          }
-          cout << endl;
-          return head;
-        });
-
-        /* a árvore que será empilhada */
-        Tree<Symbol> pushedTree(createTree(leftSide,symbolList));
+        // a árvore que será empilhada
+        Tree<TerminalT,Symbol> pushedTree(createTree<TerminalT,Symbol>(leftSide,symbolList));
 
         int topState(_stateStack.back());
 
@@ -139,6 +144,7 @@ struct Automata
 
         int gDst(gAction._value);
 
+        
         cerr << "reduzi: ";
         for (auto i(symbolList.rbegin()); i != symbolList.rend(); i++) {
           cerr << _grammar._symbolToString(*i) << ", ";
@@ -147,7 +153,7 @@ struct Automata
         cerr << " para " << _grammar._symbolToString(leftSide) 
              << " e empilhei estado " << gDst << endl;
 
-        /* para que estado devo fazer GOTO? */
+        // para que estado devo fazer GOTO?
         cerr << "TABLE[" << topState << ","
              << _grammar._symbolToString(leftSide) << "] == ";
 
@@ -155,11 +161,12 @@ struct Automata
                << "," << gDst << ">" << endl;
 
 
-        /* insere na pilha o lado esquerdo (A) da produção */
+        // insere na pilha o lado esquerdo (A) da produção
         _symbolStack.push_back(pushedTree);
 
-        /* insere na pilha o GOTO[topo,A]. TODO: pode dar erro?  */
+        // insere na pilha o GOTO[topo,A]. TODO: pode dar erro?
         _stateStack.push_back(gDst);
+        
       }
     } 
   }

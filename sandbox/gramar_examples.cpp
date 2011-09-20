@@ -11,30 +11,30 @@
 },TEOF,INVALID);
 
 MyGrammar ifG(symbolToString,{
-  {EL,{{E}},1},
-  {E,{{IF},{LPAR},{ID},{RPAR},{THEN},{V}},1},
-  {E,{{IF},{LPAR},{ID},{RPAR},{THEN},{V},{ELSE},{V}},1},
-  {V,{{E}},1},
-  {V,{{ID}},1},
-  {V,{},1}
+  {EL,{{E}}},
+  {E,{{IF},{LPAR},{ID},{RPAR},{THEN},{V}}},
+  {E,{{IF},{LPAR},{ID},{RPAR},{THEN},{V},{ELSE},{V}}},
+  {V,{{E}}},
+  {V,{{ID}}},
+  {V,{}}
 },TEOF,INVALID);
 
 MyGrammar mCICp66(symbolToString,{
-  {SL,{{S},{TEOF}},1},
-  {S,{{V},{ATTR},{E}},1},
-  {S,{{E}},1},
-  {E,{{V}},1},
-  {V,{{ID}},1},
-  {V,{{TIMES},{E}},1}
+  {SL,{{S},{TEOF}}},
+  {S,{{V},{ATTR},{E}}},
+  {S,{{E}}},
+  {E,{{V}}},
+  {V,{{ID}}},
+  {V,{{TIMES},{E}}}
 },TEOF,INVALID);
 
 // uma gramática com um monte de parenteses abrindo e fechando
 MyGrammar parG(symbolToString,{
-  {EL,{{V},{TEOF}},1},
-  {V,{{E}},1},
-  {E,{{LPAR},{F},{RPAR},{ID}},1},
-  {F,{{E},{IF}},1},
-  {F,{},1}
+  {EL,{{V},{TEOF}}},
+  {V,{{E}}},
+  {E,{{LPAR},{F},{RPAR},{ID}}},
+  {F,{{E},{IF}}},
+  {F,{}}
 },TEOF,INVALID);*/
 
 void testCanonical(MyGrammar &g)

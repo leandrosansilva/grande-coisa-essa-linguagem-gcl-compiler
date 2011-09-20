@@ -24,6 +24,9 @@ namespace Syntatical {
 template<typename TokenTypeT, typename SymbolT>
 struct Tree
 {
+  /* qual o símbolo do nó? */
+  SymbolT _head;
+  
   /* uma árvore é um mapa onde a chave é um 
    * símbolo que leva numa árvore 
   */
@@ -41,18 +44,25 @@ struct Tree
   Token<TokenTypeT> _token;
   
   TreeMap _tree;
+
+  /* construtor vazio, só pra compilar */
+  Tree()
+  {
+  }
   
   /* construtor que recebe um token */
   Tree(const Token<TokenTypeT> &token):
   _token(token),
-  _type(LEAF)
+  _type(LEAF),
+  _head(token.getType())
   {
   }
   
   /* construtor que recebe o nome e o valor de uma árvore */
   Tree(const SymbolT &key, TreeMap tree):
   _tree(tree),
-  _type(TREE)
+  _type(TREE),
+  _head(key)
   {
   }
 
@@ -61,16 +71,29 @@ struct Tree
     return _type == LEAF;
   }
 
-  string toString() const
+  /* retorna qual o símbolo do nó */
+  SymbolT getHead() const
+  {
+    return _head;
+  }
+
+  /* para poder ser usado como Symbol */
+  operator SymbolT() const
+  {
+    return getHead();
+  }
+
+  template<typename CallBack>
+  string toString(const CallBack &symbolToString) const
   {
     string out;
     out += "(";
     if (isLeaf()) {
-      out += "<leaf>";
+      out += "\"" + _token.getLexema() + "\"";
     } else {
       stringstream ss;
       for (auto i(_tree.begin()); i!= _tree.end(); i++) {
-        ss << i->first << ": " << i->second->toString() << ",";
+        ss << symbolToString(i->first) << ": " << i->second->toString(symbolToString) << ",";
       }
       out += ss.str();
     }
