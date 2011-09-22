@@ -85,20 +85,35 @@ struct Tree
   }
 
   template<typename CallBack>
-  string toString(const CallBack &symbolToString) const
+  string toString(const CallBack &symbolToString, int indent = 0) const
   {
     string out;
-    out += "(";
+
     if (isLeaf()) {
-      out += "\"" + _token.getLexema() + "\"";
+      out += "(\"" + _token.getLexema() + "\")";
     } else {
+      out += "(";
+      // coloca a indentação
+      //for (int spaces(0); spaces < indent; spaces++) {
+      //  out += "  ";
+      //}
+
       stringstream ss;
-      for (auto i(_tree.begin()); i!= _tree.end(); i++) {
-        ss << symbolToString(get<0>(*i)) << ": " << get<1>(*i)->toString(symbolToString) << ",";
+
+      int i(0);
+
+      for (;i < _tree.size() - 1; i++) {
+        ss << symbolToString(get<0>(_tree[i])) << ": " << get<1>(_tree[i])->toString(symbolToString,indent+1) << ",";
       }
+
+      if (_tree.size()) {
+        ss << symbolToString(get<0>(_tree[i])) << ": " << get<1>(_tree[i])->toString(symbolToString,indent+1);
+      }
+      
       out += ss.str();
+
+      out += ")";
     }
-    out += ")";
     return out;
   }
   
