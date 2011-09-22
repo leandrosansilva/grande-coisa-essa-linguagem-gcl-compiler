@@ -1,8 +1,9 @@
 #ifndef TREE_H
 #define TREE_H
 
-#include <map>
-#include <list>
+#include <vector>
+
+#include <tuple>
 
 #include <sstream>
 
@@ -26,11 +27,11 @@ struct Tree
 {
   /* qual o símbolo do nó? */
   SymbolT _head;
+
+  /* uma subárvore é uma tupla com uma "label" e uma árvore */
+  typedef tuple<SymbolT, Tree*> TreeChild;
   
-  /* uma árvore é um mapa onde a chave é um 
-   * símbolo que leva numa árvore 
-  */
-  typedef map<SymbolT, Tree*> TreeMap;
+  typedef vector<TreeChild> TreeMap;
 
   /* uma árvore pode ser folha ou ter subárvores */
   typedef enum {
@@ -93,7 +94,7 @@ struct Tree
     } else {
       stringstream ss;
       for (auto i(_tree.begin()); i!= _tree.end(); i++) {
-        ss << symbolToString(i->first) << ": " << i->second->toString(symbolToString) << ",";
+        ss << symbolToString(get<0>(*i)) << ": " << get<1>(*i)->toString(symbolToString) << ",";
       }
       out += ss.str();
     }

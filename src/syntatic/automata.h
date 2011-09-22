@@ -24,7 +24,9 @@ Tree<TokenTypeT,SymbolT> createTree(const SymbolT &head, const list<Tree<TokenTy
 
   /* FIXME: preencher a árvore com as subárvores */
   for (auto i(list.begin()); i != list.end(); i++) {
-    treeMap[i->getHead()] = new Tree<TokenTypeT,SymbolT>(*i);
+    typename Tree<TokenTypeT,SymbolT>::TreeChild node(
+      i->getHead(),new Tree<TokenTypeT,SymbolT>(*i));
+    treeMap.push_back(node);
   }
   
   /* retorna uma árvore  */

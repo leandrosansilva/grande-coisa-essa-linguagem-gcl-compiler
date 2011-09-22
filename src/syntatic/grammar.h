@@ -562,6 +562,12 @@ struct Grammar
     ReduceActions reduceActions(get<2>(cItems));
 
     for (auto e(edges.begin()); e != edges.end(); e++) {
+      auto found(table.find(LR1Key(get<0>(*e).first,get<0>(*e).second)));
+      
+      if (found != table.end()) {
+        cerr << "duplicado!" << endl;
+      }
+
       if (e->first.second.isNonTerminal()) {
         /* se é um não terminal, faz goto */
         table[LR1Key(get<0>(*e).first,get<0>(*e).second)] = {GOTO,get<1>(*e)};
@@ -574,6 +580,12 @@ struct Grammar
 
     /* insiro as regras de ACCEPT e REDUCE */
     for (auto r(reduceActions.begin()); r != reduceActions.end(); r++) {
+      auto found(table.find(LR1Key(get<0>(*r),get<1>(*r))));
+      
+      if (found != table.end()) {
+        cerr << "duplicado2!" << endl;
+      }
+
       table[LR1Key(get<0>(*r),get<1>(*r))] = {REDUCE,get<2>(*r)};
     }
 
