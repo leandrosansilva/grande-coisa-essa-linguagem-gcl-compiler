@@ -87,16 +87,17 @@ struct Tree
   template<typename CallBack>
   string toString(const CallBack &symbolToString, int indent = 0) const
   {
-    string out;
+    string out("\n");
+
+    // coloca a indentação
+    for (int spaces(0); spaces < indent; spaces++) {
+      out += "  ";
+    }
 
     if (isLeaf()) {
       out += "(\"" + _token.getLexema() + "\")";
     } else {
       out += "(";
-      // coloca a indentação
-      //for (int spaces(0); spaces < indent; spaces++) {
-      //  out += "  ";
-      //}
 
       stringstream ss;
 
