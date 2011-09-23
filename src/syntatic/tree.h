@@ -94,26 +94,26 @@ struct Tree
       out += "  ";
     }
 
-    if (isLeaf()) {
-      out += "(\"" + _token.getLexema() + "\")";
-    } else {
-      out += "(";
+    out += symbolToString(getHead()) + ": ";
 
+    if (isLeaf()) {
+      out += "\"" + _token.getLexema() + "\"";
+    } else {
       stringstream ss;
 
       int i(0);
 
+      /* imprime os primeiros */
       for (;i < _tree.size() - 1; i++) {
-        ss << symbolToString(get<0>(_tree[i])) << ": " << get<1>(_tree[i])->toString(symbolToString,indent+1) << ",";
+        ss << get<1>(_tree[i])->toString(symbolToString,indent+1);
       }
 
+      /* imprime a última árvore */
       if (_tree.size()) {
-        ss << symbolToString(get<0>(_tree[i])) << ": " << get<1>(_tree[i])->toString(symbolToString,indent+1);
+        ss << get<1>(_tree[i])->toString(symbolToString,indent+1);
       }
       
       out += ss.str();
-
-      out += ")";
     }
     return out;
   }

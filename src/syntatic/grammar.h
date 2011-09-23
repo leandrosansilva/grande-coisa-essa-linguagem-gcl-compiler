@@ -119,11 +119,13 @@ struct Grammar
   struct Rule
   {
     LeftSide _leftSide; 
-    Production _production; 
+    Production _production;
+    set<int> _abs;
 
-    Rule(const LeftSide &ls, const Production &prod):
+    Rule(const LeftSide &ls, const Production &prod, set<int> abs = set<int>()):
     _leftSide(ls),
-    _production(prod)
+    _production(prod),
+    _abs(abs)
     {
     }
   };
@@ -561,11 +563,46 @@ struct Grammar
     
     ReduceActions reduceActions(get<2>(cItems));
 
+    /* insiro as regras de ACCEPT e REDUCE primeiro, 
+     * pois assim as ações de shift poderão sobreescrevê-las
+     * sim, isso é uma abordagem porca.
+    */
+    for (auto r(reduceActions.begin()); r != reduceActions.end(); r++) {
+      auto found(table.find(LR1Key(get<0>(*r),get<1>(*r))));
+      
+      if (found != table.end()) {
+        cout << "duplicado! em goto" << endl;
+        cerr 
+          << get<0>(found->first) << " " << _symbolToString(get<1>(found->first))
+          << " " << table.actionToString(found->second._action) << " " << found->second._value 
+          << " and ";
+
+        cerr
+          << get<0>(*r) << " " << _symbolToString(get<1>(*r))
+          << " " << get<2>(*r)
+
+          << endl;
+      }
+
+      table[LR1Key(get<0>(*r),get<1>(*r))] = {REDUCE,get<2>(*r)};
+    }
+
     for (auto e(edges.begin()); e != edges.end(); e++) {
       auto found(table.find(LR1Key(get<0>(*e).first,get<0>(*e).second)));
       
       if (found != table.end()) {
-        cerr << "duplicado!" << endl;
+        cerr << "duplicado em terminais!" << endl;
+
+        cerr 
+          << get<0>(found->first) << " " << _symbolToString(get<1>(found->first))
+          << " " << table.actionToString(found->second._action) << " " << found->second._value 
+          << " and ";
+
+        cerr
+          << e->first.first << " " << _symbolToString(e->first.second)
+          << " " << e->second
+
+          << endl;
       }
 
       if (e->first.second.isNonTerminal()) {
@@ -576,17 +613,6 @@ struct Grammar
         /* se é um terminal, faz shift */
         table[LR1Key(get<0>(*e).first,get<0>(*e).second)] = {SHIFT,get<1>(*e)};
       }
-    }
-
-    /* insiro as regras de ACCEPT e REDUCE */
-    for (auto r(reduceActions.begin()); r != reduceActions.end(); r++) {
-      auto found(table.find(LR1Key(get<0>(*r),get<1>(*r))));
-      
-      if (found != table.end()) {
-        cerr << "duplicado2!" << endl;
-      }
-
-      table[LR1Key(get<0>(*r),get<1>(*r))] = {REDUCE,get<2>(*r)};
     }
 
     /* Por fim, inclui o estado de aceitação, que é sempre quando, em 1, acaba o arquivo */

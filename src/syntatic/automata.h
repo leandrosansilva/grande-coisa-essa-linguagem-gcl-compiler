@@ -18,12 +18,15 @@ using namespace Common;
 namespace Syntatical {
 
 template <typename TokenTypeT, typename SymbolT>
-Tree<TokenTypeT,SymbolT> createTree(const SymbolT &head, const list<Tree<TokenTypeT,SymbolT>> &list) 
+Tree<TokenTypeT,SymbolT> createTree(const set<int> abs, const SymbolT &head, const list<Tree<TokenTypeT,SymbolT>> &list) 
 {
   typename Tree<TokenTypeT,SymbolT>::TreeMap treeMap;
 
-  /* FIXME: preencher a árvore com as subárvores */
-  for (auto i(list.rbegin()); i != list.rend(); i++) {
+  int index(0);
+  for (auto i(list.rbegin()); i != list.rend(); i++, index++) {
+    if (abs.find(index) == abs.end()) {
+      continue;
+    }
     typename Tree<TokenTypeT,SymbolT>::TreeChild node(
       i->getHead(),new Tree<TokenTypeT,SymbolT>(*i));
     treeMap.push_back(node);
@@ -138,7 +141,7 @@ struct Automata
         Symbol leftSide(_grammar._v[action->second._value]._leftSide);
 
         // a árvore que será empilhada
-        Tree<TerminalT,Symbol> pushedTree(createTree<TerminalT,Symbol>(leftSide,symbolList));
+        Tree<TerminalT,Symbol> pushedTree(createTree<TerminalT,Symbol>(_grammar._v[action->second._value]._abs,leftSide,symbolList));
 
         int topState(_stateStack.back());
 
