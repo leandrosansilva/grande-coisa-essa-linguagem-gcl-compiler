@@ -618,11 +618,10 @@ TransitionTable<LexState,TokenType> automata(start,invalid,final);
 
 GCLGrammar ifG(symbolToString,{
   {EL,{{Program},{TEOF}},{0}},
-  {Program,{{Module}},{0}},
-  {Module,{{TkIf},{TkLParentesis},{Block},{TkRParentesis},{Definition}},{0,1,2,3,4}},
-  {Module,{{TkIf},{TkLParentesis},{Block},{TkRParentesis},{Definition},{TkGuarded},{Definition}},{0,1,2,3,4,5,6}},
-  {Block,{{TkString}},{0}},
-  {Block,{{BooleanConstant}},{0}},
+  {Program,{{Module},{Module}},{0,1}},
+  {Module,{{TkIf},{TkLParentesis},{BooleanConstant},{TkRParentesis},{Definition}},{2,4}},
+  {Module,{{TkIf},{TkLParentesis},{BooleanConstant},{TkRParentesis},{Definition},{TkGuarded},{Definition}},{2,4,6}},
+  {Module,{}},
   {Module,{{TkId}},{0}},
   {BooleanConstant,{{TkTrue}},{0}},
   {BooleanConstant,{{TkFalse}},{0}},
@@ -826,13 +825,18 @@ int main(int argc, char **argv)
 
   ifG.printTable();
 
+  //ifG.generateGraph();
+
   if (!syntaticAutomata.parse()) {
     cerr << "Erro!" << endl;
+    return 1;
   }
 
   Tree<TokenType,GCLGrammar::Symbol> tree(syntaticAutomata.getTree());
 
   cerr << tree.toString<function<string(const GCLGrammar::Symbol &)>>(symbolToString) << endl;
+
+  tree.dispose();
 
   return 0;
 }

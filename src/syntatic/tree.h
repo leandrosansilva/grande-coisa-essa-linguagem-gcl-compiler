@@ -84,6 +84,14 @@ struct Tree
     return getHead();
   }
 
+  void dispose()
+  {
+    for (auto t(_tree.begin()); t != _tree.end(); t++) {
+      get<1>(*t)->dispose();
+      delete get<1>(*t);
+    }
+  }
+
   template<typename CallBack>
   string toString(const CallBack &symbolToString, int indent = 0) const
   {
@@ -91,7 +99,7 @@ struct Tree
 
     // coloca a indentação
     for (int spaces(0); spaces < indent; spaces++) {
-      out += "  ";
+      out += " ";
     }
 
     out += symbolToString(getHead()) + ": ";
@@ -103,18 +111,21 @@ struct Tree
 
       int i(0);
 
-      /* imprime os primeiros */
-      for (;i < _tree.size() - 1; i++) {
+      int size(_tree.size());
+
+      /* imprime todas as árvores, em ordem, menos a última */
+      for (;i < size - 1; i++) {
         ss << get<1>(_tree[i])->toString(symbolToString,indent+1);
       }
 
       /* imprime a última árvore */
-      if (_tree.size()) {
+      if (size) {
         ss << get<1>(_tree[i])->toString(symbolToString,indent+1);
       }
       
       out += ss.str();
     }
+
     return out;
   }
   

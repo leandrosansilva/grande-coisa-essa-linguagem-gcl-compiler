@@ -24,7 +24,8 @@ Tree<TokenTypeT,SymbolT> createTree(const set<int> abs, const SymbolT &head, con
 
   int index(0);
   for (auto i(list.rbegin()); i != list.rend(); i++, index++) {
-    if (abs.find(index) == abs.end()) {
+    /* se não achou e o conjunto possui elementos */
+    if (abs.find(index) == abs.end() && !abs.empty()) {
       continue;
     }
     typename Tree<TokenTypeT,SymbolT>::TreeChild node(

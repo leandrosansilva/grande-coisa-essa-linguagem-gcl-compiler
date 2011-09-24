@@ -10,7 +10,7 @@ using namespace std;
 
 int main()
 {
-  Token<string> token1("tipo1",1,"manoel");
+  /*Token<string> token1("tipo1",1,"manoel");
   Token<string> token2("tipo2",1,"Maria");
 
   Tree<string,string>::TreeMap treeMap ({
@@ -27,5 +27,5 @@ int main()
     {"69",new Tree<string,string>(tree2)}
   });
 
-  Tree<string,string> tree3("2",treeMap2);
+  Tree<string,string> tree3("2",treeMap2);*/
 }
