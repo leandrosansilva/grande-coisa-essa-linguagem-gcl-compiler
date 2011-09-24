@@ -15,23 +15,12 @@ using namespace Syntatical;
 
 using namespace std;
 
-/* defino o conjunto de caracteres permitidos na linguagem */
-const String digits("0123456789");
 const String letters("abcdefghijklmnopqrstuvxwyzABCDEFGHIJKLMNOPQRSTUVXWYZ");
-const String symbols("+-*/=");
-
-/* aspas (quotes) e apóstrofos (apostrophes) */
-const String quotes("\'\"");
 
 const String blanks(" \t");
 const String breakline("\n");
 
 const String spaces(blanks + breakline);
-
-const String separators(spaces + "()");
-
-/* qualquer caractere! */
-const String any(digits + letters + separators + quotes + symbols);
 
 typedef enum {
   /* Estado inválido */
@@ -45,27 +34,18 @@ typedef enum {
   
   /* Estados intermediários */
   a1, a2,
-  b1, b2, b3, b4,
-  c1, c2, c3,
   sp1
 } LexState;
 
 typedef enum {
   TkId,
-  TkString,
   TkNone,
-  TkLPar,
-  TkRPar,
   TkSpaces,
   TEOF,INVALID
 } TokenType;
 
 static map<TokenType,string> TerminalMap {
   {TkId,"TkId"},
-  {TkString,"TkString"},
-  {TkLPar,"TkLPar"},
-  {TkRPar,"TkRPar"},
-  {TkNone,"TkNone"},
   {TkSpaces,"TkSpaces"},
   {TEOF,"$"},
   {INVALID,"?"}
@@ -85,9 +65,9 @@ static map<NonTerminal,string> NonTerminalMap {
   {EL,"E'"} 
 };
 
-typedef Grammar<NonTerminal,TokenType> LISPGrammar;
+typedef Grammar<NonTerminal,TokenType> ListGrammar;
 
-static string symbolToString(const LISPGrammar::Symbol &s)
+static string symbolToString(const ListGrammar::Symbol &s)
 {
   if (s.isTerminal()) {
     return TerminalMap[s._terminal];
@@ -102,14 +82,11 @@ static string symbolToString(const LISPGrammar::Symbol &s)
   }
 }
 
-LISPGrammar grammar(symbolToString,{
+ListGrammar grammar(symbolToString,{
   {EL,{{E},{TEOF}}},
-  {E,{{TkLPar},{T},{TkRPar}}},
-  {T,{{N},{T}}},
+  {E,{T}},
   {T,{}},
-  {N,{{TkId}}},
-  {N,{{TkString}}},
-  {N,{{E}}}
+  {T,{{TkId},{T}}}
 },TEOF,INVALID);
 
 TransitionTable<LexState,TokenType> automata(start,invalid,final);
@@ -119,24 +96,12 @@ int main(int argc, char **argv)
   /* Consome espaços em branco */
   automata.addTransition(start,spaces,sp1);
   automata.addTransition(sp1,spaces,sp1);
-  automata.addFinalTransition(sp1,any - spaces,TkSpaces);
+  automata.addFinalTransition(sp1,letters,TkSpaces);
   
   /* Para identificador */
-  automata.addTransition(start,any - spaces - "\"()",a1);
-  automata.addTransition(a1,any - spaces - "\"()", a1);
-  automata.addFinalTransition(a1,spaces + "\"()",TkId);
-  
-  /* Para parentesis */
-  automata.addTransition(start,"(",b1);
-  automata.addFinalTransition(b1,any,TkLPar);
-  automata.addTransition(start,")",b2);
-  automata.addFinalTransition(b2,any,TkRPar);
-  
-  /* string */
-  automata.addTransition(start,"\"",c2);
-  automata.addTransition(c2,any - "\"",c2);
-  automata.addTransition(c2,"\"",c3);
-  automata.addFinalTransition(c3,any,TkString);
+  automata.addTransition(start,letters,a1);
+  automata.addTransition(a1,letters, a1);
+  automata.addFinalTransition(a1,spaces,TkId);
   
   /* um cara que lê um arquivo do disco */
   FileReader reader(argv[1]);
@@ -147,18 +112,8 @@ int main(int argc, char **argv)
   /* Analisador léxico */
   Analyser<LexState,TokenType> lexer(reader,automata,reservedWords,TEOF);
   
-  /* Ignore os seguintes tokens,
-   * que não serão passados pro
-   * analisador sintático: espaços e comentários
-  */
   lexer.ignoreToken({TkSpaces});
   
-  /* 
-   * todo token do tipo string terá "cortados" um caractere à esquerda e outro à direita
-   * estes caracteres correspondem às aspas e apóstrofos
-   */
-  lexer.setTokenPadding(TkString,1,1);
-
   function<Token<TokenType>()> getToken([&lexer](){
     return lexer.getToken();
   });
@@ -174,9 +129,9 @@ int main(int argc, char **argv)
     return 1;
   }
 
-  Tree<TokenType,LISPGrammar::Symbol> tree(syntaticAutomata.getTree());
+  Tree<TokenType,ListGrammar::Symbol> tree(syntaticAutomata.getTree());
 
-  cerr << tree.toString<function<string(const LISPGrammar::Symbol &)>>(symbolToString) << endl;
+  cerr << tree.toString<function<string(const ListGrammar::Symbol &)>>(symbolToString) << endl;
 
   tree.dispose();
 

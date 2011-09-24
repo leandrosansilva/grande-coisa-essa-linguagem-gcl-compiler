@@ -13,3 +13,5 @@ add_executable(gramar_examples gramar_examples.cpp)
 add_executable(lisp lisp_grammar.cpp)
 target_link_libraries(lisp gcl-lexical)
 
+add_executable(list_grammar list_grammar.cpp)
+target_link_libraries(list_grammar gcl-lexical)
