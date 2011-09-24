@@ -4,7 +4,7 @@
 
 #include <lexical/analyser.h>
 #include <syntatic/grammar.h>
-#include <syntatic/automata.h>
+#include <syntatic/analyzer.h>
 
 #include <iostream>
 #include <functional>
@@ -118,18 +118,18 @@ int main(int argc, char **argv)
     return lexer.getToken();
   });
 
-  Automata<NonTerminal,TokenType> syntaticAutomata(grammar,getToken);
+  Syntatical::Analyzer<NonTerminal,TokenType> parser(grammar,getToken);
 
   grammar.printTable();
 
   grammar.generateGraph();
 
-  if (!syntaticAutomata.parse()) {
+  if (!parser.parse()) {
     cerr << "Erro!" << endl;
     return 1;
   }
 
-  Tree<TokenType,ListGrammar::Symbol> tree(syntaticAutomata.getTree());
+  Tree<TokenType,ListGrammar::Symbol> tree(parser.getTree());
 
   cerr << tree.toString<function<string(const ListGrammar::Symbol &)>>(symbolToString) << endl;
 

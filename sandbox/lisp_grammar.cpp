@@ -4,7 +4,7 @@
 
 #include <lexical/analyser.h>
 #include <syntatic/grammar.h>
-#include <syntatic/automata.h>
+#include <syntatic/analyzer.h>
 
 #include <iostream>
 #include <functional>
@@ -145,7 +145,7 @@ int main(int argc, char **argv)
   TokenHash<TokenType> reservedWords(TkNone,{});
   
   /* Analisador léxico */
-  Analyser<LexState,TokenType> lexer(reader,automata,reservedWords,TEOF);
+  Lexical::Analyser<LexState,TokenType> lexer(reader,automata,reservedWords,TEOF);
   
   /* Ignore os seguintes tokens,
    * que não serão passados pro
@@ -163,18 +163,18 @@ int main(int argc, char **argv)
     return lexer.getToken();
   });
 
-  Automata<NonTerminal,TokenType> syntaticAutomata(grammar,getToken);
+  Syntatical::Analyzer<NonTerminal,TokenType> parser(grammar,getToken);
 
   grammar.printTable();
 
   grammar.generateGraph();
 
-  if (!syntaticAutomata.parse()) {
+  if (!parser.parse()) {
     cerr << "Erro!" << endl;
     return 1;
   }
 
-  Tree<TokenType,LISPGrammar::Symbol> tree(syntaticAutomata.getTree());
+  Tree<TokenType,LISPGrammar::Symbol> tree(parser.getTree());
 
   cerr << tree.toString<function<string(const LISPGrammar::Symbol &)>>(symbolToString) << endl;
 

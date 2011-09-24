@@ -38,7 +38,7 @@ Tree<TokenTypeT,SymbolT> createTree(const set<int> abs, const SymbolT &head, con
 }
 
 template<typename NonTerminalT, typename TerminalT>
-struct Automata
+struct Analyzer
 {
   /* FIXME: isto está feio. As duas classes ficam muito desconexas assim */
   typedef typename Grammar<NonTerminalT,TerminalT>::Symbol Symbol;
@@ -67,7 +67,7 @@ struct Automata
   Grammar<NonTerminalT,TerminalT> _grammar;
 
   /* o autômato recebe uma uma gramática e uma função getToken */
-  Automata(Grammar<NonTerminalT,TerminalT> &grammar, const function<Token<TerminalT>()> &getToken):
+  Analyzer(Grammar<NonTerminalT,TerminalT> &grammar, const function<Token<TerminalT>()> &getToken):
 
   /* e já gera a tabela de ações/goto -> FIXME: processo demorado */
   _table(grammar.createTable()),
