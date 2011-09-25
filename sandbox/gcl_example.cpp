@@ -582,7 +582,7 @@ GCLGrammar grammar(symbolToString,{
   {AddingOperator,{{TkMinus}}},
 
   // <multiplyOperator>    "*" | "/" | "\" 
-  {MultiplyOperator,{{TkPlus},{TkDiv},{TkRem}}},
+  {MultiplyOperator,{{TkTimes},{TkDiv},{TkRem}}},
 
   // <constantName>        "identifier"  
   {ConstantName,{{TkId}}},
@@ -619,15 +619,15 @@ GCLGrammar grammar(symbolToString,{
 TransitionTable<LexState,TokenType> automata(start,invalid,final);
 
 GCLGrammar ifG(symbolToString,{
-  {EL,{{Program},{TEOF}},{0}},
-  {Program,{{Module},{Module}},{0,1}},
-  {Module,{{TkIf},{TkLParentesis},{BooleanConstant},{TkRParentesis},{Definition}},{2,4}},
-  {Module,{{TkIf},{TkLParentesis},{BooleanConstant},{TkRParentesis},{Definition},{TkGuarded},{Definition}},{2,4,6}},
+  {EL,{{Program},{TEOF}}},
+  {Program,{{Module},{Module}}},
+  {Module,{{TkIf},{TkLParentesis},{BooleanConstant},{TkRParentesis},{Definition}}},
+  {Module,{{TkIf},{TkLParentesis},{BooleanConstant},{TkRParentesis},{Definition},{TkElse},{Definition}}},
   {Module,{}},
-  {Module,{{TkId}},{0}},
-  {BooleanConstant,{{TkTrue}},{0}},
-  {BooleanConstant,{{TkFalse}},{0}},
-  {Definition,{{Module}},{0}}
+  {Module,{{TkId}}},
+  {BooleanConstant,{{TkTrue}}},
+  {BooleanConstant,{{TkFalse}}},
+  {Definition,{{Module}}}
 },TEOF,INVALID);
 
 int main(int argc, char **argv)

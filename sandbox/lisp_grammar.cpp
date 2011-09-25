@@ -104,7 +104,7 @@ static string symbolToString(const LISPGrammar::Symbol &s)
 
 LISPGrammar grammar(symbolToString,{
   {EL,{{E},{TEOF}}},
-  {E,{{TkLPar},{T},{TkRPar}}},
+  {E,{{TkLPar},{T},{TkRPar}},{1}},
   {T,{{N},{T}}},
   {T,{}},
   {N,{{TkId}}},

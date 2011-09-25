@@ -15,3 +15,6 @@ target_link_libraries(lisp gcl-lexical)
 
 add_executable(list_grammar list_grammar.cpp)
 target_link_libraries(list_grammar gcl-lexical)
+
+add_executable(ambiguous_example ambiguous_example.cpp)
+target_link_libraries(ambiguous_example gcl-lexical)

@@ -222,6 +222,10 @@ struct Grammar
   {
   }
 
+  virtual ~Grammar()
+  {
+  }
+
   /* regra e posição que já foi checado */
   set<pair<int,int>> _firstChecked;
 
