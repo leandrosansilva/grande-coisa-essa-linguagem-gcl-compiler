@@ -92,20 +92,20 @@ typedef enum {
 } TokenType;
 
 static map<TokenType,string> TerminalMap {
-  {TkId,"TkId"},
-  {TkAssign,"TkAssign"},
-  {TkIf,"TkIf"},
-  {TkElse,"TkElse"},
-  {TkEnd,"TkEnd"},
-  {TkLPar,"TkLPar"},
-  {TkRPar,"TkRPar"},
-  {TkPlus,"TkPlus"},
-  {TkTimes,"TkTimes"},
-  {TkSpaces,"TkSpaces"},
-  {TkTrue,"TkTrue"},
-  {TkFalse,"TkFalse"},
+  {TkId,"Id"},
+  {TkAssign,":="},
+  {TkIf,"if"},
+  {TkElse,"else"},
+  {TkEnd,";"},
+  {TkLPar,"("},
+  {TkRPar,")"},
+  {TkPlus,"+"},
+  {TkTimes,"*"},
+  {TkSpaces,"<space>"},
+  {TkTrue,"true"},
+  {TkFalse,"false"},
 
-  {TkNone,"TkNone"},
+  {TkNone,"<error>"},
   {TEOF,"$"},
   {INVALID,"?"}
 };
@@ -124,10 +124,10 @@ static map<NonTerminal,string> NonTerminalMap {
   {EL,"E'"}, 
   {Program,"Program"},
   {StmList,"StmList"},
-  {AssStm,"StmList"},
-  {Stm,"StmList"},
-  {IfStm,"StmList"},
-  {Condition,"StmList"},
+  {AssStm,"AssStm"},
+  {Stm,"Stm"},
+  {IfStm,"IfStm"},
+  {Condition,"Condition"},
 };
 
 typedef Grammar<NonTerminal,TokenType> AmbGrammar;
@@ -154,9 +154,9 @@ AmbGrammar ifG(symbolToString,{
   {StmList,{{Stm},{StmList}}},
   {Stm,{{IfStm}}},
   {Stm,{{AssStm}}},
-  {AssStm,{{TkId},{TkAssign},{TkId}}},
-  {IfStm,{{TkIf},{TkLPar},{Condition},{TkRPar},{StmList},{TkElse},{StmList}}},
-  {IfStm,{{TkIf},{TkLPar},{Condition},{TkRPar},{StmList}}},
+  {AssStm,{{TkId},{TkAssign},{TkId}},{0,2}},
+  {IfStm,{{TkIf},{TkLPar},{Condition},{TkRPar},{StmList},{TkElse},{StmList}},{2,4,6}},
+  {IfStm,{{TkIf},{TkLPar},{Condition},{TkRPar},{StmList}},{2,4}},
   {Condition,{{TkTrue}}},
   {Condition,{{TkFalse}}}
 },TEOF,INVALID);
@@ -226,9 +226,9 @@ int main(int argc, char **argv)
 
   Syntatical::Analyzer<NonTerminal,TokenType> parser(ifG,getToken);
 
-  ifG.printTable();
+  //ifG.printTable();
 
-  ifG.generateGraph();
+  //ifG.generateGraph();
 
   if (!parser.parse()) {
     cerr << "Erro!" << endl;

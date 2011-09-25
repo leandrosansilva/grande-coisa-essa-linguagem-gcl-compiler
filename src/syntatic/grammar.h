@@ -15,8 +15,6 @@
 
 #include "table.h"
 
-#include "tree.h"
-
 using namespace std;
 
 namespace Syntatical {
@@ -69,16 +67,12 @@ struct Grammar
 
     bool operator<(const Symbol &other) const
     {
-      bool t(other.isTerminal() && isTerminal() && _terminal < other._terminal);
-      bool n(other.isNonTerminal() && isNonTerminal() && _nonTerminal < other._nonTerminal);
-
-      /* se os dois são diferentes, terminal é sempre menor que não terminal */
-      bool d(other.isNonTerminal() && isTerminal());
-
-      /* se é vazio, é menor que qualquer coisa, a não ser que esta outra coisa seja vazio */
-      bool e(isEmpty() && !other.isEmpty());
-
-      return t || n || d || e;
+      return  other.isTerminal() && isTerminal() && _terminal < other._terminal
+              || other.isNonTerminal() && isNonTerminal() && _nonTerminal < other._nonTerminal
+              /* se os dois são diferentes, terminal é sempre menor que não terminal */
+              || other.isNonTerminal() && isTerminal()
+              /* se é vazio, é menor que qualquer coisa, a não ser que esta outra coisa seja vazio */
+              || isEmpty() && !other.isEmpty();
     }
 
     bool operator>(const Symbol &other) const
@@ -94,14 +88,9 @@ struct Grammar
     /* operadores de comparação */
     bool operator==(const Symbol &other) const
     {
-      /* TODO: reescrever com operador ternário */
-      bool t(other.isTerminal() && isTerminal() && _terminal == other._terminal);
-
-      bool n(other.isNonTerminal() && isNonTerminal() && _nonTerminal == other._nonTerminal);
-
-      bool e(isEmpty() && other.isEmpty());
-
-      return t || n || e;
+      return other.isTerminal() && isTerminal() && _terminal == other._terminal
+             || other.isNonTerminal() && isNonTerminal() && _nonTerminal == other._nonTerminal
+             || isEmpty() && other.isEmpty();
     }
   };
 
@@ -132,48 +121,49 @@ struct Grammar
  
   struct Item
   {
-    int _rule;
-    int _dot;
+    /* primeiro int é a regra, o segundo é a posiçao do ponto 
+     * e por fim o símbolo de lookahead 
+    */
+    tuple<int,int,Symbol> _item;
 
-    // uma lista de símbolos que formam
-    Symbol _s;
-    Item(int ruleNumber,int dot, const Symbol &s):
-    _rule(ruleNumber),
-    _dot(dot),
-    _s(s)
+    Item(int ruleNumber,int dotNumber, const Symbol &lookahead):
+    _item(make_tuple(ruleNumber,dotNumber,lookahead))
     {
+    }
+
+    int dot() const
+    {
+      return get<1>(_item);
+    }
+
+    int rule() const
+    {
+      return get<0>(_item);
+    }
+
+    Symbol symbol() const
+    {
+      return get<2>(_item);
     }
 
     bool operator<(const Item &other) const
     {
-      return !(*this == other || *this > other);
+      return _item < other._item;
     }
 
     bool operator>(const Item &other) const
     {
-      if (_s > other._s) {
-        return true;
-      }
-
-      if (_s < other._s) {
-        return false;
-      }
-
-      if ((_rule * 1000 + _dot) > (other._rule * 1000 + other._dot)) {
-        return true;
-      }
-      
-      return false;
+      return _item > other._item;
     }
 
     bool operator==(const Item &other) const
     {
-      return _rule == other._rule && _dot == other._dot && _s == other._s;
+      return _item == other._item;
     }
 
     bool operator!=(const Item &other) const
     {
-      return !(*this == other);
+      return _item != other._item;
     }
   };
 
@@ -190,14 +180,6 @@ struct Grammar
   typedef set<ReduceAction> ReduceActions;
 
   typedef tuple<vector<ItemList>,EdgeMap,ReduceActions> CanonicalItems;
-
-  typedef Tree<TerminalT,Symbol> SymbolTree;
-  
-  /* uma lista de árvores */
-  typedef list<SymbolTree> TreeList;
-
-  /* Uma ação semântica é uma função que pega uma lista de árvores e transforma numa só */
-  typedef function<SymbolTree(const Symbol &, const TreeList &)> SemanticAction;
 
   /* uma regra é um não terminal à esquerda, uma lista de símbolos e uma ação semântica */
   typedef vector<Rule<NonTerminalT,SymbolList>> RuleVector;
@@ -304,23 +286,23 @@ struct Grammar
     string out;
     
     // imprime o left side
-    out += _symbolToString(Symbol(_v[item._rule]._leftSide)) + " → ";
+    out += _symbolToString(Symbol(_v[item.rule()]._leftSide)) + " → ";
 
     // imprime a produção
-    for (int i(0); i<_v[item._rule]._production.size(); i++) {
-      if (i == item._dot) {
+    for (int i(0); i<_v[item.rule()]._production.size(); i++) {
+      if (i == item.dot()) {
         out += ". ";
       }
-      out += _symbolToString(_v[item._rule]._production[i]) + " ";
+      out += _symbolToString(_v[item.rule()]._production[i]) + " ";
     }
 
     // no caso de o ponto estar no final
-    if (item._dot == _v[item._rule]._production.size()) {
+    if (item.dot() == _v[item.rule()]._production.size()) {
       out += ". ";
     }
 
     /* imprime o lookahead  */
-    out += "  '" + _symbolToString(item._s) + "'";
+    out += "  '" + _symbolToString(item.symbol()) + "'";
 
     return out;
   }
@@ -366,23 +348,23 @@ struct Grammar
       Item curItem(s[iId]);
 
       /* não aplico às regras onde o ponto está no final! */
-      if (curItem._dot >= _v[curItem._rule]._production.size()) {
+      if (curItem.dot() >= _v[curItem.rule()]._production.size()) {
         continue;
       }
 
       /* se o ponto do item não se encntra num não-terminal, nada a ser feito */
-      if (!_v[curItem._rule]._production[curItem._dot].isNonTerminal()) {
+      if (!_v[curItem.rule()]._production[curItem.dot()].isNonTerminal()) {
         continue;
       }
 
       /* concateno todos os símbolos depois do ponto com o lookahead */
       SymbolList withLA(
-        _v[curItem._rule]._production.begin() + curItem._dot + 1,
-        _v[curItem._rule]._production.end()
+        _v[curItem.rule()]._production.begin() + curItem.dot() + 1,
+        _v[curItem.rule()]._production.end()
       );
 
       /* concateno o lookahead */
-      withLA.push_back(curItem._s);
+      withLA.push_back(curItem.symbol());
 
       /* O first do conjunto acima diz quais símbolos vêm após ele  */
       SymbolSet f(first(withLA));
@@ -394,7 +376,7 @@ struct Grammar
       for (int i(0); i < _v.size(); i++) {
 
         /* só aplico às regras cuja símbolo da esquerda seja igual ao que tenho em mãos */
-        if (_v[i]._leftSide != _v[curItem._rule]._production[curItem._dot]._nonTerminal) {
+        if (_v[i]._leftSide != _v[curItem.rule()]._production[curItem.dot()]._nonTerminal) {
           continue;
         }
 
@@ -425,13 +407,13 @@ struct Grammar
     for (auto it(its.begin()); it != its.end(); it++) {
 
       /* se o ponto está no fim ou a produção é vazia, não devo aplicar */
-      if (_v[it->_rule]._production.size() == it->_dot || 
-          _v[it->_rule]._production.size() == 0) {
+      if (_v[it->rule()]._production.size() == it->dot() || 
+          _v[it->rule()]._production.size() == 0) {
         continue;
       }
 
-      if (_v[it->_rule]._production[it->_dot] == x) {
-        j.push_back(Item(it->_rule,it->_dot+1,it->_s));
+      if (_v[it->rule()]._production[it->dot()] == x) {
+        j.push_back(Item(it->rule(),it->dot()+1,it->symbol()));
       }
     }
 
@@ -461,13 +443,13 @@ struct Grammar
       for (auto item(s.begin()); item != s.end(); item++) {
 
         /* se o ponto está no final, é uma ação de redução */
-        if (item->_dot == _v[item->_rule]._production.size()) {
-          reduceActions.insert(ReduceAction(itemIndex,item->_s,item->_rule));
+        if (item->dot() == _v[item->rule()]._production.size()) {
+          reduceActions.insert(ReduceAction(itemIndex,item->symbol(),item->rule()));
           continue;
         }
         
         // Símbolo da transição
-        Symbol edgeSymbol(_v[item->_rule]._production[item->_dot]);
+        Symbol edgeSymbol(_v[item->rule()]._production[item->dot()]);
 
         // se o símbolo que estou analisando for o de final de arquivo, salto pro final
         if (edgeSymbol == Symbol(_EOF)) {

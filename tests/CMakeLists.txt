@@ -10,7 +10,7 @@ target_link_libraries(
 
 add_executable(string_test string_test.cpp)
 
-# add_executable(grammar_test tests.cpp)
+add_executable(grammar_test tests.cpp)
 
 add_executable(syntatic_table table_tests.cpp)
 

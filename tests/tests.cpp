@@ -1,4 +1,4 @@
-#include "mygrammar.h"
+#include <sandbox/mygrammar.h>
 
 bool TEST(const bool ret, const string &msg)
 {
@@ -87,7 +87,8 @@ void testClosure(MyGrammar &g)
 {
   MyGrammar::ItemList s(g.closure({{0,0,{}}}));
  
-  cout << "closure final" << endl; 
+  cout << "closure final" << endl;
+
   g.printItemList(s);
 
   cout << endl;
@@ -111,7 +112,7 @@ void testItemSet()
   a.insert({1,2,{ID}});
 
   for (auto i(a.begin()); i != a.end(); i++) {
-    cout << i->_rule << ", " << i->_dot << ", " << symbolToString(i->_s) << endl;
+    cout << i->rule() << ", " << i->dot() << ", " << symbolToString(i->symbol()) << endl;
   }
 
   TEST(a.find({2,3,{ELSE}}) == a.end(),"FALSE");
@@ -130,48 +131,39 @@ void testCanonical(MyGrammar &g)
 {
   MyGrammar::CanonicalItems c(g.items());
 
-  cout << "nº de closures: " << c.first.size() << " e de itens: " << c.second.size() << endl;
-
-  for (auto s(c.first.begin()); s != c.first.end(); s++) {
-    cout << endl << "new set " << dec << (unsigned long long int)*s << endl;
-    for (auto i((*s)->begin()); i != (*s)->end(); i++) {
-      g.printItem(*i);
-    }
-  }
-
-  cout << "gotos, etc" << endl;
-  
-  for (auto i(c.second.begin()); i != c.second.end(); i++) {
-    cout << dec << (unsigned long long)i->second << endl;
-    g.printItem(i->first);
-    cout << endl;
-  }
+  cout << "nº de closures: " << get<0>(c).size() << " e de itens: " << get<1>(c).size() << endl;
 }
 
 MyGrammar g(symbolToString,{
-  {EL,{{E}},1},
-  {E,{{E},{PLUS},{T}},1},
-  {E,{{T}},1},
-  {T,{{T},{TIMES},{F}},1},
-  {T,{{F}},1},
-  {F,{{LPAR},{E},{RPAR}},1},
-  {F,{{ID}},1}
+  {EL,{{E}}},
+  {E,{{E},{PLUS},{T}}},
+  {E,{{T}}},
+  {T,{{T},{TIMES},{F}}},
+  {T,{{F}}},
+  {F,{{LPAR},{E},{RPAR}}},
+  {F,{{ID}}}
 },TEOF,INVALID);
 
 MyGrammar mCICp66(symbolToString,{
-  {SL,{{S},{TEOF}},1},
-  {S,{{V},{ATTR},{E}},1},
-  {S,{{E}},1},
-  {E,{{V}},1},
-  {V,{{ID}},1},
-  {V,{{PLUS},{E}},1}
+  {SL,{{S},{TEOF}}},
+  {S,{{V},{ATTR},{E}}},
+  {S,{{E}}},
+  {E,{{V}}},
+  {V,{{ID}}},
+  {V,{{PLUS},{E}}}
 },TEOF,INVALID);
+
+void testItem2()
+{
+  MyGrammar::Item item(3,2,{S});
+
+  cout << g.itemToString(item) << endl;
+}
 
 
 int main(int argc, char **argv)
 {
-  //testSymbol();
-  //testItemSet();
-  //testClosure(mCICp66);
-  testCanonical(mCICp66);
+  testItem2();
+  testItemSet();
+  testSymbol();
 }

@@ -1,13 +1,13 @@
 #include "mygrammar.h"
 
-/*MyGrammar g(symbolToString,{
-  {EL,{{E}},1},
-  {E,{{E},{PLUS},{T}},1},
-  {E,{{T}},1},
-  {T,{{T},{TIMES},{F}},1},
-  {T,{{F}},1},
-  {F,{{LPAR},{E},{RPAR}},1},
-  {F,{{ID}},1}
+MyGrammar g(symbolToString,{
+  {EL,{{E}}},
+  {E,{{E},{PLUS},{T}}},
+  {E,{{T}}},
+  {T,{{T},{TIMES},{F}}},
+  {T,{{F}}},
+  {F,{{LPAR},{E},{RPAR}}},
+  {F,{{ID}}}
 },TEOF,INVALID);
 
 MyGrammar ifG(symbolToString,{
@@ -35,7 +35,7 @@ MyGrammar parG(symbolToString,{
   {E,{{LPAR},{F},{RPAR},{ID}}},
   {F,{{E},{IF}}},
   {F,{}}
-},TEOF,INVALID);*/
+},TEOF,INVALID);
 
 void testCanonical(MyGrammar &g)
 {
