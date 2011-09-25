@@ -208,6 +208,16 @@ struct Grammar
   {
   }
 
+  /* toda vez que calculo o conjunto first de um símbolo, 
+   * adiciono nesta variável, e consulto quando necessário
+  */
+  map<Symbol,SymbolSet> _firstSymbolSets;
+
+  /* toda vez que calculo o conjunto first de uma lista de símbolos, 
+   * adiciono nesta variável, e consulto quando necessário
+  */
+  map<SymbolList,SymbolSet> _firstSymbolListSets;
+
   /* regra e posição que já foi checado */
   set<pair<int,int>> _firstChecked;
 
@@ -217,6 +227,13 @@ struct Grammar
       return {symbol};
     }
 
+    /* busco na minha tabela de first já calculados */
+    auto found(_firstSymbolSets.find(symbol));
+    if (found != _firstSymbolSets.end()) {
+      // retorna o encontrado!
+      return found->second;
+    }
+      
     SymbolSet f;
 
     /* para cada produção do símbolo, vai adicionando o first dele em f */
@@ -257,11 +274,21 @@ struct Grammar
       }
     }
 
+    /* insere na lista de firsts já calculados para símbolos */
+    _firstSymbolSets[symbol] = f;
+
     return f;
   }
 
   SymbolSet first(const SymbolList &list)
   {
+    /* verifica se já calculou este first */
+    auto found(_firstSymbolListSets.find(list));
+    if (found != _firstSymbolListSets.end()) {
+      // retorna o que achou
+      return found->second;
+    }
+    
     SymbolSet f;
 
     for(auto i(list.begin()); i != list.end(); i++) {
@@ -277,6 +304,9 @@ struct Grammar
         break;
       }
     }
+    
+    /* adiciona o achado */
+    _firstSymbolListSets[list] = f;
 
     return f;
   }
