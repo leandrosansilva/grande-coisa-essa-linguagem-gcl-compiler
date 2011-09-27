@@ -467,9 +467,6 @@ GCLGrammar grammar(symbolToString,{
   // <constantDef>       "const" <constantName> "=" <constant> 
   {ConstantDef,{{TkConst},{ConstantName},{TkEqual},{Constant}}},
 
-  // FIXME: teste
-  {Constant,{{Teste5}}},
-  
   // <variableDef>    <type> <variableList>
   {VariableDef,{{Type},{VariableList}}},
 
@@ -663,14 +660,9 @@ GCLGrammar grammar(symbolToString,{
   {VariableMore,{{TkLBracket},{Expression},{TkRBracket},{Indexorcomp}}},
   {VariableMore,{{TkDot},{Nextitem},{Indexorcomp}}},
 
-  {Nextitem,{{Teste7}}},
-  {Indexorcomp,{{Teste8}}},
-
-  // <nextitem>      "number" | "identifier" // XXX: adicionei string e real
-  /*{Nextitem,{{TkInteger}}},
-  {Nextitem,{{TkReal}}},
+  // <nextitem>      "number" | "identifier"
+  {Nextitem,{{TkInteger}}},
   {Nextitem,{{TkId}}},
-  {Nextitem,{{TkString}}},
 
   // <indexorcomp>   { "."  "number" | "[" <expression> "]" } // TODO: este number pode ser uma variável?
   {Indexorcomp,{}},
@@ -682,7 +674,7 @@ GCLGrammar grammar(symbolToString,{
 
   // <booleanConstant>     "true" | "false" 
   {BooleanConstant,{{TkTrue}}},
-  {BooleanConstant,{{TkFalse}}}*/
+  {BooleanConstant,{{TkFalse}}}
   
 },TEOF,INVALID);
 
