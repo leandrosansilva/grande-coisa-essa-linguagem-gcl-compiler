@@ -490,10 +490,6 @@ GCLGrammar grammar(symbolToString,{
   {TypeSymbol,{{TkStringWord}}},
   {TypeSymbol,{{TkId}}},
 
-  // FIXME: só teste 
-  {VariableList,{{Teste7}}},
-  {Rangetype,{{Teste9}}},
-
   // <tupletype>    "[" <typeSymbol> { "," <typeSymbol> } "]"
   {Tupletype,{{TkLBracket},{TypeSymbol},{TypeSymbolList},{TkRBracket}}},
   {TypeSymbolList,{{TkComma},{TypeSymbol},{TypeSymbolList}}},
@@ -506,15 +502,15 @@ GCLGrammar grammar(symbolToString,{
   {ArrayTypeList,{}},
 
   // <rangetype>    "range" "[" <constant> ".." <constant>  "]"
-  /*{Rangetype,{{TkRange},{TkLBracket},{Constant},{TkTwoDots},{Constant},{TkRBracket}}},
+  {Rangetype,{{TkRange},{TkLBracket},{Constant},{TkTwoDots},{Constant},{TkRBracket}}},
 
-  // <variableList>   "identifier" {"," "identifier"}
+    // <variableList>   "identifier" {"," "identifier"}
   {VariableList,{{TkId},{IdList}}},
   {IdList,{{TkComma},{TkId},{IdList}}},
   {IdList,{}},
 
   // <typedef>    "typedef" <type> "identifier" 
-  {Typedef,{{TkTypedef},{Type},TkId}}, 
+  /*{Typedef,{{TkTypedef},{Type},TkId}}, 
 
   // <procedureDecl>  "proc" "identifier" [<paramPart>]
   {ProcedureDecl,{{TkProc},{TkId}}},
@@ -916,7 +912,7 @@ int main(int argc, char **argv)
     return lexer.getToken();
   });
 
-  //grammar.printTable();
+  grammar.printTable();
 
   //grammar.generateGraph();
 
