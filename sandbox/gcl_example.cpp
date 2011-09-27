@@ -547,8 +547,6 @@ GCLGrammar grammar(symbolToString,{
   {EmptyStatement,{{TkSkip}}},
 
   // FIXME: teste
-  {ReadStatement,{{Teste6}}},
-  {WriteStatement,{{Teste7}}},
   {AssignStatement,{{Teste8}}},
   {ReturnStatement,{{Teste9}}},
   {CallStatement,{{Teste10}}},
@@ -557,13 +555,16 @@ GCLGrammar grammar(symbolToString,{
   {ForStatement,{{Teste13}}},
 
   // <readStatement>      "read" <variableAccessList>
-  /*{ReadStatement,{{TkRead},{VariableAccessList}}},
+  {ReadStatement,{{TkRead},{VariableAccessList}}},
 
   // <variableAccessList>  <variableAccess> {"," <variableAccess> }
   {VariableAccessList,{{VariableAccess},{VariableAccessList2}}},
   {VariableAccessList2,{{TkComma},{VariableAccess},{VariableAccessList2}}},
   {VariableAccessList2,{}},
-  
+
+  // FIXME: teste
+  {VariableAccess,{{Teste6}}},
+
   // <writeStatement>  "write" <writeItem> {"," <writeItem> } 
   {WriteStatement,{{TkWrite},{WriteItem},{WriteItemList}}},
   {WriteItemList,{{TkComma},{WriteItem},{WriteItemList}}},
@@ -572,9 +573,12 @@ GCLGrammar grammar(symbolToString,{
   // <writeItem>       "stringconst" | <expression>  FIXME: is this Ok? Stringconst?
   {WriteItem,{{TkString}}},
   {WriteItem,{{Expression}}},
+
+  // FIXME: teste
+  {Expression,{{Teste7}}},
   
   // <expressionList>      <expression> { "," <expression> }  
-  {ExpressionList,{{Expression},{ExpressionList2}}},
+  /*{ExpressionList,{{Expression},{ExpressionList2}}},
   {ExpressionList2,{{TkComma},{Expression},{ExpressionList2}}},
   {ExpressionList2,{}},
 
