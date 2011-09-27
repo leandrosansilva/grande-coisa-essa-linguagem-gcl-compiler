@@ -18,7 +18,7 @@ using namespace Common;
 namespace Syntatical {
 
 template <typename TokenTypeT, typename SymbolT>
-Tree<TokenTypeT,SymbolT> createTree(const set<int> abs, const SymbolT &head, const list<Tree<TokenTypeT,SymbolT>> &list) 
+Tree<TokenTypeT,SymbolT> createTree(const set<int> &abs, const SymbolT &head, const list<Tree<TokenTypeT,SymbolT>> &list) 
 {
   typename Tree<TokenTypeT,SymbolT>::TreeMap treeMap;
 
