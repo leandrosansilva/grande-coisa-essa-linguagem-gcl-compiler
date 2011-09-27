@@ -464,7 +464,6 @@ GCLGrammar grammar(symbolToString,{
 
   // FIXME: teste
   {ProcedureDef,{{Teste1}}},
-  {Typedef,{{Teste2}}},
   {ProcedureDecl,{{Teste3}}},
   
   // <constantDef>       "const" <constantName> "=" <constant> 
@@ -510,10 +509,10 @@ GCLGrammar grammar(symbolToString,{
   {IdList,{}},
 
   // <typedef>    "typedef" <type> "identifier" 
-  /*{Typedef,{{TkTypedef},{Type},TkId}}, 
+  {Typedef,{{TkTypedef},{Type},TkId}}, 
 
   // <procedureDecl>  "proc" "identifier" [<paramPart>]
-  {ProcedureDecl,{{TkProc},{TkId}}},
+  /*{ProcedureDecl,{{TkProc},{TkId}}},
   {ProcedureDecl,{{TkProc},{TkId},{ParamPart}}},
 
   // <procedureDef>   <procedureDecl> <block>  
