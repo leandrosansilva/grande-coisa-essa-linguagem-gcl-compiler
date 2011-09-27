@@ -99,7 +99,7 @@ struct Tree
 
     // coloca a indentação
     for (int spaces(0); spaces < indent; spaces++) {
-      out += "--";
+      out += ".";
     }
 
     out += symbolToString(getHead()) + ": ";

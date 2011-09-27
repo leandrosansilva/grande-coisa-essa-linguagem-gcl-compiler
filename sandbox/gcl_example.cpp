@@ -546,12 +546,6 @@ GCLGrammar grammar(symbolToString,{
   // <emptyStatement>     "skip"
   {EmptyStatement,{{TkSkip}}},
 
-  // FIXME: teste
-  {ReturnStatement,{{Teste9}}},
-  {CallStatement,{{Teste10}}},
-  {DoStatement,{{Teste12}}},
-  {ForStatement,{{Teste13}}},
-
   // <readStatement>      "read" <variableAccessList>
   {ReadStatement,{{TkRead},{VariableAccessList}}},
 
@@ -593,7 +587,7 @@ GCLGrammar grammar(symbolToString,{
   {GuardedCommand,{{Expression},{TkThen},{StatementPart}}},
 
   // <doStatement>         "do" <guardedCommandList> "od" 
-  /*{DoStatement,{{TkDo},{GuardedCommandList},{TkOd}}},  
+  {DoStatement,{{TkDo},{GuardedCommandList},{TkOd}}},  
 
   // <forStatement>    "forall" <variableAccess> "->" <statementPart> "llarof"
   {ForStatement,{{TkForall},{VariableAccess},{TkThen},{StatementPart},{TkLlarof}}},
@@ -605,8 +599,11 @@ GCLGrammar grammar(symbolToString,{
   {CallStatement,{{TkId},{TkDot},{TkId},{ArgumentList}}},
   {CallStatement,{{TkId},{ArgumentList}}},
 
+  // FIXME: teste
+  {ArgumentList,{{Teste10}}},
+
   // <expressionList>      <expression> { "," <expression> }  
-  {ExpressionList,{{Expression},{ExpressionList2}}},
+  /*{ExpressionList,{{Expression},{ExpressionList2}}},
   {ExpressionList2,{{TkComma},{Expression},{ExpressionList2}}},
   {ExpressionList2,{}},
 
