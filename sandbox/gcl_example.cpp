@@ -492,7 +492,6 @@ GCLGrammar grammar(symbolToString,{
 
   // FIXME: só teste 
   {VariableList,{{Teste7}}},
-  {Arraytype,{{Teste8}}},
   {Rangetype,{{Teste9}}},
 
   // <tupletype>    "[" <typeSymbol> { "," <typeSymbol> } "]"
@@ -502,12 +501,12 @@ GCLGrammar grammar(symbolToString,{
 
   // <arraytype>    "array" "[" "identifier" "]" 
   //      {"[" "identifier" "]"}
-  /*{Arraytype,{{TkArray},{TkLBracket},{TkId},{TkRBracket},{ArrayTypeList}}},
+  {Arraytype,{{TkArray},{TkLBracket},{TkId},{TkRBracket},{ArrayTypeList}}},
   {ArrayTypeList,{{TkLBracket},{TkId},{TkRBracket},{ArrayTypeList}}},
   {ArrayTypeList,{}},
 
   // <rangetype>    "range" "[" <constant> ".." <constant>  "]"
-  {Rangetype,{{TkRange},{TkLBracket},{Constant},{TkTwoDots},{Constant},{TkRBracket}}},
+  /*{Rangetype,{{TkRange},{TkLBracket},{Constant},{TkTwoDots},{Constant},{TkRBracket}}},
 
   // <variableList>   "identifier" {"," "identifier"}
   {VariableList,{{TkId},{IdList}}},
@@ -871,6 +870,8 @@ int main(int argc, char **argv)
       {"forall",TkForall},
       {"llarof",TkLlarof},
       {"skip",TkSkip},
+
+      // palavras de teste 
       {"teste1",Teste1}, 
       {"teste2",Teste2}, 
       {"teste3",Teste3}, 
