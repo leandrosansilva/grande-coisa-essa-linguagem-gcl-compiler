@@ -286,6 +286,7 @@ typedef enum {
   Module,                
   Block,                 
   DefinitionPart,        
+  DefinitionList,        
   Definition,            
   ConstantDef,           
   VariableDef,           
@@ -303,6 +304,7 @@ typedef enum {
   ParamDef,              
   ParamDefList,              
   StatementPart,         
+  StatementList,         
   Statement,             
   EmptyStatement,        
   ReadStatement,         
@@ -353,6 +355,7 @@ static map<NonTerminal,string> NonTerminalMap {
   {Module,"module"},                
   {Block,"block"},                 
   {DefinitionPart,"definitionPart"},        
+  {DefinitionList,"definitionList"},        
   {Definition,"definition"},            
   {ConstantDef,"constantDef"},           
   {VariableDef,"variableDef"},           
@@ -370,6 +373,7 @@ static map<NonTerminal,string> NonTerminalMap {
   {ParamDef,"paramDef"},              
   {ParamDefList,"paramDefList"},              
   {StatementPart,"statementPart"},         
+  {StatementList,"statementList"},         
   {Statement,"statement"},             
   {EmptyStatement,"emptyStatement"},        
   {ReadStatement,"readStatement"},         
@@ -447,12 +451,10 @@ GCLGrammar grammar(symbolToString,{
   // <block>        <definitionPart> "begin" <statementPart> "end"
   {Block,{{DefinitionPart},{TkBegin},{StatementPart},{TkEndWord}}},
 
-  // <definitionPart>   {<definition> ";"}  
-  {DefinitionPart,{{Definition},{TkEnd}}},
-  {DefinitionPart,{}},
-
-  // FIXME: teste  
-  {StatementPart,{{Teste11},{TkEnd}}},
+  // <definitionPart>   {<definition> ";"}
+  {DefinitionPart,{DefinitionList}},
+  {DefinitionList,{{Definition},{TkEnd},{DefinitionList}}},
+  {DefinitionList,{}},
 
   //<definition>      <constantDef> | <variableDef> | <procedureDef> 
   //      | <typedef> |<procedureDecl> 
@@ -462,10 +464,6 @@ GCLGrammar grammar(symbolToString,{
   {Definition,{{Typedef}}},
   {Definition,{{ProcedureDecl}}},
 
-  // FIXME: teste
-  {ProcedureDef,{{Teste1}}},
-  {ProcedureDecl,{{Teste3}}},
-  
   // <constantDef>       "const" <constantName> "=" <constant> 
   {ConstantDef,{{TkConst},{ConstantName},{TkEqual},{Constant}}},
 
@@ -512,7 +510,7 @@ GCLGrammar grammar(symbolToString,{
   {Typedef,{{TkTypedef},{Type},TkId}}, 
 
   // <procedureDecl>  "proc" "identifier" [<paramPart>]
-  /*{ProcedureDecl,{{TkProc},{TkId}}},
+  {ProcedureDecl,{{TkProc},{TkId}}},
   {ProcedureDecl,{{TkProc},{TkId},{ParamPart}}},
 
   // <procedureDef>   <procedureDecl> <block>  
@@ -527,8 +525,10 @@ GCLGrammar grammar(symbolToString,{
   {ParamDef,{{TkVal},{VariableDef}}},
   {ParamDef,{{TkRef},{VariableDef}}},
 
-  // <statementPart>  { <statement> ";"} 
-  {StatementPart,{{Statement},{TkEnd}}},
+  // <statementPart>  { <statement> ";"}
+  {StatementPart,{{StatementList}}}, 
+  {StatementList,{{Statement},{TkEnd},{StatementList}}},
+  {StatementList,{}},
 
   // <statement>    <emptyStatement> | <readStatement> | <writeStatement> 
   //      | <assignStatement> | <returnStatement> | <callStatement>
@@ -546,8 +546,18 @@ GCLGrammar grammar(symbolToString,{
   // <emptyStatement>     "skip"
   {EmptyStatement,{{TkSkip}}},
 
+  // FIXME: teste
+  {ReadStatement,{{Teste6}}},
+  {WriteStatement,{{Teste7}}},
+  {AssignStatement,{{Teste8}}},
+  {ReturnStatement,{{Teste9}}},
+  {CallStatement,{{Teste10}}},
+  {IfStatement,{{Teste11}}},
+  {DoStatement,{{Teste12}}},
+  {ForStatement,{{Teste13}}},
+
   // <readStatement>      "read" <variableAccessList>
-  {ReadStatement,{{TkRead},{VariableAccessList}}},
+  /*{ReadStatement,{{TkRead},{VariableAccessList}}},
 
   // <variableAccessList>  <variableAccess> {"," <variableAccess> }
   {VariableAccessList,{{VariableAccess},{VariableAccessList2}}},
