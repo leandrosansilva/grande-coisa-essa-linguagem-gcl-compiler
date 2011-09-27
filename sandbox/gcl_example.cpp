@@ -494,16 +494,15 @@ GCLGrammar grammar(symbolToString,{
   {VariableList,{{Teste7}}},
   {Arraytype,{{Teste8}}},
   {Rangetype,{{Teste9}}},
-  {Tupletype,{{Teste10}}},
 
   // <tupletype>    "[" <typeSymbol> { "," <typeSymbol> } "]"
-  /*{Tupletype,{{TkLBracket},{TypeSymbol},{TypeSymbolList},{TkRBracket}}},
+  {Tupletype,{{TkLBracket},{TypeSymbol},{TypeSymbolList},{TkRBracket}}},
   {TypeSymbolList,{{TkComma},{TypeSymbol},{TypeSymbolList}}},
   {TypeSymbolList,{}},
 
   // <arraytype>    "array" "[" "identifier" "]" 
   //      {"[" "identifier" "]"}
-  {Arraytype,{{TkArray},{TkLBracket},{TkId},{TkRBracket},{ArrayTypeList}}},
+  /*{Arraytype,{{TkArray},{TkLBracket},{TkId},{TkRBracket},{ArrayTypeList}}},
   {ArrayTypeList,{{TkLBracket},{TkId},{TkRBracket},{ArrayTypeList}}},
   {ArrayTypeList,{}},
 
