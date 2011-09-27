@@ -566,14 +566,8 @@ GCLGrammar grammar(symbolToString,{
   {WriteItem,{{TkString}}},
   {WriteItem,{{Expression}}},
 
-  // FIXME: teste
-  {Expression,{{Teste7}}},
-  
   // <assignStatement>     <variableAccessList> ":=" <expressionList>  
   {AssignStatement,{{VariableAccessList},{TkAssign},{ExpressionList}}},
-
-  // FIXME: teste
-  {ExpressionList,{{Teste8}}},
 
   // <ifStatement>         "if" <guardedCommandList> "fi"  
   {IfStatement,{{TkIf},{GuardedCommandList},{TkFi}}},  
@@ -599,11 +593,8 @@ GCLGrammar grammar(symbolToString,{
   {CallStatement,{{TkId},{TkDot},{TkId},{ArgumentList}}},
   {CallStatement,{{TkId},{ArgumentList}}},
 
-  // FIXME: teste
-  {ArgumentList,{{Teste10}}},
-
   // <expressionList>      <expression> { "," <expression> }  
-  /*{ExpressionList,{{Expression},{ExpressionList2}}},
+  {ExpressionList,{{Expression},{ExpressionList2}}},
   {ExpressionList2,{{TkComma},{Expression},{ExpressionList2}}},
   {ExpressionList2,{}},
 
@@ -613,17 +604,20 @@ GCLGrammar grammar(symbolToString,{
  
   // <expression>    <relationalExpression> {<booleanOperator> <relationalExpression>}
   {Expression,{{RelationalExpression},{BoolRelList}}},
-  {BoolRelList,{{BooleanOperator},{RelationalExpression}}},
+  {BoolRelList,{{BooleanOperator},{RelationalExpression},{BoolRelList}}},
   {BoolRelList,{}},
 
   // <booleanOperator> "&" | "|" 
   {BooleanOperator,{{TkAnd}}},
   {BooleanOperator,{{TkOr}}},
-    
+
   // <relationalExpression>  <simpleExpression> [<relationalOperator> <simpleExpression>] 
   {RelationalExpression,{{SimpleExpression}}},
   {RelationalExpression,{{SimpleExpression},{RelationalOperator},{SimpleExpression}}},
-  
+
+  // FIXME: teste
+  {SimpleExpression,{{Teste7}}},
+
   // <relationalOperator>  "<" | "=" | ">" | "<=" | ">=" | "#" 
   {RelationalOperator,{{TkLThan}}},
   {RelationalOperator,{{TkEqual}}},
@@ -632,8 +626,9 @@ GCLGrammar grammar(symbolToString,{
   {RelationalOperator,{{TkGEThan}}},
   {RelationalOperator,{{TkSharp}}},
 
-  // <simpleExpression>  ( "+" | "-" )  <term> { <addingOperator> <term>} | <term> { <addingOperator> <term>}  
-  {SimpleExpression,{{SimpleExpression},{TkPlus},{Term},{SimpleExpressionExt}}}, 
+  // <simpleExpression>  ( "+" | "-" )  <term> { <addingOperator> <term>} | 
+  //                                    <term> { <addingOperator> <term>}  
+  /*{SimpleExpression,{{SimpleExpression},{TkPlus},{Term},{SimpleExpressionExt}}}, 
   {SimpleExpression,{{SimpleExpression},{TkMinus},{Term},{SimpleExpressionExt}}}, 
   {SimpleExpressionExt,{{AddingOperator},{Term}}},
   {SimpleExpressionExt,{{Term},{AddingOperator}}},
