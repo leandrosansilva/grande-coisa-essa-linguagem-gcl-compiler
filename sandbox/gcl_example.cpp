@@ -74,12 +74,7 @@ typedef enum {
 } LexState;
 
 typedef enum {
-  /* Tokens de teste */
   TkId,
-  
-  TkString,
-  TkInteger,
-  TkReal,
   
   TkComment,
   TkSpaces,
@@ -114,15 +109,25 @@ typedef enum {
   TkTimes,
   TkDiv,
   TkRem,
+
+  /* Tipos base */
+  TkInteger,
+  TkReal,
+  TkBoolean,
+  TkString,
   
   /* Palavras reservadas */
   TkModule,
   TkPrivate,
   TkEndWord,
   TkConst,
-  TkBoolean,
+
+  /* palavras reservadas dos tipos base */
+  TkBooleanWord,
   TkIntegerWord,
   TkRealWord,
+  TkStringWord,
+
   TkBegin,
   TkTypedef,
   TkArray,
@@ -146,16 +151,33 @@ typedef enum {
   
   TkNone,
 
-  TEOF,INVALID
+  TEOF,INVALID,
+
+  /* Tokens de teste! Não fazem parte da gramatica! */
+  Teste1,
+  Teste2,
+  Teste3,
+  Teste4,
+  Teste5,
+  Teste6,
+  Teste7,
+  Teste8,
+  Teste9,
+  Teste10,
+  Teste11,
+  Teste12,
+  Teste13,
+  Teste14,
+  Teste15,
+  Teste16,
+  Teste17,
+  Teste18,
+  Teste19,
 } TokenType;
 
 static map<TokenType,string> TerminalMap {
   /* Tokens de teste */
   {TkId,"TkId"},
-    
-  {TkString,"TkString"},
-  {TkInteger,"TkInteger"},
-  {TkReal,"TkReal"},
     
   {TkComment,"TkComment"},
   {TkSpaces,"TkSpaces"},
@@ -190,15 +212,25 @@ static map<TokenType,string> TerminalMap {
   {TkTimes,"TkTimes"},
   {TkDiv,"TkDiv"},
   {TkRem,"TkRem"},
-    
+
+  /* Tipos */
+  {TkReal,"TkReal"},
+  {TkInteger,"TkInteger"},
+  {TkString,"TkString"},
+  {TkBoolean,"TkBoolean"},
+ 
   /* Palavras reservadas */
   {TkModule,"TkModule"},
   {TkPrivate,"TkPrivate"},
   {TkEndWord,"TkEndWord"},
   {TkConst,"TkConst"},
-  {TkBoolean,"TkBoolean"},
+
+  // quatro tipos base da linguagem
+  {TkBooleanWord,"TkBooleanWord"},
   {TkIntegerWord,"TkIntegerWord"},
   {TkRealWord,"TkRealWord"},
+  {TkStringWord,"TkStringWord"},
+
   {TkBegin,"TkBegin"},
   {TkTypedef,"TkTypedef"},
   {TkArray,"TkArray"},
@@ -224,7 +256,28 @@ static map<TokenType,string> TerminalMap {
 
   {TEOF,"$"},
 
-  {INVALID,"?"}
+  {INVALID,"?"},
+
+  // Tokens de teste! Não fazem parte da gramática!
+  {Teste1,"Teste1"},
+  {Teste2,"Teste2"},
+  {Teste3,"Teste3"},
+  {Teste4,"Teste4"},
+  {Teste5,"Teste5"},
+  {Teste6,"Teste6"},
+  {Teste7,"Teste7"},
+  {Teste8,"Teste8"},
+  {Teste9,"Teste9"},
+  {Teste10,"Teste10"},
+  {Teste11,"Teste11"},
+  {Teste12,"Teste12"},
+  {Teste13,"Teste13"},
+  {Teste14,"Teste14"},
+  {Teste15,"Teste15"},
+  {Teste16,"Teste16"},
+  {Teste17,"Teste17"},
+  {Teste18,"Teste18"},
+  {Teste19,"Teste19"},
 };
 
 typedef enum {
@@ -378,15 +431,16 @@ static string symbolToString(const GCLGrammar::Symbol &s)
 }
 
 GCLGrammar grammar(symbolToString,{
+  // Regra básica, da gramática estentida
   {EL,{{Program},{TEOF}}},
 
   // <program>       <module> {<module>}
   {Program,{{ModuleList}}},
+  {ModuleList,{{Module},{ModuleList}}},
+  {ModuleList,{}},
 
   // <module>        "module" "identifier" <definitionPart> 
   //      [ "private"  <block> ] "."  
-  {ModuleList,{{Module},{ModuleList}}},
-  {ModuleList,{}},
   {Module,{{TkModule},{TkId},{DefinitionPart},{TkDot}}},
   {Module,{{TkModule},{TkId},{DefinitionPart},{TkPrivate},{Block},{TkDot}}},
 
@@ -397,6 +451,9 @@ GCLGrammar grammar(symbolToString,{
   {DefinitionPart,{{Definition},{TkEnd}}},
   {DefinitionPart,{}},
 
+  // FIXME: teste  
+  {StatementPart,{{Teste11},{TkEnd}}},
+
   //<definition>      <constantDef> | <variableDef> | <procedureDef> 
   //      | <typedef> |<procedureDecl> 
   {Definition,{{ConstantDef}}},
@@ -405,27 +462,42 @@ GCLGrammar grammar(symbolToString,{
   {Definition,{{Typedef}}},
   {Definition,{{ProcedureDecl}}},
 
+  // FIXME: teste
+  {ProcedureDef,{{Teste1}}},
+  {Typedef,{{Teste2}}},
+  {ProcedureDecl,{{Teste3}}},
+  
   // <constantDef>       "const" <constantName> "=" <constant> 
   {ConstantDef,{{TkConst},{ConstantName},{TkEqual},{Constant}}},
+
+  // FIXME: teste
+  {ConstantName,{{Teste4}}},
+  {Constant,{{Teste5}}},
   
   // <variableDef>    <type> <variableList>
   {VariableDef,{{Type},{VariableList}}},
- 
+
   // <type>     <typeSymbol> [ <arraytype> | <rangetype> ] | <tupletype>
   {Type,{{TypeSymbol}}},
   {Type,{{TypeSymbol},{Arraytype}}},
   {Type,{{TypeSymbol},{Rangetype}}},
   {Type,{{Tupletype}}},
 
-  // <typeSymbol>       "integer" | "Boolean"  | "identifier"
-  {TypeSymbol,{{TkInteger},}},
-  {TypeSymbol,{{TkBoolean},}},
-  {TypeSymbol,{{TkReal},}},
-  {TypeSymbol,{{TkString},}},
-  {TypeSymbol,{{TkId},}},
+  // <typeSymbol>     "string" | "integer" | "Boolean"  | "identifier"
+  {TypeSymbol,{{TkIntegerWord}}},
+  {TypeSymbol,{{TkBooleanWord}}},
+  {TypeSymbol,{{TkRealWord}}},
+  {TypeSymbol,{{TkStringWord}}},
+  {TypeSymbol,{{TkId}}},
+
+  // FIXME: só teste 
+  {VariableList,{{Teste7}}},
+  {Arraytype,{{Teste8}}},
+  {Rangetype,{{Teste9}}},
+  {Tupletype,{{Teste10}}},
 
   // <tupletype>    "[" <typeSymbol> { "," <typeSymbol> } "]"
-  {Tupletype,{{TkLBracket},{TypeSymbol},{TypeSymbolList},{TkRBracket}}},
+  /*{Tupletype,{{TkLBracket},{TypeSymbol},{TypeSymbolList},{TkRBracket}}},
   {TypeSymbolList,{{TkComma},{TypeSymbol},{TypeSymbolList}}},
   {TypeSymbolList,{}},
 
@@ -612,7 +684,7 @@ GCLGrammar grammar(symbolToString,{
 
   // <booleanConstant>     "true" | "false" 
   {BooleanConstant,{{TkTrue}}},
-  {BooleanConstant,{{TkFalse}}}
+  {BooleanConstant,{{TkFalse}}}*/
   
 },TEOF,INVALID);
 
@@ -737,7 +809,7 @@ int main(int argc, char **argv)
   automata.addTransition(start,";",k1);
   automata.addFinalTransition(k1,any,TkEnd);
   
-  /* string com aspas simples*/
+  /* string com aspas simples */
   automata.addTransition(start,"\'",c1);
   automata.addTransition(c1,any - "\'",c1);
   automata.addTransition(c1,"\'",c3);
@@ -776,9 +848,10 @@ int main(int argc, char **argv)
       {"private",TkPrivate},
       {"end",TkEndWord},
       {"const",TkConst},
-      {"Boolean",TkBoolean},
+      {"Boolean",TkBooleanWord},
       {"integer",TkIntegerWord},
       {"real",TkRealWord},
+      {"string",TkStringWord},
       {"begin",TkBegin},
       {"typedef",TkTypedef},
       {"array",TkArray},
@@ -798,12 +871,31 @@ int main(int argc, char **argv)
       {"false",TkFalse},
       {"forall",TkForall},
       {"llarof",TkLlarof},
-      {"skip",TkSkip} 
+      {"skip",TkSkip},
+      {"teste1",Teste1}, 
+      {"teste2",Teste2}, 
+      {"teste3",Teste3}, 
+      {"teste4",Teste4}, 
+      {"teste5",Teste5}, 
+      {"teste6",Teste6}, 
+      {"teste7",Teste7}, 
+      {"teste8",Teste8}, 
+      {"teste9",Teste9},
+      {"teste10",Teste10},
+      {"teste11",Teste11},
+      {"teste12",Teste12},
+      {"teste13",Teste13},
+      {"teste14",Teste14},
+      {"teste15",Teste15},
+      {"teste16",Teste15},
+      {"teste17",Teste17},
+      {"teste18",Teste18},
+      {"teste19",Teste19},
     }
   );
   
   /* Analisador léxico */
-  Analyser<LexState,TokenType> lexer(reader,automata,reservedWords,TEOF);
+  Lexical::Analyser<LexState,TokenType> lexer(reader,automata,reservedWords,TEOF);
   
   // os identificadores devem ser comparados na tabela de palavras reservadas
   lexer.addTokenToCompareWithReserved({TkId});
@@ -820,15 +912,13 @@ int main(int argc, char **argv)
    */
   lexer.setTokenPadding(TkString,1,1);
 
-  function<Token<TokenType>()> getToken([&lexer](){
+  Syntatical::Analyzer<NonTerminal,TokenType> parser(grammar,[&lexer](){
     return lexer.getToken();
   });
 
-  Syntatical::Analyzer<NonTerminal,TokenType> parser(ifG,getToken);
+  //grammar.printTable();
 
-  ifG.printTable();
-
-  //ifG.generateGraph();
+  //grammar.generateGraph();
 
   if (!parser.parse()) {
     cerr << "Erro!" << endl;
