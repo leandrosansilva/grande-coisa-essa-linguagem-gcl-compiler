@@ -468,7 +468,6 @@ GCLGrammar grammar(symbolToString,{
   {ConstantDef,{{TkConst},{ConstantName},{TkEqual},{Constant}}},
 
   // FIXME: teste
-  {ConstantName,{{Teste4}}},
   {Constant,{{Teste5}}},
   
   // <variableDef>    <type> <variableList>
@@ -631,14 +630,19 @@ GCLGrammar grammar(symbolToString,{
   {SimpleExpression,{{Term},{SimpleExpressionExt}}},
   {SimpleExpressionExt,{}},
 
-  // FIXME: teste
-  {Term,{{Teste7}}},
-  {AddingOperator,{{Teste8}}},
-
   // <term>      <factor> {<multiplyOperator> <factor>}  
-  /*{Term,{{Factor},{TermExt}}},
-  {TermExt,{{MultiplyOperator},{Factor}}},
+  {Term,{{Factor},{TermExt}}},
+  {TermExt,{{MultiplyOperator},{Factor},{TermExt}}},
   {TermExt,{}},
+
+  // <addingOperator>  "+" | "-"  
+  {AddingOperator,{{TkPlus}}},
+  {AddingOperator,{{TkMinus}}},
+
+  // <multiplyOperator>    "*" | "/" | "\" 
+  {MultiplyOperator,{{TkTimes}}},
+  {MultiplyOperator,{{TkDiv}}},
+  {MultiplyOperator,{{TkRem}}},
 
   // <factor>    <variableAccess> | "number" | <booleanConstant> 
   //        | "[" <expressionList> "]" 
@@ -650,18 +654,11 @@ GCLGrammar grammar(symbolToString,{
   {Factor,{{TkLParentesis},{Expression},{TkRParentesis}}},
   {Factor,{{TkNot},{Factor}}},
 
-  // <addingOperator>  "+" | "-"  
-  {AddingOperator,{{TkPlus}}},
-  {AddingOperator,{{TkMinus}}},
-
-  // <multiplyOperator>    "*" | "/" | "\" 
-  {MultiplyOperator,{{TkTimes},{TkDiv},{TkRem}}},
-
   // <constantName>        "identifier"  
   {ConstantName,{{TkId}}},
 
   // <variableAccess>      "identifier" <variableMore>  
-  {VariableAccess,{{TkId},{VariableMore}}},
+  /*{VariableAccess,{{TkId},{VariableMore}}},
 
   // <variableMore>        ""  |  "[" <expression> "]"  <indexorcomp>
   //          | "." <nextitem>  <indexorcomp>
