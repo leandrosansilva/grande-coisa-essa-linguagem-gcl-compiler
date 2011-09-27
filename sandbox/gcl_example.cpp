@@ -553,9 +553,6 @@ GCLGrammar grammar(symbolToString,{
   {VariableAccessList2,{{TkComma},{VariableAccess},{VariableAccessList2}}},
   {VariableAccessList2,{}},
 
-  // FIXME: teste
-  {VariableAccess,{{Teste6}}},
-
   // <writeStatement>  "write" <writeItem> {"," <writeItem> } 
   {WriteStatement,{{TkWrite},{WriteItem},{WriteItemList}}},
   {WriteItemList,{{TkComma},{WriteItem},{WriteItemList}}},
@@ -658,7 +655,7 @@ GCLGrammar grammar(symbolToString,{
   {ConstantName,{{TkId}}},
 
   // <variableAccess>      "identifier" <variableMore>  
-  /*{VariableAccess,{{TkId},{VariableMore}}},
+  {VariableAccess,{{TkId},{VariableMore}}},
 
   // <variableMore>        ""  |  "[" <expression> "]"  <indexorcomp>
   //          | "." <nextitem>  <indexorcomp>
@@ -666,8 +663,11 @@ GCLGrammar grammar(symbolToString,{
   {VariableMore,{{TkLBracket},{Expression},{TkRBracket},{Indexorcomp}}},
   {VariableMore,{{TkDot},{Nextitem},{Indexorcomp}}},
 
+  {Nextitem,{{Teste7}}},
+  {Indexorcomp,{{Teste8}}},
+
   // <nextitem>      "number" | "identifier" // XXX: adicionei string e real
-  {Nextitem,{{TkInteger}}},
+  /*{Nextitem,{{TkInteger}}},
   {Nextitem,{{TkReal}}},
   {Nextitem,{{TkId}}},
   {Nextitem,{{TkString}}},
