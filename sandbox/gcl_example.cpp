@@ -615,9 +615,6 @@ GCLGrammar grammar(symbolToString,{
   {RelationalExpression,{{SimpleExpression}}},
   {RelationalExpression,{{SimpleExpression},{RelationalOperator},{SimpleExpression}}},
 
-  // FIXME: teste
-  {SimpleExpression,{{Teste7}}},
-
   // <relationalOperator>  "<" | "=" | ">" | "<=" | ">=" | "#" 
   {RelationalOperator,{{TkLThan}}},
   {RelationalOperator,{{TkEqual}}},
@@ -626,19 +623,23 @@ GCLGrammar grammar(symbolToString,{
   {RelationalOperator,{{TkGEThan}}},
   {RelationalOperator,{{TkSharp}}},
 
-  // <simpleExpression>  ( "+" | "-" )  <term> { <addingOperator> <term>} | 
-  //                                    <term> { <addingOperator> <term>}  
-  /*{SimpleExpression,{{SimpleExpression},{TkPlus},{Term},{SimpleExpressionExt}}}, 
-  {SimpleExpression,{{SimpleExpression},{TkMinus},{Term},{SimpleExpressionExt}}}, 
-  {SimpleExpressionExt,{{AddingOperator},{Term}}},
-  {SimpleExpressionExt,{{Term},{AddingOperator}}},
+  // <simpleExpression>  ( "+" | "-" )  <term> { <addingOperator> <term>}
+  //                     | <term> { <addingOperator> <term>}  
+  {SimpleExpression,{{TkPlus},{Term},{SimpleExpressionExt}}}, 
+  {SimpleExpression,{{TkMinus},{Term},{SimpleExpressionExt}}}, 
+  {SimpleExpressionExt,{{AddingOperator},{Term},{SimpleExpressionExt}}},
+  {SimpleExpression,{{Term},{SimpleExpressionExt}}},
   {SimpleExpressionExt,{}},
 
+  // FIXME: teste
+  {Term,{{Teste7}}},
+  {AddingOperator,{{Teste8}}},
+
   // <term>      <factor> {<multiplyOperator> <factor>}  
-  {Term,{{Factor},{TermExt}}},
+  /*{Term,{{Factor},{TermExt}}},
   {TermExt,{{MultiplyOperator},{Factor}}},
   {TermExt,{}},
-  
+
   // <factor>    <variableAccess> | "number" | <booleanConstant> 
   //        | "[" <expressionList> "]" 
   //        | "(" <expression> ")" | "~" <factor> 
