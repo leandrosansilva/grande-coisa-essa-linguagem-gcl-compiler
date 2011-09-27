@@ -547,10 +547,8 @@ GCLGrammar grammar(symbolToString,{
   {EmptyStatement,{{TkSkip}}},
 
   // FIXME: teste
-  {AssignStatement,{{Teste8}}},
   {ReturnStatement,{{Teste9}}},
   {CallStatement,{{Teste10}}},
-  {IfStatement,{{Teste11}}},
   {DoStatement,{{Teste12}}},
   {ForStatement,{{Teste13}}},
 
@@ -577,13 +575,11 @@ GCLGrammar grammar(symbolToString,{
   // FIXME: teste
   {Expression,{{Teste7}}},
   
-  // <expressionList>      <expression> { "," <expression> }  
-  /*{ExpressionList,{{Expression},{ExpressionList2}}},
-  {ExpressionList2,{{TkComma},{Expression},{ExpressionList2}}},
-  {ExpressionList2,{}},
-
   // <assignStatement>     <variableAccessList> ":=" <expressionList>  
   {AssignStatement,{{VariableAccessList},{TkAssign},{ExpressionList}}},
+
+  // FIXME: teste
+  {ExpressionList,{{Teste8}}},
 
   // <ifStatement>         "if" <guardedCommandList> "fi"  
   {IfStatement,{{TkIf},{GuardedCommandList},{TkFi}}},  
@@ -597,7 +593,7 @@ GCLGrammar grammar(symbolToString,{
   {GuardedCommand,{{Expression},{TkThen},{StatementPart}}},
 
   // <doStatement>         "do" <guardedCommandList> "od" 
-  {DoStatement,{{TkDo},{GuardedCommandList},{TkOd}}},  
+  /*{DoStatement,{{TkDo},{GuardedCommandList},{TkOd}}},  
 
   // <forStatement>    "forall" <variableAccess> "->" <statementPart> "llarof"
   {ForStatement,{{TkForall},{VariableAccess},{TkThen},{StatementPart},{TkLlarof}}},
@@ -608,7 +604,12 @@ GCLGrammar grammar(symbolToString,{
   // <callStatement>   "identifier" ["." "identifier"] <argumentList>
   {CallStatement,{{TkId},{TkDot},{TkId},{ArgumentList}}},
   {CallStatement,{{TkId},{ArgumentList}}},
-  
+
+  // <expressionList>      <expression> { "," <expression> }  
+  {ExpressionList,{{Expression},{ExpressionList2}}},
+  {ExpressionList2,{{TkComma},{Expression},{ExpressionList2}}},
+  {ExpressionList2,{}},
+
   // <argumentList>    "(" [ <expressionList> ] ")"
   {ArgumentList,{{TkLParentesis},{ExpressionList},{TkRParentesis}}},
   {ArgumentList,{{TkLParentesis},{TkRParentesis}}},
