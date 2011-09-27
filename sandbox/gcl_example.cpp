@@ -445,15 +445,15 @@ GCLGrammar grammar(symbolToString,{
 
   // <module>        "module" "identifier" <definitionPart> 
   //      [ "private"  <block> ] "."  
-  {Module,{{TkModule},{TkId},{DefinitionPart},{TkDot}}},
-  {Module,{{TkModule},{TkId},{DefinitionPart},{TkPrivate},{Block},{TkDot}}},
+  {Module,{{TkModule},{TkId},{DefinitionPart},{TkDot}},{1,2}},
+  {Module,{{TkModule},{TkId},{DefinitionPart},{TkPrivate},{Block},{TkDot}},{1,2,4}},
 
   // <block>        <definitionPart> "begin" <statementPart> "end"
-  {Block,{{DefinitionPart},{TkBegin},{StatementPart},{TkEndWord}}},
+  {Block,{{DefinitionPart},{TkBegin},{StatementPart},{TkEndWord}},{0,2}},
 
   // <definitionPart>   {<definition> ";"}
-  {DefinitionPart,{DefinitionList}},
-  {DefinitionList,{{Definition},{TkEnd},{DefinitionList}}},
+  {DefinitionPart,{{DefinitionList}}},
+  {DefinitionList,{{Definition},{TkEnd},{DefinitionList}},{0,2}},
   {DefinitionList,{}},
 
   //<definition>      <constantDef> | <variableDef> | <procedureDef> 
@@ -465,7 +465,7 @@ GCLGrammar grammar(symbolToString,{
   {Definition,{{ProcedureDecl}}},
 
   // <constantDef>       "const" <constantName> "=" <constant> 
-  {ConstantDef,{{TkConst},{ConstantName},{TkEqual},{Constant}}},
+  {ConstantDef,{{TkConst},{ConstantName},{TkEqual},{Constant}},{1,3}},
 
   // <variableDef>    <type> <variableList>
   {VariableDef,{{Type},{VariableList}}},
@@ -484,37 +484,37 @@ GCLGrammar grammar(symbolToString,{
   {TypeSymbol,{{TkId}}},
 
   // <tupletype>    "[" <typeSymbol> { "," <typeSymbol> } "]"
-  {Tupletype,{{TkLBracket},{TypeSymbol},{TypeSymbolList},{TkRBracket}}},
-  {TypeSymbolList,{{TkComma},{TypeSymbol},{TypeSymbolList}}},
+  {Tupletype,{{TkLBracket},{TypeSymbol},{TypeSymbolList},{TkRBracket}},{1,2}},
+  {TypeSymbolList,{{TkComma},{TypeSymbol},{TypeSymbolList}},{1,2}},
   {TypeSymbolList,{}},
 
   // <arraytype>    "array" "[" "identifier" "]" 
   //      {"[" "identifier" "]"}
-  {Arraytype,{{TkArray},{TkLBracket},{TkId},{TkRBracket},{ArrayTypeList}}},
-  {ArrayTypeList,{{TkLBracket},{TkId},{TkRBracket},{ArrayTypeList}}},
+  {Arraytype,{{TkArray},{TkLBracket},{TkId},{TkRBracket},{ArrayTypeList}},{}},
+  {ArrayTypeList,{{TkLBracket},{TkId},{TkRBracket},{ArrayTypeList}},{1,3}},
   {ArrayTypeList,{}},
 
   // <rangetype>    "range" "[" <constant> ".." <constant>  "]"
-  {Rangetype,{{TkRange},{TkLBracket},{Constant},{TkTwoDots},{Constant},{TkRBracket}}},
+  {Rangetype,{{TkRange},{TkLBracket},{Constant},{TkTwoDots},{Constant},{TkRBracket}},{2,4}},
 
     // <variableList>   "identifier" {"," "identifier"}
   {VariableList,{{TkId},{IdList}}},
-  {IdList,{{TkComma},{TkId},{IdList}}},
+  {IdList,{{TkComma},{TkId},{IdList}},{1,2}},
   {IdList,{}},
 
   // <typedef>    "typedef" <type> "identifier" 
-  {Typedef,{{TkTypedef},{Type},TkId}}, 
+  {Typedef,{{TkTypedef},{Type},TkId},{1,2}}, 
 
   // <procedureDecl>  "proc" "identifier" [<paramPart>]
-  {ProcedureDecl,{{TkProc},{TkId}}},
-  {ProcedureDecl,{{TkProc},{TkId},{ParamPart}}},
+  {ProcedureDecl,{{TkProc},{TkId}},{1}},
+  {ProcedureDecl,{{TkProc},{TkId},{ParamPart}},{1,2}},
 
   // <procedureDef>   <procedureDecl> <block>  
   {ProcedureDef,{{ProcedureDecl},{Block}}},
 
   // <paramPart>    "(" [ <paramDef> { ";" <paramDef> } ] )" 
-  {ParamPart,{{TkLParentesis},{ParamDef},{ParamDefList},{TkRParentesis}}},
-  {ParamDefList,{{TkEnd},{ParamDef},{ParamDefList}}},
+  {ParamPart,{{TkLParentesis},{ParamDef},{ParamDefList},{TkRParentesis}},{1,2}},
+  {ParamDefList,{{TkEnd},{ParamDef},{ParamDefList}},{1,2}},
   {ParamDefList,{}},
 
   // <paramDef>     ( "val" | "ref" ) <variableDef> 
@@ -523,7 +523,7 @@ GCLGrammar grammar(symbolToString,{
 
   // <statementPart>  { <statement> ";"}
   {StatementPart,{{StatementList}}}, 
-  {StatementList,{{Statement},{TkEnd},{StatementList}}},
+  {StatementList,{{Statement},{TkEnd},{StatementList}},{0,2}},
   {StatementList,{}},
 
   // <statement>    <emptyStatement> | <readStatement> | <writeStatement> 
@@ -540,19 +540,19 @@ GCLGrammar grammar(symbolToString,{
   {Statement,{{ForStatement}}},
 
   // <emptyStatement>     "skip"
-  {EmptyStatement,{{TkSkip}}},
+  {EmptyStatement,{{TkSkip}},{}},
 
   // <readStatement>      "read" <variableAccessList>
-  {ReadStatement,{{TkRead},{VariableAccessList}}},
+  {ReadStatement,{{TkRead},{VariableAccessList}},{1}},
 
   // <variableAccessList>  <variableAccess> {"," <variableAccess> }
   {VariableAccessList,{{VariableAccess},{VariableAccessList2}}},
-  {VariableAccessList2,{{TkComma},{VariableAccess},{VariableAccessList2}}},
+  {VariableAccessList2,{{TkComma},{VariableAccess},{VariableAccessList2}},{1,2}},
   {VariableAccessList2,{}},
 
   // <writeStatement>  "write" <writeItem> {"," <writeItem> } 
-  {WriteStatement,{{TkWrite},{WriteItem},{WriteItemList}}},
-  {WriteItemList,{{TkComma},{WriteItem},{WriteItemList}}},
+  {WriteStatement,{{TkWrite},{WriteItem},{WriteItemList}},{1,2}},
+  {WriteItemList,{{TkComma},{WriteItem},{WriteItemList}},{1,2}},
   {WriteItemList,{}},
 
   // <writeItem>       "stringconst" | <expression>  FIXME: is this Ok? Stringconst?
@@ -560,40 +560,40 @@ GCLGrammar grammar(symbolToString,{
   {WriteItem,{{Expression}}},
 
   // <assignStatement>     <variableAccessList> ":=" <expressionList>  
-  {AssignStatement,{{VariableAccessList},{TkAssign},{ExpressionList}}},
+  {AssignStatement,{{VariableAccessList},{TkAssign},{ExpressionList}},{0,2}},
 
   // <ifStatement>         "if" <guardedCommandList> "fi"  
-  {IfStatement,{{TkIf},{GuardedCommandList},{TkFi}}},  
+  {IfStatement,{{TkIf},{GuardedCommandList},{TkFi}},{1}},  
 
   // <guardedCommandList>  <guardedCommand> {"[]" <guardedCommand>}  
   {GuardedCommandList,{{GuardedCommand},{GuardedCommandList2}}},
-  {GuardedCommandList2,{{TkGuarded},{GuardedCommand},{GuardedCommandList2}}},
+  {GuardedCommandList2,{{TkGuarded},{GuardedCommand},{GuardedCommandList2}},{1,2}},
   {GuardedCommandList2,{}},
 
   // <guardedCommand>  <expression> "->" <statementPart>  
-  {GuardedCommand,{{Expression},{TkThen},{StatementPart}}},
+  {GuardedCommand,{{Expression},{TkThen},{StatementPart}},{0,2}},
 
   // <doStatement>         "do" <guardedCommandList> "od" 
-  {DoStatement,{{TkDo},{GuardedCommandList},{TkOd}}},  
+  {DoStatement,{{TkDo},{GuardedCommandList},{TkOd}},{1}},  
 
   // <forStatement>    "forall" <variableAccess> "->" <statementPart> "llarof"
-  {ForStatement,{{TkForall},{VariableAccess},{TkThen},{StatementPart},{TkLlarof}}},
+  {ForStatement,{{TkForall},{VariableAccess},{TkThen},{StatementPart},{TkLlarof}},{1,3}},
   
   // <returnStatement> "return" <expression>
-  {ReturnStatement,{TkReturn}},
+  {ReturnStatement,{TkReturn},{}},
 
   // <callStatement>   "identifier" ["." "identifier"] <argumentList>
-  {CallStatement,{{TkId},{TkDot},{TkId},{ArgumentList}}},
+  {CallStatement,{{TkId},{TkDot},{TkId},{ArgumentList}},{0,2,3}},
   {CallStatement,{{TkId},{ArgumentList}}},
 
   // <expressionList>      <expression> { "," <expression> }  
   {ExpressionList,{{Expression},{ExpressionList2}}},
-  {ExpressionList2,{{TkComma},{Expression},{ExpressionList2}}},
+  {ExpressionList2,{{TkComma},{Expression},{ExpressionList2}},{1,2}},
   {ExpressionList2,{}},
 
   // <argumentList>    "(" [ <expressionList> ] ")"
-  {ArgumentList,{{TkLParentesis},{ExpressionList},{TkRParentesis}}},
-  {ArgumentList,{{TkLParentesis},{TkRParentesis}}},
+  {ArgumentList,{{TkLParentesis},{ExpressionList},{TkRParentesis}},{1}},
+  {ArgumentList,{{TkLParentesis},{TkRParentesis}},{}},
  
   // <expression>    <relationalExpression> {<booleanOperator> <relationalExpression>}
   {Expression,{{RelationalExpression},{BoolRelList}}},
@@ -644,8 +644,8 @@ GCLGrammar grammar(symbolToString,{
   {Factor,{{VariableAccess}}},
   {Factor,{{TkInteger}}},
   {Factor,{{BooleanConstant}}},
-  {Factor,{{TkLBracket},{ExpressionList},{TkRBracket}}},
-  {Factor,{{TkLParentesis},{Expression},{TkRParentesis}}},
+  {Factor,{{TkLBracket},{ExpressionList},{TkRBracket}},{1}},
+  {Factor,{{TkLParentesis},{Expression},{TkRParentesis}},{1}},
   {Factor,{{TkNot},{Factor}}},
 
   // <constantName>        "identifier"  
@@ -657,8 +657,8 @@ GCLGrammar grammar(symbolToString,{
   // <variableMore>        ""  |  "[" <expression> "]"  <indexorcomp>
   //          | "." <nextitem>  <indexorcomp>
   {VariableMore,{}},  
-  {VariableMore,{{TkLBracket},{Expression},{TkRBracket},{Indexorcomp}}},
-  {VariableMore,{{TkDot},{Nextitem},{Indexorcomp}}},
+  {VariableMore,{{TkLBracket},{Expression},{TkRBracket},{Indexorcomp}},{1,3}},
+  {VariableMore,{{TkDot},{Nextitem},{Indexorcomp}},{1,2}},
 
   // <nextitem>      "number" | "identifier"
   {Nextitem,{{TkInteger}}},
@@ -667,7 +667,7 @@ GCLGrammar grammar(symbolToString,{
   // <indexorcomp>   { "."  "number" | "[" <expression> "]" } // TODO: este number pode ser uma variável?
   {Indexorcomp,{}},
   {Indexorcomp,{{TkDot},{TkInteger}}},
-  {Indexorcomp,{{TkLBracket},{Expression},{TkRBracket}}},
+  {Indexorcomp,{{TkLBracket},{Expression},{TkRBracket}},{1}},
   
   // <constant>      <expression>
   {Constant,{{Expression}}},
@@ -908,7 +908,7 @@ int main(int argc, char **argv)
     return lexer.getToken();
   });
 
-  grammar.printTable();
+  //grammar.printTable();
 
   //grammar.generateGraph();
 

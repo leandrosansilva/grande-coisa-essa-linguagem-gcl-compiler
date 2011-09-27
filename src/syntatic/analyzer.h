@@ -90,7 +90,9 @@ struct Analyzer
       // Ação a ser executada: Reduce, error, goto, accept
       typename LR1Table::iterator action(_table.find(LR1Key(_stateStack.back(),{token.getType()})));
 
-      /* estado de erro! */
+      /* estado de erro! 
+       * FIXME: dizer quais tokens são esperados
+      */
       if (action == _table.end()) {
         cerr << "Erro no parser!" << endl;
         cerr << "Topo estado: " << _stateStack.back() << " e topo symbol"
@@ -100,8 +102,6 @@ struct Analyzer
 
       // aceitação, casou tudo
       if (action->second._action == ACCEPT) {
-        cerr << "Aceitou!" << endl;
-  
         /* o próprio topo da pilha */
         _tree = _symbolStack.back();
 
@@ -110,16 +110,12 @@ struct Analyzer
 
       // ação de shift
       if (action->second._action == SHIFT) {
-        cerr << "Empilho " << action->second._value 
-             << " e " << _grammar._symbolToString(token.getType())
-             << endl;
         _stateStack.push_back(action->second._value);
         _symbolStack.push_back(token);
       
         // pega o próximo token
         token = _getNextToken();
 
-        cerr << "Li o token " << _grammar._symbolToString(token.getType()) << endl;
         continue;
       }
 
@@ -137,7 +133,6 @@ struct Analyzer
           _stateStack.pop_back();
         }
 
-        
         // o lado esquerdo da produção do reduce 
         Symbol leftSide(_grammar._v[action->second._value]._leftSide);
 
@@ -149,23 +144,6 @@ struct Analyzer
         TableAction gAction(_table[LR1Key(_stateStack.back(),leftSide)]);
 
         int gDst(gAction._value);
-
-        
-        cerr << "reduzi: ";
-        for (auto i(symbolList.rbegin()); i != symbolList.rend(); i++) {
-          cerr << _grammar._symbolToString(*i) << ", ";
-        }
-
-        cerr << " para " << _grammar._symbolToString(leftSide) 
-             << " e empilhei estado " << gDst << endl;
-
-        // para que estado devo fazer GOTO?
-        cerr << "TABLE[" << topState << ","
-             << _grammar._symbolToString(leftSide) << "] == ";
-
-                cerr << "<" << _table.actionToString(gAction._action) 
-               << "," << gDst << ">" << endl;
-
 
         // insere na pilha o lado esquerdo (A) da produção
         _symbolStack.push_back(pushedTree);
