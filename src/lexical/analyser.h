@@ -34,6 +34,9 @@ using namespace Common;
 template<typename StateType, typename TokenType>
 class Analyser
 {
+  /* qual o token de final de arquivo? */
+  TokenType _TEOF;
+  
   /* De onde vêm os caracteres? */
   Input &_input;
   
@@ -55,6 +58,11 @@ class Analyser
     std::list<TokenType> _list;
     
   public:
+    void append(const std::list<TokenType> &list)
+    {
+      _list.insert(_list.end(),list.begin(),list.end());
+    }
+    
     bool find(const TokenType &type)
     {
       return std::find(_list.begin(),_list.end(),type) != _list.end();
@@ -94,9 +102,9 @@ class Analyser
      * faz o tratamento de token inválido
      * faz o tratamento de token correto
      * faz o tratamento de fim de arquivo
-     * Faz coisa demais!
-     * 
-    */ 
+     * Faz coisa demais! 
+     *
+    */
     
     /* Já gravo a linha onde inicio o a leitura do token */
     int line(_input.getLineNumber());
@@ -175,27 +183,36 @@ class Analyser
 
 public:
 
-  Analyser(Input &file, TransitionTable<StateType,TokenType> &table, TokenHash<TokenType> &reserved):
+  /* um analisador precisa de uma entrada de dados,
+   * de um automato (tabela de transição),
+   * e de uma tabela de palavras reservadas
+   */
+  Analyser(Input &file, TransitionTable<StateType,TokenType> &table, TokenHash<TokenType> &reserved, const TokenType &TEOF):
   _input(file),
   _table(table),
   _reserved(reserved),
-  _canRead(true)
+  _canRead(true),
+  _TEOF(TEOF)
   {
   }
   
-  void addTokenToCompareWithReserved(const TokenType &t)
+  /* Toda vez que um token identificado com o tipo passado
+   * for encontrado, deve ser comparado na tabela de palavras reservadas
+   */
+  void addTokenToCompareWithReserved(const std::list<TokenType> &tokens)
   {
-    _compare.add(t);
+    _compare.append(tokens);
   }
  
-  /* Deve ignorar o tipo passado */
-  void ignoreToken(const TokenType &token)
+  /* Deve ignorar o tipo passado, que não será passado às fazes seguintes de compilação
+  */
+  void ignoreToken(const std::list<TokenType> &tokens)
   {
-    _ignore.add(token);
+    _ignore.append(tokens);
   }
   
   /* me retorna se posso continuar a pegar token ou se já terminou */
-  bool canReadToken() const 
+  bool canReadToken() const
   {
     /* Só retorna se é capaz de ler do arquivo */
     return _canRead;
@@ -208,29 +225,42 @@ public:
   Token<TokenType> getToken()
   {
     Token<TokenType> token;
-    
+
     /* Lê token até achar um que não possa ser descartado */
     do {
       token = _privGetToken();
     } while (_ignore.find(token.getType()) && canReadToken());
-    
+
+    /* FIXME: gambi - se não consegue ler do arquivo e o token é inválido ou para ser descartado, é bug do final do arquivo */
+    if (!canReadToken() && (token.getType() == _reserved.getNone() || _ignore.find(token.getType()))) {
+      token.setType(_TEOF);
+      return token;
+    }
+
     /* se foi pego como identificador, vejo se é uma palavra reservada */
     if (_compare.find(token.getType())) {
         
       /* o token da string que casou. Deve ser diferente do tipo inválido */
       TokenType foundType(_reserved.find(token.getLexema()));
+      
       if (foundType != _reserved.getNone()) {
-        /* Se for uma palavra reservada, defino o novo tipo do token encontrado */
+        /* Se for uma palavra reservada, defino o novo tipo do token encontrado 
+         * como sendo o tipo da palavra reservada encontrada
+        */
         token.setType(foundType);
       }
     }
     
-    /* Faz a parte do padding dos tokens */
+    /* Faz a parte do padding dos tokens
+     * Por exemplo, o conteúdo da string "amarelo" é só amarelo, sem aspas
+     * então aplico padding de 1 a esquerda e 1 á direita
+    */
     typename TokenPaddingMap<TokenType>::const_iterator it(_paddings.find(token.getType()));
-    /* se achou, o token tem padding */
+    /* se achou, o token tem padding, por isso devo aplicá-lo */
     if (it != _paddings.end()) {
       token.setPadding(it->second);
     }
+
     
     /* Retorna o token, seja ele válido ou inválido */
     return token;

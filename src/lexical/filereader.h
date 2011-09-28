@@ -28,15 +28,10 @@
 
 namespace Lexical {
 
-/* TODO: este cara poderia ter outro nome e ser mais genérico, não só para arquivo */
+/* TODO: implementar o buffer para não ler o arquivo todo para a memória */
 
-/* TODO: reimplementar este leitor para ler código unicode (utf-x) também.
- * Use std::wifstream e wchar_t
-*/
-
-/**
+/*
  * Interface com o arquivo de código-fonte
- * 
 */
 class FileReader: public std::ifstream, public Input
 {

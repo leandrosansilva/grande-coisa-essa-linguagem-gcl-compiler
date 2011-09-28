@@ -25,12 +25,15 @@
 #include <algorithm>
 #include <map>
 
-#include <exception>
+/* FIXME: Vector/List/RbTree é o Car****, meu nome agora é Hash
+ * G++ tem hash em <ext/hash>
+*/
 
 namespace Lexical {
 
 using namespace Common;
-  
+
+/* uma transição no autômato é composto por um estado origem, um estado destino e uma ação */
 template<typename StateType>
 class Transition
 {
@@ -54,26 +57,46 @@ public:
 template<typename StateType, typename TokenType>
 class TransitionTable
 {
-  typedef std::vector< Transition<StateType> > TransitionVector;
+  /* uma lista de todas as transições possíveis */
+  typedef std::vector<Transition<StateType>> TransitionVector;
+  
+  /* um mapa que diz que, saindo por um estado, que token casou */
   typedef std::map<StateType,TokenType> StateTokenMap;
   
+  /* Um mapa que gerencia conflito entre estados
+   * O que isso significa? Pegue o par s1 => s2;
+   * Caso o automato esteja no estado s2 e exista uma marca em s1,
+   * significa que deve voltar e casar o que sai de s1
+  */
   typedef std::map<StateType,StateType> ConflictTable;
   
+  /* uma marca é um ponto no autômato que pode gerar um conflito futuro */
   struct Mark {
     Mark(const StateType &state, const int &pos):
     _pos(pos),
     _state(state)
     {}
     
+    /* em que posição da entrada ocorreu? */
     int _pos;
+    
+    /* qual era o estado naquele ponto? */
     StateType _state;
   };
   
+  /* instancia da marca */
   Mark _mark;
   
+  /* estado inicial */
   StateType _startState;
+  
+  /* estado inválido */
   StateType _invalidState;
+  
+  /* estado final, ou seja, entrada aceita */
   StateType _finalState;
+  
+  /* estado atual do autômato */
   StateType _currentState;
   
   /* O estado antes de fazer a transição.
@@ -81,16 +104,22 @@ class TransitionTable
   */
   StateType _previousState;
   
+  /* tabela de transições é um vetor porque existe uma ordem */
   TransitionVector _table;
+  
+  /*  */
   StateTokenMap _matchedTokens;
+  
+  /* a instancia da tabela de conflitos que será usada */
   ConflictTable _conflict;
   
+  /* acumula o lexema do token casado */
   String _matchedString;
   
   /* Adiciona um estado que casa um padrão */
   virtual void _addMatched(const StateType &state, const TokenType &tokenType)
   {
-    _matchedTokens[state] = tokenType;
+    _matchedTokens.insert(std::pair<StateType,TokenType>(state,tokenType));
   }
   
 public:
@@ -104,14 +133,16 @@ public:
   {
   }
   
+  /* define o estado da marca no sistema */
   virtual void setMark(const StateType &t, const int &pos)
   {
     _mark._state = t;
     _mark._pos = pos;
-    
-    //std::cout << "Marquei estado " << t << " na posição " << pos << std::endl;
   }
   
+  /* Verifica se, dado um estado, existe uma marca de um estado anterior que 
+   * conflita com aquele
+   */
   virtual bool hasMark(const StateType &state) const
   {
     if (_mark._state == _invalidState)
@@ -142,7 +173,6 @@ public:
   {
     _mark._pos = 0;
     _mark._state = _invalidState;
-    //std::cout << "Resetei a marca" << std::endl;
   }
   
   /* retorna true se o estado atual é um dos finais positivamente,
@@ -162,12 +192,15 @@ public:
     _table.push_back(Transition<StateType>(from,to,s));
   }
   
+  /* FIXME: estou colocando informações de tokens no automato.
+   * Não é função dele lidar com isso */
   virtual void addFinalTransition(const StateType &from, const String &s,const TokenType &token)
   {
     addTransition(from,s,_finalState);
     _addMatched(from,token);
   }
   
+  /* Existe um conflito na posição atual que refletirá nas transições seguintes? */
   virtual bool hasConflict(const StateType &state)
   {
     /* checagem dos conflitos */
@@ -175,7 +208,6 @@ public:
     
     if (itConflict != _conflict.end()) {
       /* se chegou aqui, existe chance de conflito */
-      //std::cout << "[" << itConflict->first << "] => '" << itConflict->second << "'" << std::endl;
       return true;
     }
     return false;
@@ -187,15 +219,22 @@ public:
   }
   
   /* Efetua uma transição. 
-   * Retorna o estado inválido caso não 
+   * Retorna o estado inválido caso não
    * tenha conseguido fazer esta transição
    */
-  virtual StateType doTransition(const char &symbol)
+  virtual StateType doTransition(const char symbol)
   {
+    /* salva o estado anterior */
     _previousState = _currentState;
     
     /* Acha o elemento */
     typename TransitionVector::iterator i(_table.begin());
+
+    /* no pior dos casos buscará na lista toda!
+     * TODO: reimplementar utilizando uma estrutura melhor (hash)
+     * Um dos problemas com hash é que ele não possui ordem
+     * e ordem é algo que faz diferença aqui
+    */
     for (; i != _table.end(); i++) {
       if (i->_from == _currentState && String(i->_pattern + "\0").hasChar(symbol))
         break;
@@ -207,17 +246,19 @@ public:
     /* só concateno a string achada quando não for um estado depois do final 
      * ou caso tenha entrado num estado inválido
      */
-    if (!isInAMatchedState())
+    if (!isInAMatchedState()) {
       _matchedString += symbol;
+    }
     
-    /*std::cout << "was in state '" << _previousState << "' ,read " 
-              << (int)symbol << " -> '" << symbol 
-              <<  "' and changed to state " << _currentState << std::endl;*/
-              
     return _currentState;
   }
   
-  /* reseta estado ao inicial e limpa o buffer do lexema  */
+  /* reseta estado ao inicial e limpa o buffer do lexema 
+   * TODO: talvez seja interessante que não se volte ao estado inicial
+   * mas talvez para um estado definido pelo usuário, a fim de processar
+   * um tipo restrito de token
+   *
+  */
   virtual void reset()
   {
     _currentState = _startState;
@@ -245,6 +286,7 @@ public:
     return _startState;
   }
   
+  /* Qual o lexema do token casado? */
   virtual TokenType getMatchedToken() const
   {
     /* _previousState aponta para o último estado que eu estava.
@@ -253,6 +295,7 @@ public:
     return _matchedTokens.at(_previousState);
   }
   
+  /* Se um estado é saída para o final, qual token ele informa casamento? */
   virtual TokenType getTokenTypeFinishedIn(const StateType &state) const
   {
     return _matchedTokens.at(state);

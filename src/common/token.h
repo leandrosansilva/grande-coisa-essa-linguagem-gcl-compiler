@@ -27,7 +27,7 @@ class TokenPaddingMap: public std::map<TokenType,TokenPadding>
 public:
   void add(const TokenType &type, const TokenPadding &padding)
   {
-    insert(std::pair<TokenType,TokenPadding>(type,padding));
+    this->insert(std::pair<TokenType,TokenPadding>(type,padding));
   }
 };
 

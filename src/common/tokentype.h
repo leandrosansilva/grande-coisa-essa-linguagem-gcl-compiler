@@ -25,31 +25,49 @@
 namespace Common {
 /* 
   * Tabela hash com todos as palavras reservadas
-  * TODO: Como tratar linguagens que são case-insensitive? 
+  * TODO: Como tratar linguagens que são case-insensitive?
+  * Adicionar um parâmetro no constructor que diz se é para checar
+  * sensitividade à caixa. Na hora do find, 
+  * buscar a string transformada em "uppercase"
 */
 template<typename TokenType>
 class TokenHash
 {
+  /* um tipo de token inválido */
   TokenType _none;
+  
+  /* um mapa de palesvras reservadas */
   typedef std::map<const String,TokenType> ReservedMap;
   ReservedMap _reservedMap;
   
 public:
+  
+  /* construtor que recebe um token nulo e um mapa lexema => tokentype */
+  TokenHash(const TokenType &none, const ReservedMap &map):
+  _none(none),
+  _reservedMap(map)
+  {
+  }
+  
+  /* precisa de um Token inválido, que serve como referência */
   TokenHash(const TokenType &none):
   _none(none)
   {
   }
  
+  /* adiciona uma nova palavra reservada*/
   virtual void add(const String &pattern,const TokenType &token)
   {
-    _reservedMap[pattern] = token;
+    _reservedMap.insert(std::pair<String,TokenType>(pattern,token));
   }
   
+  /* recebe um lexema e diz qual token é */
   virtual TokenType find(const String &pattern) const {
     typename ReservedMap::const_iterator it(_reservedMap.find(pattern));
     return (it != _reservedMap.end()) ? it->second : _none;
   }
   
+  /* Retorna o token que não indica coisa válida alguma */
   virtual TokenType getNone() const
   {
     return _none;
