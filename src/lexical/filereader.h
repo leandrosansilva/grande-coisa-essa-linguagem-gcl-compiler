@@ -16,6 +16,7 @@
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+
 #ifndef LEXICAL_FILEREADER_H
 #define LEXICAL_FILEREADER_H
 
@@ -49,8 +50,6 @@ public:
   /* pega o número de linha do arquivo que está sendo analizada */
   int getLineNumber() const;
   
-  int getColumnNumber() const;
-  
   /* volta n posições na entrada */
   bool back(int = 1);
   
@@ -63,15 +62,10 @@ public:
   /* Posição na entrada */
   int getPos() const;
   
-
-  
 private:
   int _lineNumber;
-  int _columnNumber;
   
-  /* nesta string fica todo o conteúdo do arquivo! 
-   * TODO: mudar isso para pedaços por demanda
-  */
+  /* nesta string fica todo o conteúdo do arquivo! */
   char *_fileContent;
   
   /* posição atual na string */

@@ -345,7 +345,7 @@ typedef enum {
   IdList,
   ArrayTypeList,
   WriteItemList,
-  BoolRelList,
+  RelationalExpressionExt,
   EL
 } NonTerminal;
 
@@ -414,7 +414,7 @@ static map<NonTerminal,string> NonTerminalMap {
   {IdList,"IdList"},
   {ArrayTypeList,"ArrayTypeList"},
   {WriteItemList,"WriteItemList"},
-  {BoolRelList,"BoolRelList"},
+  {RelationalExpressionExt,"relationalExpressionExt"},
   {EL,"E'"} 
 };
 
@@ -439,7 +439,7 @@ GCLGrammar grammar(symbolToString,{
   {EL,{{Program},{TEOF}}},
 
   // <program>       <module> {<module>}
-  {Program,{{ModuleList}}},
+  {Program,{{Module},{ModuleList}}},
   {ModuleList,{{Module},{ModuleList}}},
   {ModuleList,{}},
 
@@ -596,9 +596,9 @@ GCLGrammar grammar(symbolToString,{
   {ArgumentList,{{TkLParentesis},{TkRParentesis}},{-1}},
  
   // <expression>    <relationalExpression> {<booleanOperator> <relationalExpression>}
-  {Expression,{{RelationalExpression},{BoolRelList}}},
-  {BoolRelList,{{BooleanOperator},{RelationalExpression},{BoolRelList}}},
-  {BoolRelList,{}},
+  {Expression,{{RelationalExpression},{RelationalExpressionExt}}},
+  {RelationalExpressionExt,{{BooleanOperator},{RelationalExpression},{RelationalExpressionExt}}},
+  {RelationalExpressionExt,{}},
 
   // <booleanOperator> "&" | "|" 
   {BooleanOperator,{{TkAnd}}},

@@ -155,8 +155,8 @@ AmbGrammar ifG(symbolToString,{
   {Stm,{{IfStm}}},
   {Stm,{{AssStm}}},
   {AssStm,{{TkId},{TkAssign},{TkId}},{0,2}},
-  {IfStm,{{TkIf},{TkLPar},{Condition},{TkRPar},{StmList},{TkElse},{StmList}},{2,4,6}},
   {IfStm,{{TkIf},{TkLPar},{Condition},{TkRPar},{StmList}},{2,4}},
+  {IfStm,{{TkIf},{TkLPar},{Condition},{TkRPar},{StmList},{TkElse},{StmList}},{2,4,6}},
   {Condition,{{TkTrue}}},
   {Condition,{{TkFalse}}}
 },TEOF,INVALID);

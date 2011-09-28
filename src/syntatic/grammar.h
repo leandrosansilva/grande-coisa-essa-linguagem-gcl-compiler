@@ -604,7 +604,7 @@ struct Grammar
     }
 
     for (auto e(edges.begin()); e != edges.end(); e++) {
-      auto found(table.find(LR1Key(get<0>(*e).first,get<0>(*e).second)));
+      /*auto found(table.find(LR1Key(get<0>(*e).first,get<0>(*e).second)));
       
       if (found != table.end()) {
         cerr << "duplicado em terminais!" << endl;
@@ -619,7 +619,7 @@ struct Grammar
           << " " << e->second
 
           << endl;
-      }
+      }*/
 
       if (e->first.second.isNonTerminal()) {
         /* se é um não terminal, faz goto */
