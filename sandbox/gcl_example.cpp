@@ -313,7 +313,7 @@ typedef enum {
   WriteStatement,        
   WriteItem,             
   ExpressionList,        
-  ExpressionList2,        
+  ExpressionListExt,        
   AssignStatement,       
   IfStatement,           
   GuardedCommandList,    
@@ -382,7 +382,7 @@ static map<NonTerminal,string> NonTerminalMap {
   {WriteStatement,"writeStatement"},        
   {WriteItem,"writeItem"},             
   {ExpressionList,"expressionList"},        
-  {ExpressionList2,"expressionList2"},        
+  {ExpressionListExt,"expressionListExt"},        
   {AssignStatement,"assignStatement"},       
   {IfStatement,"ifStatement"},           
   {GuardedCommandList,"guardedCommandList"},    
@@ -555,7 +555,7 @@ GCLGrammar grammar(symbolToString,{
   {WriteItemList,{{TkComma},{WriteItem},{WriteItemList}},{1,2}},
   {WriteItemList,{}},
 
-  // <writeItem>       "stringconst" | <expression>  FIXME: is this Ok? Stringconst?
+  // <writeItem>       "stringconst" |  <expression>  FIXME: is this Ok? Stringconst?
   {WriteItem,{{TkString}}},
   {WriteItem,{{Expression}}},
 
@@ -587,9 +587,9 @@ GCLGrammar grammar(symbolToString,{
   {CallStatement,{{TkId},{ArgumentList}}},
 
   // <expressionList>      <expression> { "," <expression> }  
-  {ExpressionList,{{Expression},{ExpressionList2}}},
-  {ExpressionList2,{{TkComma},{Expression},{ExpressionList2}},{1,2}},
-  {ExpressionList2,{}},
+  {ExpressionList,{{Expression},{ExpressionListExt}}},
+  {ExpressionListExt,{{TkComma},{Expression},{ExpressionListExt}},{1,2}},
+  {ExpressionListExt,{}},
 
   // <argumentList>    "(" [ <expressionList> ] ")"
   {ArgumentList,{{TkLParentesis},{ExpressionList},{TkRParentesis}},{1}},
@@ -643,6 +643,7 @@ GCLGrammar grammar(symbolToString,{
   //        | "(" <expression> ")" | "~" <factor> 
   {Factor,{{VariableAccess}}},
   {Factor,{{TkInteger}}},
+  {Factor,{{TkReal}}},
   {Factor,{{BooleanConstant}}},
   {Factor,{{TkLBracket},{ExpressionList},{TkRBracket}},{1}},
   {Factor,{{TkLParentesis},{Expression},{TkRParentesis}},{1}},
@@ -679,18 +680,6 @@ GCLGrammar grammar(symbolToString,{
 },TEOF,INVALID);
 
 TransitionTable<LexState,TokenType> automata(start,invalid,final);
-
-GCLGrammar ifG(symbolToString,{
-  {EL,{{Program},{TEOF}}},
-  {Program,{{Module},{Module}}},
-  {Module,{{TkIf},{TkLParentesis},{BooleanConstant},{TkRParentesis},{Definition}}},
-  {Module,{{TkIf},{TkLParentesis},{BooleanConstant},{TkRParentesis},{Definition},{TkElse},{Definition}}},
-  {Module,{}},
-  {Module,{{TkId}}},
-  {BooleanConstant,{{TkTrue}}},
-  {BooleanConstant,{{TkFalse}}},
-  {Definition,{{Module}}}
-},TEOF,INVALID);
 
 int main(int argc, char **argv)
 {
