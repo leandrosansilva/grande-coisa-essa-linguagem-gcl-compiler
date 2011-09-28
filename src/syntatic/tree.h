@@ -128,9 +128,42 @@ struct Tree
 
     return out;
   }
+
+  template<typename CallBack>
+  void generateGraph(const CallBack &symbolToString) const
+  {
+    int count(0);
+
+    cout << "digraph MyGrammar { " << endl;
+
+    generateSubGraph<CallBack>(symbolToString,count);
+
+    cout << "}" << endl;
+  }
+
+  template<typename CallBack>
+  void generateSubGraph(const CallBack &symbolToString, int &count) const
+  {
+    int myCount(count);
   
+    /* */
+    if (isLeaf()) {
+      cout << "  c" << count << " [shape=oval,style=filled,color=\"#49FF61\",label=\"" << _token.getLexema() << "\"];" << endl;
+      return;
+    }
+
+    cout << "  c" << count << " [shape=rect,label=\"" << symbolToString(_head) << "\"];" << endl;
+
+    int size(_tree.size());
+
+    /* imprime todas as árvores, em ordem, menos a última */
+    for (int i(0); i < size; i++) {
+      count++;
+      cout << "  c" << myCount << " -> " << "c" << count << ";" << endl;
+      get<1>(_tree[i])->generateSubGraph(symbolToString,count);
+    }
+  }
 };
 
 }
 #endif
-

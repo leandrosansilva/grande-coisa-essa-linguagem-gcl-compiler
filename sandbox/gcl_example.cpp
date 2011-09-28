@@ -490,7 +490,7 @@ GCLGrammar grammar(symbolToString,{
 
   // <arraytype>    "array" "[" "identifier" "]" 
   //      {"[" "identifier" "]"}
-  {Arraytype,{{TkArray},{TkLBracket},{TkId},{TkRBracket},{ArrayTypeList}},{}},
+  {Arraytype,{{TkArray},{TkLBracket},{TkId},{TkRBracket},{ArrayTypeList}},{2,4}},
   {ArrayTypeList,{{TkLBracket},{TkId},{TkRBracket},{ArrayTypeList}},{1,3}},
   {ArrayTypeList,{}},
 
@@ -593,7 +593,7 @@ GCLGrammar grammar(symbolToString,{
 
   // <argumentList>    "(" [ <expressionList> ] ")"
   {ArgumentList,{{TkLParentesis},{ExpressionList},{TkRParentesis}},{1}},
-  {ArgumentList,{{TkLParentesis},{TkRParentesis}},{}},
+  {ArgumentList,{{TkLParentesis},{TkRParentesis}},{-1}},
  
   // <expression>    <relationalExpression> {<booleanOperator> <relationalExpression>}
   {Expression,{{RelationalExpression},{BoolRelList}}},
@@ -919,7 +919,9 @@ int main(int argc, char **argv)
 
   Tree<TokenType,GCLGrammar::Symbol> tree(parser.getTree());
 
-  cerr << tree.toString<function<string(const GCLGrammar::Symbol &)>>(symbolToString) << endl;
+  //cerr << tree.toString<function<string(const GCLGrammar::Symbol &)>>(symbolToString) << endl;
+
+  tree.generateGraph<function<string(const GCLGrammar::Symbol &)>>(symbolToString);
 
   tree.dispose();
 
