@@ -237,7 +237,9 @@ int main(int argc, char **argv)
 
   Tree<TokenType,AmbGrammar::Symbol> tree(parser.getTree());
 
-  cerr << tree.toString<function<string(const AmbGrammar::Symbol &)>>(symbolToString) << endl;
+  //cerr << tree.toString<function<string(const AmbGrammar::Symbol &)>>(symbolToString) << endl;
+
+  tree.generateGraph<function<string(const AmbGrammar::Symbol &)>>(symbolToString);
 
   tree.dispose();
 

@@ -158,7 +158,7 @@ struct Tree
 
     int size(_tree.size());
 
-    /* imprime todas as árvores, em ordem, menos a última */
+    /* gera grafo de cada subárvore todas as árvores */
     for (int i(0); i < size; i++) {
       count++;
       cout << "  c" << myCount << " -> " << "c" << count << ";" << endl;

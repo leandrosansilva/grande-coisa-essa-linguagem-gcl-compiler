@@ -92,11 +92,26 @@ struct Analyzer
 
       /* estado de erro! 
        * FIXME: dizer quais tokens são esperados
+       * Como fazer isso? Olho na tabela todas as ações 
+       * onde o estado é o atual e pego seus símbolos de transição
       */
       if (action == _table.end()) {
+        typename Grammar<NonTerminalT,TerminalT>::SymbolList list;
+
+        for (auto i(_table.begin()); i != _table.end(); i++) {
+          // se o estado é o atual, adiciona o símbolo na lista
+          if (get<0>(i->first) == _stateStack.back() && get<1>(i->first).isTerminal()) {
+            list.push_back(get<1>(i->first));
+          }
+        }
+
+        // Imprime os possíveis valores
         cerr << "Erro no parser!" << endl;
-        cerr << "Topo estado: " << _stateStack.back() << " e topo symbol"
-             << _grammar._symbolToString(_symbolStack.back()) << endl;
+        cerr << "Símbolos esperados: ";
+        for (auto i(list.begin()); i!= list.end(); i++) {
+          cerr << _grammar._symbolToString(*i) << ", ";
+        }
+        cerr << endl;
         return false;
       }
 

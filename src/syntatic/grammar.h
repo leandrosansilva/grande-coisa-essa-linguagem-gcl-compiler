@@ -584,7 +584,7 @@ struct Grammar
      * sim, isso é uma abordagem porca.
     */
     for (auto r(reduceActions.begin()); r != reduceActions.end(); r++) {
-      auto found(table.find(LR1Key(get<0>(*r),get<1>(*r))));
+      /*auto found(table.find(LR1Key(get<0>(*r),get<1>(*r))));
       
       if (found != table.end()) {
         cout << "duplicado! em goto" << endl;
@@ -598,7 +598,7 @@ struct Grammar
           << " " << get<2>(*r)
 
           << endl;
-      }
+      }*/
 
       table[LR1Key(get<0>(*r),get<1>(*r))] = {REDUCE,get<2>(*r)};
     }
