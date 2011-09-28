@@ -165,10 +165,6 @@ int main(int argc, char **argv)
 
   Syntatical::Analyzer<NonTerminal,TokenType> parser(grammar,getToken);
 
-  grammar.printTable();
-
-  grammar.generateGraph();
-
   if (!parser.parse()) {
     cerr << "Erro!" << endl;
     return 1;
@@ -176,7 +172,9 @@ int main(int argc, char **argv)
 
   Tree<TokenType,LISPGrammar::Symbol> tree(parser.getTree());
 
-  cerr << tree.toString<function<string(const LISPGrammar::Symbol &)>>(symbolToString) << endl;
+  //cerr << tree.toString<function<string(const LISPGrammar::Symbol &)>>(symbolToString) << endl;
+
+  tree.generateGraph<function<string(const LISPGrammar::Symbol &)>>(symbolToString);
 
   tree.dispose();
 
