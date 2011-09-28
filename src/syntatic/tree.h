@@ -148,11 +148,13 @@ struct Tree
   
     /* */
     if (isLeaf()) {
-      cout << "  c" << count << " [shape=oval,style=filled,color=\"#49FF61\",label=\"" << _token.getLexema() << "\"];" << endl;
+      cout << "  c" << count << " [shape=oval,style=filled,color=\"#49FF61\",label=\"" 
+           << _token.getLexema() << "\"];" << endl;
       return;
     }
 
-    cout << "  c" << count << " [shape=rect,label=\"" << symbolToString(_head) << "\"];" << endl;
+    cout << "  c" << count << " [shape=rect,label=\"" << symbolToString(_head) 
+         << "\"];" << endl;
 
     int size(_tree.size());
 
