@@ -12,7 +12,7 @@ int main(int argc, char **argv)
     const char c(file.getChar());
     std::cout << "'" << c << "' => " 
               << file.getLineNumber() 
-              << "x"  << file.getColumnNumber() << std::endl;
+              << std::endl;
               
     if (c == 'a') {
       file.back(2);

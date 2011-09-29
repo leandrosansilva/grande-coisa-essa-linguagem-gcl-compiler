@@ -643,6 +643,7 @@ GCLGrammar grammar(symbolToString,{
   //        | "(" <expression> ")" | "~" <factor> 
   {Factor,{{VariableAccess}}},
   {Factor,{{TkInteger}}},
+  {Factor,{{TkString}}},
   {Factor,{{TkReal}}},
   {Factor,{{BooleanConstant}}},
   {Factor,{{TkLBracket},{ExpressionList},{TkRBracket}},{1}},
