@@ -1,4 +1,5 @@
 module doComplexo2
+private
 begin
 	do x#0 -> search(x,A, result); 
 		if result.1 -> write x, ' can be found at ', result.2;  

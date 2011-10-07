@@ -896,7 +896,7 @@ int main(int argc, char **argv)
 
   Syntatical::Analyzer<NonTerminal,TokenType> parser(grammar,[&lexer](){
     return lexer.getToken();
-  });
+  },"gcl_table.txt");
 
   //grammar.printTable();
 

@@ -221,6 +221,8 @@ struct Grammar
   /* regra e posição que já foi checado */
   set<pair<int,int>> _firstChecked;
 
+  LR1Table _table;
+
   SymbolSet first(const Symbol &symbol)
   {
     if (symbol.isTerminal() || symbol.isEmpty()) {
@@ -569,9 +571,22 @@ struct Grammar
     cout << "}" << endl;
   }
 
-  LR1Table createTable()
+  LR1Table &createTable(const string &fileName)
   {
-    LR1Table table;
+    /* Ideia: abre arquivo. Se ele tiver conteúdo, desserializa-o para a memória e retorna
+     * caso ele tenha tamanho 0 ou 1, faz todo o cálculo e, no final, 
+     * serializa cada regra da tabela no arquivo em questão
+    */
+    fstream file(fileName,fstream::in | ios::ate);
+
+    cerr << "abriu arquivo " << fileName << " com código " << file.tellp() << endl;
+
+    if (file.tellp() > 0) { // possui dados
+      _table << file;
+    }
+
+    file.close();
+    file.open(fileName,fstream::out | ios::trunc);
 
     CanonicalItems cItems(items());
 
@@ -584,67 +599,35 @@ struct Grammar
      * sim, isso é uma abordagem porca.
     */
     for (auto r(reduceActions.begin()); r != reduceActions.end(); r++) {
-      /*auto found(table.find(LR1Key(get<0>(*r),get<1>(*r))));
-      
-      if (found != table.end()) {
-        cout << "duplicado! em goto" << endl;
-        cerr 
-          << get<0>(found->first) << " " << _symbolToString(get<1>(found->first))
-          << " " << table.actionToString(found->second._action) << " " << found->second._value 
-          << " and ";
-
-        cerr
-          << get<0>(*r) << " " << _symbolToString(get<1>(*r))
-          << " " << get<2>(*r)
-
-          << endl;
-      }*/
-
-      table[LR1Key(get<0>(*r),get<1>(*r))] = {REDUCE,get<2>(*r)};
+      _table[LR1Key(get<0>(*r),get<1>(*r))] = {REDUCE,get<2>(*r)};
     }
 
     for (auto e(edges.begin()); e != edges.end(); e++) {
-      /*auto found(table.find(LR1Key(get<0>(*e).first,get<0>(*e).second)));
-      
-      if (found != table.end()) {
-        cerr << "duplicado em terminais!" << endl;
-
-        cerr 
-          << get<0>(found->first) << " " << _symbolToString(get<1>(found->first))
-          << " " << table.actionToString(found->second._action) << " " << found->second._value 
-          << " and ";
-
-        cerr
-          << e->first.first << " " << _symbolToString(e->first.second)
-          << " " << e->second
-
-          << endl;
-      }*/
-
       if (e->first.second.isNonTerminal()) {
         /* se é um não terminal, faz goto */
-        table[LR1Key(get<0>(*e).first,get<0>(*e).second)] = {GOTO,get<1>(*e)};
+        _table[LR1Key(get<0>(*e).first,get<0>(*e).second)] = {GOTO,get<1>(*e)};
 
       } else if (e->first.second.isTerminal()) {
         /* se é um terminal, faz shift */
-        table[LR1Key(get<0>(*e).first,get<0>(*e).second)] = {SHIFT,get<1>(*e)};
+        _table[LR1Key(get<0>(*e).first,get<0>(*e).second)] = {SHIFT,get<1>(*e)};
       }
     }
 
     /* Por fim, inclui o estado de aceitação, que é sempre quando, em 1, acaba o arquivo */
-    table[LR1Key(1,_EOF)] = {ACCEPT};
+    _table[LR1Key(1,_EOF)] = {ACCEPT};
 
-    return table; 
+    _table >> file;
+
+    file.close();
+
+    return _table; 
   }
 
   void printTable()
   {
-    LR1Table table(createTable());
-
-    for (auto r(table.begin()); r != table.end(); r++) {
+    for (auto r(_table.begin()); r != _table.end(); r++) {
       cerr << get<0>(r->first) << " " << _symbolToString(get<1>(r->first))
-           << " " << table.actionToString(r->second._action) << " " << r->second._value << endl;
-
+           << " " << _table.actionToString(r->second._action) << " " << r->second._value << endl;
     }
   }
 };

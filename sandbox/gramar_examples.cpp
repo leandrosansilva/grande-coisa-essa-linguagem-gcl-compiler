@@ -62,12 +62,11 @@ void testCanonical(MyGrammar &g)
 
 void testTable(MyGrammar &g)
 {
-  MyGrammar::LR1Table table(g.createTable());
+  MyGrammar::LR1Table table(g.createTable("test_grammar.txt"));
 
   for (auto r(table.begin()); r != table.end(); r++) {
     cerr << get<0>(r->first) << " " << g._symbolToString(get<1>(r->first))
          << " " << table.actionToString(r->second._action) << " " << r->second._value << endl;
-
   }
 }
 

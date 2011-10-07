@@ -67,13 +67,14 @@ struct Analyzer
   Grammar<NonTerminalT,TerminalT> _grammar;
 
   /* o autômato recebe uma uma gramática e uma função getToken */
-  Analyzer(Grammar<NonTerminalT,TerminalT> &grammar, const function<Token<TerminalT>()> &getToken):
+  Analyzer(Grammar<NonTerminalT,TerminalT> &grammar, const function<Token<TerminalT>()> &getToken, const string &tableFileName = "grammar.table"):
 
   /* e já gera a tabela de ações/goto -> FIXME: processo demorado */
-  _table(grammar.createTable()),
+  _table(grammar.createTable(tableFileName)),
 
   /* inicialmente possuo o estado 0 na pilha de estados */
   _stateStack({0}),
+
   _grammar(grammar),
   
   _getNextToken(getToken)
