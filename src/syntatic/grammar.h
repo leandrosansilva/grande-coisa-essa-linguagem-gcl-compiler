@@ -571,23 +571,8 @@ struct Grammar
     cout << "}" << endl;
   }
 
-  LR1Table &createTable(const string &fileName)
+  LR1Table &createTable()
   {
-    /* Ideia: abre arquivo. Se ele tiver conteúdo, desserializa-o para a memória e retorna
-     * caso ele tenha tamanho 0 ou 1, faz todo o cálculo e, no final, 
-     * serializa cada regra da tabela no arquivo em questão
-    */
-    fstream file(fileName,fstream::in | ios::ate);
-
-    cerr << "abriu arquivo " << fileName << " com código " << file.tellp() << endl;
-
-    if (file.tellp() > 0) { // possui dados
-      _table << file;
-    }
-
-    file.close();
-    file.open(fileName,fstream::out | ios::trunc);
-
     CanonicalItems cItems(items());
 
     EdgeMap edges(get<1>(cItems));
@@ -615,10 +600,6 @@ struct Grammar
 
     /* Por fim, inclui o estado de aceitação, que é sempre quando, em 1, acaba o arquivo */
     _table[LR1Key(1,_EOF)] = {ACCEPT};
-
-    _table >> file;
-
-    file.close();
 
     return _table; 
   }

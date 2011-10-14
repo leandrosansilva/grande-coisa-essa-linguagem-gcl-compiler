@@ -62,7 +62,7 @@ void testCanonical(MyGrammar &g)
 
 void testTable(MyGrammar &g)
 {
-  MyGrammar::LR1Table table(g.createTable("test_grammar.txt"));
+  MyGrammar::LR1Table table(g.createTable());
 
   for (auto r(table.begin()); r != table.end(); r++) {
     cerr << get<0>(r->first) << " " << g._symbolToString(get<1>(r->first))

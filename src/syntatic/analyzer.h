@@ -70,7 +70,7 @@ struct Analyzer
   Analyzer(Grammar<NonTerminalT,TerminalT> &grammar, const function<Token<TerminalT>()> &getToken, const string &tableFileName = "grammar.table"):
 
   /* e já gera a tabela de ações/goto -> FIXME: processo demorado */
-  _table(grammar.createTable(tableFileName)),
+  _table(grammar.createTable()),
 
   /* inicialmente possuo o estado 0 na pilha de estados */
   _stateStack({0}),
