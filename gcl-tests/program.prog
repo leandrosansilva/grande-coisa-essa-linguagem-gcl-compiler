@@ -1,24 +1,43 @@
-!! Rachel Programming Language
-!! Data Types -> string, int, char and array (perhaps tuple?)
+# Rachel Programming Language
+# RApid and CHEater Language
+# Data Types -> string, int, char and array (perhaps tuple?)
+
+(nothing int go, string dad -> int)
+
+(firstChars [10]string a -> string:
+  int size((count a));
+  string final((count a));
+  int counter(0);
+  
+  body:
+
+  while (&& (< counter size) (> counter 500)) {
+    final[counter] = a[counter][0];
+  }
+
+  |final;
+)
 
 (nothing int go, string dad -> int:
 
-  string caca(4); !! cria e inicializa uma variável
+  string caca(4); # cria e inicializa uma variavel
 
   body:
 
   if (== dad "mom") {
-    |23; !! retorno
+    |23; # retorno
   } else {
-    |go;
+    |(+ go 30 45);
   }
 )
 
 (reverse string name -> string:
 
-  !! para inicializar uma string, passa-se uma outra string ou um tamanho 
+  # para inicializar uma string, passa-se uma outra string ou um tamanho 
   string r((count name));
   int size((count name));
+  char firstChar(name[0]);
+  char anyChar('a');
   int i(0);
   
   body:
@@ -31,7 +50,7 @@
   |r;
 )
 
-(myFunction: !! tipo de retorno void e não recebe parâmetros
+(myFunction: # tipo de retorno void e nao recebe parametros
   body:
   (writeln "Good News Everyone!");
 )
@@ -50,77 +69,96 @@
   | (+ (nothing (+ nome[2] 2) "joseph") (nothing (* 4 3) "mom"));
 )
 
-!! Program -> FunctionDecl FunctionDeclList
-!! FunctionDeclList -> FunctionDecl FunctionDeclList
-!! FunctionDeclList -> {}
+# Program -> Function FunctionList
+# FunctionList -> Function FunctionList
+# FunctionList -> {}
+# Function -> FunctionImpl
+# Function -> FunctionDecl
 
-!! FunctionDecl -> "(" identifier ListOfFormalParams ";" FunctionContent ")" 
-!! FunctionDecl -> "(" identifier ListOfFormalParams "->" BasicType ":" FunctionContent ")"
+# Funcao com implementacao
+# FunctionImpl -> "(" identifier ListOfFormalParams ":" FunctionContent ")" 
+# FunctionImpl -> "(" identifier ListOfFormalParams "->" TypeName ":" FunctionContent ")"
 
-!! BasicType -> "int"
-!! BasicType -> "string"
+# Funcao sem implementacao, so interface
+# FunctionImpl -> "(" identifier ListOfFormalParams ")" 
+# FunctionImpl -> "(" identifier ListOfFormalParams "->" TypeName ")"
 
-!! ListOfFormalParams -> ListOfParamDef
-!! ListOfFormalParams -> {}
-!! ListOfParamDef -> ParamDef ListOfParamDef
-!! ListOfParamDef -> "," ParamDef ListOfParamDef
-!! ListOfParamDef -> {}
+# TypeName -> BasicTypeName
+# TypeName -> ArrayTypeName
 
-!! ParamDef -> BasicType TkId
+# BasicTypeName -> "int"
+# BasicTypeName -> "string"
 
-!! FunctionContent -> VariableDeclarationList "body" ":" FunctionBody
-!! VariableDeclarationList -> {}
-!! VariableDeclarationList -> VariableInitialization ";" VariableInitializationList
-!! VariableInitializationList -> {}  
-!! VariableInitializationList ->  VariableInitialization ";" VariableInitializationList
-!! VariableInitialization -> BasicType TkId "(" Expression ")" ";"
+# ArrayTypeName -> "[" ArrayTypeSize "]" ArrayTypeNameExt
+# ArrayTypeNameExt -> "[" ArrayTypeSize "]" ArrayTypeNameExt
+# ArrayTypeNameExt -> {}
 
-!! FunctionBody -> StmList
-!! StmList -> Stm ";" StmList;
-!! StmList -> {}
+# ArrayTypeSize -> TkInt
+# ArrayTypeSize -> {}
 
-!! Stm -> FunctionCallStm
-!! Stm -> AttrStm
-!! Stm -> IfStm
-!! Stm -> WhileStm
-!! Stm -> ReturnStm
+# ListOfFormalParams -> ListOfParamDef
+# ListOfParamDef -> {}
+# ListOfParamDef -> ParamDef ListOfParamDefExt
+# ListOfParamDefExt -> "," ParamDef ListOfParamDefExt
+# ListOfParamDefExt -> {}
 
-!! FunctionCallStm -> "(" FunctionName RealParameters ")"
-!! RealParameters -> Expression RealParameters
-!! RealParameters -> {}
+# ParamDef -> TypeName TkId
 
-!! FunctionName -> TkId
-!! FunctionName -> "+"
-!! FunctionName -> "-"
-!! FunctionName -> "*"
-!! FunctionName -> "/"
-!! FunctionName -> "%"
-!! FunctionName -> "&&"
-!! FunctionName -> "||"
-!! FunctionName -> "~"
-!! FunctionName -> "=="
-!! FunctionName -> "!="
-!! FunctionName -> ">"
-!! FunctionName -> ">="
-!! FunctionName -> "<"
-!! FunctionName -> "<="
+# FunctionContent -> VariableDeclarationList "body" ":" FunctionBody
 
-!! AttrStm -> VariableAccess "=" Expression
-!! VariableAccess -> TkId
-!! VariableAccess -> TkId IndexAccess
-!! IndexAccess -> "[" Expression "]" IndexAccessExt
-!! IndexAccessExt -> IndexAccess
-!! IndexAccessExt -> {}
+# VariableDeclarationList -> {}
+# VariableDeclarationList -> VariableInitialization ";" VariableInitializationListExt
+# VariableInitializationListExt ->  VariableInitialization ";" VariableInitializationListExt
+# VariableInitializationListExt -> {}  
 
-!! IfStm -> "if" Expression "{" StmList "}"
-!! IfStm -> "if" Expression "{" StmList "}" "else" "{" StmList "}"
+# VariableInitialization -> TypeName TkId "(" Expression ")"
 
-!! WhileStm -> "while" Expression "{" StmList "}"
+# FunctionBody -> StmList
+# StmList -> Stm ";" StmList;
+# StmList -> {}
 
-!! ReturnStm -> "|" Expression
+# Stm -> FunctionCall
+# Stm -> AttrStm
+# Stm -> IfStm
+# Stm -> WhileStm
+# Stm -> ReturnStm
 
-!! Expression -> FunctionCallStm
-!! Expression -> TkInteger
-!! Expression -> TkString
-!! Expression -> TkChar
-!! Expression -> VariableAccess
+# FunctionCall -> "(" FunctionName RealParameters ")"
+# RealParameters -> Expression RealParameters
+# RealParameters -> {}
+
+# FunctionName -> TkId
+# FunctionName -> "+"
+# FunctionName -> "-"
+# FunctionName -> "*"
+# FunctionName -> "/"
+# FunctionName -> "%"
+# FunctionName -> "&&"
+# FunctionName -> "||"
+# FunctionName -> "~"
+# FunctionName -> "=="
+# FunctionName -> "!="
+# FunctionName -> ">"
+# FunctionName -> ">="
+# FunctionName -> "<"
+# FunctionName -> "<="
+
+# AttrStm -> VariableAccess "=" Expression
+# VariableAccess -> TkId
+# VariableAccess -> TkId IndexAccess
+# IndexAccess -> "[" Expression "]" IndexAccessExt
+# IndexAccessExt -> IndexAccess
+# IndexAccessExt -> {}
+
+# IfStm -> "if" Expression "{" StmList "}"
+# IfStm -> "if" Expression "{" StmList "}" "else" "{" StmList "}"
+
+# WhileStm -> "while" Expression "{" StmList "}"
+
+# ReturnStm -> "|" Expression
+
+# Expression -> FunctionCall
+# Expression -> TkInteger
+# Expression -> TkString
+# Expression -> TkChar
+# Expression -> VariableAccess
