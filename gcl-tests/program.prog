@@ -4,7 +4,7 @@
 
 (nothing int go, string dad -> int)
 
-(firstChars [10]string a -> string:
+(firstChars string a -> string:
   int size((count a));
   string final((count a));
   int counter(0);
@@ -13,7 +13,7 @@
 
   while (&& (< counter size) (> counter 500)) {
     final[counter] = a[counter][0];
-  }
+  };
 
   |final;
 )
@@ -28,7 +28,7 @@
     |23; # retorno
   } else {
     |(+ go 30 45);
-  }
+  };
 )
 
 (reverse string name -> string:
@@ -45,7 +45,7 @@
   while (< i size) {
     r[i] = nome[(- size i)];
     i = (+ i 1);
-  }
+  };
   
   |r;
 )
@@ -89,7 +89,7 @@
 # BasicTypeName -> "int"
 # BasicTypeName -> "string"
 
-# ArrayTypeName -> "[" ArrayTypeSize "]" ArrayTypeNameExt
+# ArrayTypeName -> "[" ArrayTypeSize "]" ArrayTypeNameExt BasicTypeName
 # ArrayTypeNameExt -> "[" ArrayTypeSize "]" ArrayTypeNameExt
 # ArrayTypeNameExt -> {}
 
@@ -114,7 +114,7 @@
 # VariableInitialization -> TypeName TkId "(" Expression ")"
 
 # FunctionBody -> StmList
-# StmList -> Stm ";" StmList;
+# StmList -> Stm ";" StmList
 # StmList -> {}
 
 # Stm -> FunctionCall

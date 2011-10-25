@@ -108,7 +108,7 @@ struct Analyzer
 
         // Imprime os possíveis valores
         cerr << "Erro no parser!" << endl;
-        cerr << "Lido: " <<  _grammar._symbolToString(token.getType()) << "(\"" <<  token.getLexema() << "\")" <<  " Símbolos esperados: ";
+        cerr << "Lido: " <<  _grammar._symbolToString(token.getType()) << "(\"" << token.getLexema() << "\")" << " line:" << token.getLine() <<  " Símbolos esperados: ";
         for (auto i(list.begin()); i!= list.end(); i++) {
           cerr << _grammar._symbolToString(*i) << ", ";
         }

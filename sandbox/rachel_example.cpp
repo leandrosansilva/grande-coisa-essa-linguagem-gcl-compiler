@@ -18,10 +18,10 @@ using namespace std;
 /* defino o conjunto de caracteres permitidos na linguagem */
 const String digits("0123456789");
 const String letters("abcdefghijklmnopqrstuvxwyzABCDEFGHIJKLMNOPQRSTUVXWYZ");
-const String symbols("#!:.=-,;()[]<>&|~+-*/\\.{}");
+const String symbols("#!:.=-,;()[]<>&|~+-*/\\.{}%");
 
 /* outros caracteres que podem aparecer em textos corridos */
-const String others("@$%?");
+const String others("@$?");
 
 /* aspas (quotes) e apóstrofos (apostrophes) */
 const String quotes("\'\"");
@@ -48,7 +48,7 @@ typedef enum {
   
   /* Estados intermediários */
   s,b1,a1,g1,l1,h1,h2,i1,i2,m1,m2,n1,n2,o1,p1,r1,s1,
-  s2,t1,t2,u1,w1,f1,k1,x1,c1,c2,c3,d1,d2,e1,J1,j2,q1,q2
+  s2,t1,t2,u1,w1,f1,k1,x1,c1,c2,c3,d1,d2,e1,J1,j2,q1,q2,yy1,yy2,yy3
   
 } LexState;
 
@@ -78,6 +78,8 @@ typedef enum {
   TkDiv,
   TkTimes,
   TkDot,
+  TkMod,
+  TkDiff,
   TkEnd,
   TkString,
   TkStringWord,
@@ -145,6 +147,8 @@ static map<TokenType,string> TerminalMap {
   {TkDiv,"TkDiv"},
   {TkTimes,"TkTimes"},
   {TkDot,"TkDot"},
+  {TkMod,"TkMod"},
+  {TkDiff,"TkDiff"},
   {TkEnd,"TkEnd"},
   {TkString,"TkString"},
   {TkStringWord,"TkStringWord"},
@@ -187,11 +191,84 @@ static map<TokenType,string> TerminalMap {
 };
 
 typedef enum {
-  EL
+  EL,
+  ArrayTypeName,
+  ArrayTypeNameExt,
+  ArrayTypeSize,
+  AttrStm,
+  BasicTypeName,
+  Data,
+  Expression,
+  Funcao,
+  Function,
+  FunctionBody,
+  FunctionCall,
+  FunctionContent,
+  FunctionImpl,
+  FunctionDecl,
+  FunctionList,
+  FunctionName,
+  IfStm,
+  IndexAccess,
+  IndexAccessExt,
+  ListOfFormalParams,
+  ListOfParamDef,
+  ListOfParamDefExt,
+  ParamDef,
+  Program,
+  Rachel,
+  RApid,
+  RealParameters,
+  ReturnStm,
+  Stm,
+  StmList,
+  TypeName,
+  VariableAccess,
+  VariableDeclarationList,
+  VariableInitialization,
+  VariableInitializationListExt,
+  WhileStm,
+
 } NonTerminal;
 
 static map<NonTerminal,string> NonTerminalMap {
-  {EL,"E'"} 
+  {EL,"E'"},
+  {ArrayTypeName,"ArrayTypeName"},
+  {ArrayTypeNameExt,"ArrayTypeNameExt"},
+  {ArrayTypeSize,"ArrayTypeSize"},
+  {AttrStm,"AttrStm"},
+  {BasicTypeName,"BasicTypeName"},
+  {Data,"Data"},
+  {Expression,"Expression"},
+  {Funcao,"Funcao"},
+  {Function,"Function"},
+  {FunctionBody,"FunctionBody"},
+  {FunctionCall,"FunctionCall"},
+  {FunctionContent,"FunctionContent"},
+  {FunctionImpl,"FunctionImpl"},
+  {FunctionDecl,"FunctionDecl"},
+  {FunctionList,"FunctionList"},
+  {FunctionName,"FunctionName"},
+  {IfStm,"IfStm"},
+  {IndexAccess,"IndexAccess"},
+  {IndexAccessExt,"IndexAccessExt"},
+  {ListOfFormalParams,"ListOfFormalParams"},
+  {ListOfParamDef,"ListOfParamDef"},
+  {ListOfParamDefExt,"ListOfParamDefExt"},
+  {ParamDef,"ParamDef"},
+  {Program,"Program"},
+  {Rachel,"Rachel"},
+  {RApid,"RApid"},
+  {RealParameters,"RealParameters"},
+  {ReturnStm,"ReturnStm"},
+  {Stm,"Stm"},
+  {StmList,"StmList"},
+  {TypeName,"TypeName"},
+  {VariableAccess,"VariableAccess"},
+  {VariableDeclarationList,"VariableDeclarationList"},
+  {VariableInitialization,"VariableInitialization"},
+  {VariableInitializationListExt,"VariableInitializationListExt"},
+  {WhileStm,"WhileStm"}
 };
 
 typedef Grammar<NonTerminal,TokenType> RachelGrammar;
@@ -211,6 +288,99 @@ static string symbolToString(const RachelGrammar::Symbol &s)
 }
 
 RachelGrammar grammar(symbolToString,{
+  {EL,{{Program},{TEOF}}},
+  {Program,{{Function},{FunctionList}}},
+  {FunctionList,{{Function},{FunctionList}}},
+  {FunctionList,{}},
+  {Function,{{FunctionImpl}}},
+  {Function,{{FunctionDecl}}},
+  {FunctionImpl,{{TkLParentesis},{TkId},{ListOfFormalParams},{TkTwoDots},{FunctionContent},{TkRParentesis}}},
+  {FunctionImpl,{{TkLParentesis},{TkId},{ListOfFormalParams},{TkIs},{TypeName},{TkTwoDots},{FunctionContent},{TkRParentesis}}},
+
+  {FunctionDecl,{{TkLParentesis},{TkId},{ListOfFormalParams},{TkRParentesis}}},
+  {FunctionDecl,{{TkLParentesis},{TkId},{ListOfFormalParams},{TkIs},{TypeName},{TkRParentesis}}},
+
+  {TypeName,{{BasicTypeName}}},
+  {TypeName,{{ArrayTypeName}}},
+
+  {BasicTypeName,{{TkIntWord}}},
+  {BasicTypeName,{{TkStringWord}}},
+  {BasicTypeName,{{TkCharWord}}},
+
+  {ArrayTypeName,{{TkLBracket},{ArrayTypeSize},{TkRBracket},{ArrayTypeNameExt},{BasicTypeName}}},
+  {ArrayTypeNameExt,{{TkLBracket},{ArrayTypeSize},{TkRBracket},{ArrayTypeNameExt}}},
+  {ArrayTypeNameExt,{}},
+  {ArrayTypeSize,{{TkInteger}}},
+  {ArrayTypeSize,{}},
+
+  {ListOfFormalParams,{{ListOfParamDef}}},
+  {ListOfParamDef,{}},
+  {ListOfParamDef,{{ParamDef},{ListOfParamDefExt}}},
+  {ListOfParamDefExt,{{TkComma},{ParamDef},{ListOfParamDefExt}}},
+  {ListOfParamDefExt,{}},
+
+  {ParamDef,{{TypeName},{TkId}}},
+
+  {FunctionContent,{{VariableDeclarationList},{TkBody},{TkTwoDots},{FunctionBody}}},
+
+  {VariableDeclarationList,{}},
+  {VariableDeclarationList,{{VariableInitialization},{TkEnd},{VariableInitializationListExt}}},
+  {VariableInitializationListExt,{{VariableInitialization},{TkEnd},{VariableInitializationListExt}}},
+  {VariableInitializationListExt,{}},
+  {VariableInitialization,{{TypeName},{TkId},{TkLParentesis},{Expression},{TkRParentesis}}},
+
+  {FunctionBody,{{StmList}}},
+
+  {StmList,{{Stm},{TkEnd},{StmList}}},
+  {StmList,{}},
+  {Stm,{{FunctionCall}}},
+  {Stm,{{AttrStm}}},
+  {Stm,{{IfStm}}},
+  {Stm,{{WhileStm}}},
+  {Stm,{{ReturnStm}}},
+
+  {FunctionCall,{{TkLParentesis},{FunctionName},{RealParameters},{TkRParentesis}}},
+
+  {RealParameters,{{Expression},{RealParameters}}},
+  {RealParameters,{}},
+
+  {FunctionName,{{TkId}}},
+  {FunctionName,{{TkPlus}}},
+  {FunctionName,{{TkMinus}}},
+  {FunctionName,{{TkTimes}}},
+  {FunctionName,{{TkDiv}}},
+  {FunctionName,{{TkMod}}},
+  {FunctionName,{{TkAnd}}},
+  {FunctionName,{{TkOr}}},
+  {FunctionName,{{TkNot}}},
+  {FunctionName,{{TkEqual}}},
+  {FunctionName,{{TkDiff}}},
+  {FunctionName,{{TkGThan}}},
+  {FunctionName,{{TkGEThan}}},
+  {FunctionName,{{TkLThan}}},
+  {FunctionName,{{TkLEThan}}},
+
+  {AttrStm,{{VariableAccess},{TkAttr},{Expression}}},
+
+  {VariableAccess,{{TkId}}},
+  {VariableAccess,{{TkId},{IndexAccess}}},
+  {IndexAccess,{{TkLBracket},{Expression},{TkRBracket},{IndexAccessExt}}},
+  {IndexAccessExt,{{IndexAccess}}},
+  {IndexAccessExt,{}},
+
+  {IfStm,{{TkIf},{Expression},{TkLBlock},{StmList},{TkRBlock}}},
+  {IfStm,{{TkIf},{Expression},{TkLBlock},{StmList},{TkRBlock},{TkElse},{TkLBlock},{StmList},{TkRBlock}}},
+
+  {WhileStm,{{TkWhile},{Expression},{TkLBlock},{StmList},{TkRBlock}}},
+
+  {ReturnStm,{{TkReturn},{Expression}}},
+
+  {Expression,{{FunctionCall}}},
+  {Expression,{{TkInteger}}},
+  {Expression,{{TkString}}},
+  {Expression,{{TkChar}}},
+  {Expression,{{VariableAccess}}}
+
 },TEOF,INVALID);
 
 TransitionTable<LexState,TokenType> automata(start,invalid,final);
@@ -340,6 +510,15 @@ int main(int argc, char **argv)
   automata.addTransition(start,"}",q2);
   automata.addFinalTransition(q2,any,TkRBlock);
 
+  /* Para % */
+  automata.addTransition(start,"%",yy1);
+  automata.addFinalTransition(yy1,any,TkMod);
+
+  /* Para != */
+  automata.addTransition(start,"!",yy2);
+  automata.addTransition(yy2,"=",yy3);
+  automata.addFinalTransition(yy3,any,TkDiff);
+
   /* um cara que lê um arquivo do disco */
   FileReader reader(argv[1]);
   
@@ -350,7 +529,7 @@ int main(int argc, char **argv)
       {"integer",TkIntWord},
       {"string",TkStringWord},
       {"body",TkBody},
-      {"char",TkChar},
+      {"char",TkCharWord},
       {"if",TkIf},
       {"else",TkElse},
       {"while",TkWhile},
@@ -404,10 +583,33 @@ int main(int argc, char **argv)
   lexer.setTokenPadding(TkString,1,1);
   lexer.setTokenPadding(TkChar,1,1);
 
+  /*
   while (lexer.canReadToken()) {
     Token<TokenType> t(lexer.getToken());
     cout << symbolToString({t.getType()}) << " " << t.getLexema() << endl;
   }
+  return 0;
+  */
+
+  function<Token<TokenType>()> getToken([&lexer](){
+    return lexer.getToken();
+  });
+
+  Syntatical::Analyzer<NonTerminal,TokenType> parser(grammar,getToken);
+
+  if (!parser.parse()) {
+    cerr << "Erro!" << endl;
+    return 1;
+  }
+
+  Tree<TokenType,RachelGrammar::Symbol> tree(parser.getTree());
+
+  //cerr << tree.toString<function<string(const RachelGrammar::Symbol &)>>(symbolToString) << endl;
+
+  tree.generateGraph<function<string(const RachelGrammar::Symbol &)>>(symbolToString);
+
+  tree.dispose();
+
 
   return 0;
 }
