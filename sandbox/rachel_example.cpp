@@ -294,11 +294,11 @@ RachelGrammar grammar(symbolToString,{
   {FunctionList,{}},
   {Function,{{FunctionImpl}}},
   {Function,{{FunctionDecl}}},
-  {FunctionImpl,{{TkLParentesis},{TkId},{ListOfFormalParams},{TkTwoDots},{FunctionContent},{TkRParentesis}}},
-  {FunctionImpl,{{TkLParentesis},{TkId},{ListOfFormalParams},{TkIs},{TypeName},{TkTwoDots},{FunctionContent},{TkRParentesis}}},
+  {FunctionImpl,{{TkLParentesis},{TkId},{ListOfFormalParams},{TkTwoDots},{FunctionContent},{TkRParentesis}},{1,2,4}},
+  {FunctionImpl,{{TkLParentesis},{TkId},{ListOfFormalParams},{TkIs},{TypeName},{TkTwoDots},{FunctionContent},{TkRParentesis}},{1,2,4,6}},
 
-  {FunctionDecl,{{TkLParentesis},{TkId},{ListOfFormalParams},{TkRParentesis}}},
-  {FunctionDecl,{{TkLParentesis},{TkId},{ListOfFormalParams},{TkIs},{TypeName},{TkRParentesis}}},
+  {FunctionDecl,{{TkLParentesis},{TkId},{ListOfFormalParams},{TkRParentesis}},{1,2}},
+  {FunctionDecl,{{TkLParentesis},{TkId},{ListOfFormalParams},{TkIs},{TypeName},{TkRParentesis}},{1,2,4}},
 
   {TypeName,{{BasicTypeName}}},
   {TypeName,{{ArrayTypeName}}},
@@ -307,8 +307,8 @@ RachelGrammar grammar(symbolToString,{
   {BasicTypeName,{{TkStringWord}}},
   {BasicTypeName,{{TkCharWord}}},
 
-  {ArrayTypeName,{{TkLBracket},{ArrayTypeSize},{TkRBracket},{ArrayTypeNameExt},{BasicTypeName}}},
-  {ArrayTypeNameExt,{{TkLBracket},{ArrayTypeSize},{TkRBracket},{ArrayTypeNameExt}}},
+  {ArrayTypeName,{{TkLBracket},{ArrayTypeSize},{TkRBracket},{ArrayTypeNameExt},{BasicTypeName}},{1,3,4}},
+  {ArrayTypeNameExt,{{TkLBracket},{ArrayTypeSize},{TkRBracket},{ArrayTypeNameExt}},{1,3}},
   {ArrayTypeNameExt,{}},
   {ArrayTypeSize,{{TkInteger}}},
   {ArrayTypeSize,{}},
@@ -316,22 +316,22 @@ RachelGrammar grammar(symbolToString,{
   {ListOfFormalParams,{{ListOfParamDef}}},
   {ListOfParamDef,{}},
   {ListOfParamDef,{{ParamDef},{ListOfParamDefExt}}},
-  {ListOfParamDefExt,{{TkComma},{ParamDef},{ListOfParamDefExt}}},
+  {ListOfParamDefExt,{{TkComma},{ParamDef},{ListOfParamDefExt}},{1,2}},
   {ListOfParamDefExt,{}},
 
   {ParamDef,{{TypeName},{TkId}}},
 
-  {FunctionContent,{{VariableDeclarationList},{TkBody},{TkTwoDots},{FunctionBody}}},
+  {FunctionContent,{{VariableDeclarationList},{TkBody},{TkTwoDots},{FunctionBody}},{0,3}},
 
   {VariableDeclarationList,{}},
-  {VariableDeclarationList,{{VariableInitialization},{TkEnd},{VariableInitializationListExt}}},
-  {VariableInitializationListExt,{{VariableInitialization},{TkEnd},{VariableInitializationListExt}}},
+  {VariableDeclarationList,{{VariableInitialization},{TkEnd},{VariableInitializationListExt}},{0,2}},
+  {VariableInitializationListExt,{{VariableInitialization},{TkEnd},{VariableInitializationListExt}},{0,2}},
   {VariableInitializationListExt,{}},
-  {VariableInitialization,{{TypeName},{TkId},{TkLParentesis},{Expression},{TkRParentesis}}},
+  {VariableInitialization,{{TypeName},{TkId},{TkLParentesis},{Expression},{TkRParentesis}},{0,1,3}},
 
   {FunctionBody,{{StmList}}},
 
-  {StmList,{{Stm},{TkEnd},{StmList}}},
+  {StmList,{{Stm},{TkEnd},{StmList}},{0,2}},
   {StmList,{}},
   {Stm,{{FunctionCall}}},
   {Stm,{{AttrStm}}},
@@ -339,7 +339,7 @@ RachelGrammar grammar(symbolToString,{
   {Stm,{{WhileStm}}},
   {Stm,{{ReturnStm}}},
 
-  {FunctionCall,{{TkLParentesis},{FunctionName},{RealParameters},{TkRParentesis}}},
+  {FunctionCall,{{TkLParentesis},{FunctionName},{RealParameters},{TkRParentesis}},{1,2}},
 
   {RealParameters,{{Expression},{RealParameters}}},
   {RealParameters,{}},
@@ -360,20 +360,21 @@ RachelGrammar grammar(symbolToString,{
   {FunctionName,{{TkLThan}}},
   {FunctionName,{{TkLEThan}}},
 
-  {AttrStm,{{VariableAccess},{TkAttr},{Expression}}},
+  {AttrStm,{{VariableAccess},{TkAttr},{Expression}},{0,2}},
 
   {VariableAccess,{{TkId}}},
   {VariableAccess,{{TkId},{IndexAccess}}},
-  {IndexAccess,{{TkLBracket},{Expression},{TkRBracket},{IndexAccessExt}}},
+  {IndexAccess,{{TkLBracket},{Expression},{TkRBracket},{IndexAccessExt}},{1,3}},
   {IndexAccessExt,{{IndexAccess}}},
   {IndexAccessExt,{}},
 
-  {IfStm,{{TkIf},{Expression},{TkLBlock},{StmList},{TkRBlock}}},
-  {IfStm,{{TkIf},{Expression},{TkLBlock},{StmList},{TkRBlock},{TkElse},{TkLBlock},{StmList},{TkRBlock}}},
+  {IfStm,{{TkIf},{Expression},{TkLBlock},{StmList},{TkRBlock}},{1,3}},
+  {IfStm,{{TkIf},{Expression},{TkLBlock},{StmList},{TkRBlock},{TkElse},{TkLBlock},{StmList},{TkRBlock}},{1,3,7}},
 
-  {WhileStm,{{TkWhile},{Expression},{TkLBlock},{StmList},{TkRBlock}}},
+  {WhileStm,{{TkWhile},{Expression},{TkLBlock},{StmList},{TkRBlock}},{1,3}},
 
-  {ReturnStm,{{TkReturn},{Expression}}},
+  {ReturnStm,{{TkReturn},{Expression}},{1}},
+  {ReturnStm,{{TkReturn}},{1}},
 
   {Expression,{{FunctionCall}}},
   {Expression,{{TkInteger}}},
