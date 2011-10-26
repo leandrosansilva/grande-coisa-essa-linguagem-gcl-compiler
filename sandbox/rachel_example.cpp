@@ -95,30 +95,13 @@ typedef enum {
   TkElse,
   TkWhile,
 
+  TkRead,
+  TkWrite,
+  TkWriteLn,
+
   TkNone,
 
-  TEOF,INVALID,
-
-  /* Tokens de teste! Não fazem parte da gramatica! */
-  Teste1,
-  Teste2,
-  Teste3,
-  Teste4,
-  Teste5,
-  Teste6,
-  Teste7,
-  Teste8,
-  Teste9,
-  Teste10,
-  Teste11,
-  Teste12,
-  Teste13,
-  Teste14,
-  Teste15,
-  Teste16,
-  Teste17,
-  Teste18,
-  Teste19,
+  TEOF,INVALID
 } TokenType;
 
 static map<TokenType,string> TerminalMap {
@@ -164,30 +147,12 @@ static map<TokenType,string> TerminalMap {
   {TkIf,"TkIf"},
   {TkElse,"TkElse"},
   {TkWhile,"TkWhile"},
+  {TkRead,"TkRead"},
+  {TkWrite,"TkWrite"},
+  {TkWriteLn,"TkWriteLn"},
 
   {TEOF,"$"},
-  {INVALID,"?"},
-
-  // Tokens de teste! Não fazem parte da gramática!
-  {Teste1,"Teste1"},
-  {Teste2,"Teste2"},
-  {Teste3,"Teste3"},
-  {Teste4,"Teste4"},
-  {Teste5,"Teste5"},
-  {Teste6,"Teste6"},
-  {Teste7,"Teste7"},
-  {Teste8,"Teste8"},
-  {Teste9,"Teste9"},
-  {Teste10,"Teste10"},
-  {Teste11,"Teste11"},
-  {Teste12,"Teste12"},
-  {Teste13,"Teste13"},
-  {Teste14,"Teste14"},
-  {Teste15,"Teste15"},
-  {Teste16,"Teste16"},
-  {Teste17,"Teste17"},
-  {Teste18,"Teste18"},
-  {Teste19,"Teste19"},
+  {INVALID,"?"}
 };
 
 typedef enum {
@@ -228,7 +193,9 @@ typedef enum {
   VariableInitialization,
   VariableInitializationListExt,
   WhileStm,
-
+  Set,
+  SetContent,
+  SetContentExt
 } NonTerminal;
 
 static map<NonTerminal,string> NonTerminalMap {
@@ -268,7 +235,10 @@ static map<NonTerminal,string> NonTerminalMap {
   {VariableDeclarationList,"VariableDeclarationList"},
   {VariableInitialization,"VariableInitialization"},
   {VariableInitializationListExt,"VariableInitializationListExt"},
-  {WhileStm,"WhileStm"}
+  {WhileStm,"WhileStm"},
+  {Set,"Set"},
+  {SetContent,"SetContent"},
+  {SetContentExt,"SetContentExt"}
 };
 
 typedef Grammar<NonTerminal,TokenType> RachelGrammar;
@@ -359,6 +329,9 @@ RachelGrammar grammar(symbolToString,{
   {FunctionName,{{TkGEThan}}},
   {FunctionName,{{TkLThan}}},
   {FunctionName,{{TkLEThan}}},
+  {FunctionName,{{TkRead}}},
+  {FunctionName,{{TkWrite}}},
+  {FunctionName,{{TkWriteLn}}},
 
   {AttrStm,{{VariableAccess},{TkAttr},{Expression}},{0,2}},
 
@@ -380,8 +353,16 @@ RachelGrammar grammar(symbolToString,{
   {Expression,{{TkInteger}}},
   {Expression,{{TkString}}},
   {Expression,{{TkChar}}},
-  {Expression,{{VariableAccess}}}
+  {Expression,{{VariableAccess}}},
+  {Expression,{{Set}}},
 
+  /* coisas como {2,3,"aa",{2,54,"ee",342}}  */
+  {Set,{{TkLBlock},{SetContent},{TkRBlock}},{1}},
+  {SetContent,{{Expression},{SetContentExt}}},
+  {SetContent,{}},
+  {SetContentExt,{{TkComma},{Expression},{SetContentExt}},{1,2}},
+  {SetContentExt,{}}
+  
 },TEOF,INVALID);
 
 TransitionTable<LexState,TokenType> automata(start,invalid,final);
@@ -535,6 +516,11 @@ int main(int argc, char **argv)
       {"else",TkElse},
       {"while",TkWhile},
 
+      /* entrada e saída de dados */
+      {"read",TkRead},
+      {"write",TkWrite},
+      {"writeln",TkWriteLn},
+
       /* aliases para outros símbolos */
       {"and",TkAnd},
       {"or",TkOr},
@@ -544,28 +530,7 @@ int main(int argc, char **argv)
       {"sum",TkReturn},
       {"sub",TkReturn},
       {"times",TkReturn},
-      {"div",TkReturn},
-
-      // palavras de teste 
-      {"teste1",Teste1}, 
-      {"teste2",Teste2}, 
-      {"teste3",Teste3}, 
-      {"teste4",Teste4}, 
-      {"teste5",Teste5}, 
-      {"teste6",Teste6}, 
-      {"teste7",Teste7}, 
-      {"teste8",Teste8}, 
-      {"teste9",Teste9},
-      {"teste10",Teste10},
-      {"teste11",Teste11},
-      {"teste12",Teste12},
-      {"teste13",Teste13},
-      {"teste14",Teste14},
-      {"teste15",Teste15},
-      {"teste16",Teste15},
-      {"teste17",Teste17},
-      {"teste18",Teste18},
-      {"teste19",Teste19},
+      {"div",TkReturn}
     }
   );
   
@@ -583,14 +548,6 @@ int main(int argc, char **argv)
   
   lexer.setTokenPadding(TkString,1,1);
   lexer.setTokenPadding(TkChar,1,1);
-
-  /*
-  while (lexer.canReadToken()) {
-    Token<TokenType> t(lexer.getToken());
-    cout << symbolToString({t.getType()}) << " " << t.getLexema() << endl;
-  }
-  return 0;
-  */
 
   function<Token<TokenType>()> getToken([&lexer](){
     return lexer.getToken();
@@ -610,7 +567,6 @@ int main(int argc, char **argv)
   tree.generateGraph<function<string(const RachelGrammar::Symbol &)>>(symbolToString);
 
   tree.dispose();
-
 
   return 0;
 }
