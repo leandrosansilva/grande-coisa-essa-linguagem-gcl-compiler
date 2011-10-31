@@ -4,7 +4,7 @@
 
 #include <lexical/analyser.h>
 #include <syntatic/grammar.h>
-#include <syntatic/analyzer.h>
+#include <syntatic/analyser.h>
 
 #include <iostream>
 #include <functional>
@@ -163,7 +163,7 @@ int main(int argc, char **argv)
     return lexer.getToken();
   });
 
-  Syntatical::Analyzer<NonTerminal,TokenType> parser(grammar,getToken);
+  Syntatical::Analyser<NonTerminal,TokenType> parser(grammar,getToken);
 
   if (!parser.parse()) {
     cerr << "Erro!" << endl;

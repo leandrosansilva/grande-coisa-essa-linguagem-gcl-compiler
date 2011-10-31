@@ -45,6 +45,11 @@ struct Tree
   Token<TokenTypeT> _token;
   
   TreeMap _tree;
+  
+  Tree &getChild(int i) const
+  {
+    return *(get<1>(_tree[i]));
+  }
 
   /* construtor vazio, só pra compilar */
   Tree()

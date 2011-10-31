@@ -4,7 +4,7 @@
 
 #include <lexical/analyser.h>
 #include <syntatic/grammar.h>
-#include <syntatic/analyzer.h>
+#include <syntatic/analyser.h>
 
 #include <iostream>
 #include <functional>
@@ -398,26 +398,26 @@ TransitionTable<LexState,TokenType> automata(start,invalid,final);
  * tipo do parâmetro da esquerda e o da direita são iguais, retornando um erro caso sejam diferentes
  *
  * Numa instrução de retorno, deve-ve verificar se o tipo do 
- * mapa[FunctionCall] = new FunctionCallAnalyzer(tabelaDeVariaveis,TabelaDeFuncoes,TabelaDeTipos)
+ * mapa[FunctionCall] = new FunctionCallAnalyser(tabelaDeVariaveis,TabelaDeFuncoes,TabelaDeTipos)
  *
 */
 
-struct NodeAnalyzer;
+struct NodeAnalyser;
 
-map<NonTerminal,NodeAnalyzer *> aMap;
+map<NonTerminal,NodeAnalyser *> aMap;
 
-struct NodeAnalyzer
+struct NodeAnalyser
 {
   // retorna o código gerado por aquele nó
   virtual string getCode(Tree<TokenType,RachelGrammar::Symbol> &t) = 0;
   
-  virtual NodeAnalyzer *getAnalyzer(Tree<TokenType,RachelGrammar::Symbol> &t)
+  virtual NodeAnalyser *getAnalyser(Tree<TokenType,RachelGrammar::Symbol> &t)
   {
     return aMap[t.getHead()._nonTerminal];
   }
 };
 
-struct LiteralAnalyzer: public NodeAnalyzer
+struct LiteralAnalyser: public NodeAnalyser
 {
   // retorna o código gerado por aquele nó
   virtual string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
@@ -426,17 +426,21 @@ struct LiteralAnalyzer: public NodeAnalyzer
   }
 };
 
-struct ProgramAnalyzer: public NodeAnalyzer
+struct ProgramAnalyser: public NodeAnalyser
 {
   // retorna o código gerado por aquele nó
   virtual string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
   {
-    //return getAnalyzer(get<1>(t._tree[0]))->getCode() + "programCode";
+    return "{" + getAnalyser(t.getChild(0))->getCode(t.getChild(1)) + "}";
   }
 };
 
 int main(int argc, char **argv)
 {
+  /* Adiciona os tratadores semânticos */
+  aMap[Program] = new ProgramAnalyser;
+  aMap[Literal] = new LiteralAnalyser;
+  
   /* Consome espaços em branco */
   automata.addTransition(start,spaces,s);
   automata.addTransition(s,spaces,s);
@@ -621,7 +625,7 @@ int main(int argc, char **argv)
     return lexer.getToken();
   });
 
-  Syntatical::Analyzer<NonTerminal,TokenType> parser(grammar2,getToken);
+  Syntatical::Analyser<NonTerminal,TokenType> parser(grammar2,getToken);
 
   if (!parser.parse()) {
     cerr << "Erro!" << endl;
@@ -633,8 +637,8 @@ int main(int argc, char **argv)
   //cerr << tree.toString<function<string(const RachelGrammar::Symbol &)>>(symbolToString) << endl;
   //tree.generateGraph<function<string(const RachelGrammar::Symbol &)>>(symbolToString);
 
-  cout << aMap[tree.getHead()._nonTerminal]->getCode() << endl;
-
+  cout << aMap[tree.getHead()._nonTerminal]->getCode(tree) << endl;
+  
   tree.dispose();
 
   return 0;

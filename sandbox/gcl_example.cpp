@@ -4,7 +4,7 @@
 
 #include <lexical/analyser.h>
 #include <syntatic/grammar.h>
-#include <syntatic/analyzer.h>
+#include <syntatic/analyser.h>
 
 #include <iostream>
 #include <functional>
@@ -894,7 +894,7 @@ int main(int argc, char **argv)
    */
   lexer.setTokenPadding(TkString,1,1);
 
-  Syntatical::Analyzer<NonTerminal,TokenType> parser(grammar,[&lexer](){
+  Syntatical::Analyser<NonTerminal,TokenType> parser(grammar,[&lexer](){
     return lexer.getToken();
   },"gcl_table.txt");
 

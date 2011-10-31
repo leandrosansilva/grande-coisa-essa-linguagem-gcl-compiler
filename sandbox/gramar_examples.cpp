@@ -78,7 +78,7 @@ int main(int argc, char **argv)
 
   //mCICp66.generateGraph();
 
-  //MySyntatical::Analyzer automata(parG);
+  //MySyntatical::Analyser automata(parG);
 
   return 0;
 }
