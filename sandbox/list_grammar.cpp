@@ -110,7 +110,7 @@ int main(int argc, char **argv)
   TokenHash<TokenType> reservedWords(TkNone,{});
   
   /* Analisador léxico */
-  Analyser<LexState,TokenType> lexer(reader,automata,reservedWords,TEOF);
+  Lexical::Analyser<LexState,TokenType> lexer(reader,automata,reservedWords,TEOF);
   
   lexer.ignoreToken({TkSpaces});
   

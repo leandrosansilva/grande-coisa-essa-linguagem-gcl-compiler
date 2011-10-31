@@ -213,7 +213,7 @@ int main(int argc, char **argv)
   );
   
   /* Analisador léxico */
-  Analyser<LexState,TokenType> lexer(reader,automata,reservedWords,TEOF);
+  Lexical::Analyser<LexState,TokenType> lexer(reader,automata,reservedWords,TEOF);
   
   // os identificadores devem ser comparados na tabela de palavras reservadas
   lexer.addTokenToCompareWithReserved({TkId});
