@@ -58,7 +58,11 @@ int main(int argc, char **argv)
     }
   }
   
-  cout << (stack.size() ? "Falhou" : "Casou" ) << endl; 
+  cout << (stack.size() ? "Falhou" : "Casou" ) << endl;
+  
+  auto a([&stack]() -> float {
+    return 1;
+  });
   
   return 0;
 }

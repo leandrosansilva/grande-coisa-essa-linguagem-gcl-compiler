@@ -195,7 +195,13 @@ typedef enum {
   WhileStm,
   Set,
   SetContent,
-  SetContentExt
+  SetContentExt,
+  Literal,
+  NonLiteral,
+  LiteralSet,
+  LiteralSetContent,
+  LiteralSetContentExt
+
 } NonTerminal;
 
 static map<NonTerminal,string> NonTerminalMap {
@@ -238,7 +244,12 @@ static map<NonTerminal,string> NonTerminalMap {
   {WhileStm,"WhileStm"},
   {Set,"Set"},
   {SetContent,"SetContent"},
-  {SetContentExt,"SetContentExt"}
+  {SetContentExt,"SetContentExt"},
+  {LiteralSet,"LiteralSet"},
+  {Literal,"Literal"},
+  {NonLiteral,"NonLiteral"},
+  {LiteralSetContent,"LiteralSetContent"},
+  {LiteralSetContentExt,"LiteralSetContentExt"}
 };
 
 typedef Grammar<NonTerminal,TokenType> RachelGrammar;
@@ -256,6 +267,13 @@ static string symbolToString(const RachelGrammar::Symbol &s)
     return "$";
   }
 }
+
+RachelGrammar grammar2(symbolToString,{
+  {EL,{{Program},{TEOF}}},
+  {Program,{{Literal}}},
+  {Literal,{{TkString}}},
+  {Literal,{{TkInteger}}}
+},TEOF,INVALID);
 
 RachelGrammar grammar(symbolToString,{
   {EL,{{Program},{TEOF}}},
@@ -291,11 +309,11 @@ RachelGrammar grammar(symbolToString,{
 
   {ParamDef,{{TypeName},{TkId}}},
 
-  {FunctionContent,{{VariableDeclarationList},{TkBody},{TkTwoDots},{FunctionBody}},{0,3}},
+  {FunctionContent,{{VariableDeclarationList},{FunctionBody}}},
 
   {VariableDeclarationList,{}},
-  {VariableDeclarationList,{{VariableInitialization},{TkEnd},{VariableInitializationListExt}},{0,2}},
-  {VariableInitializationListExt,{{VariableInitialization},{TkEnd},{VariableInitializationListExt}},{0,2}},
+  {VariableDeclarationList,{{VariableInitialization},{VariableInitializationListExt},{TkEnd}},{0,1}},
+  {VariableInitializationListExt,{{TkComma},{VariableInitialization},{VariableInitializationListExt}},{1,2}},
   {VariableInitializationListExt,{}},
   {VariableInitialization,{{TypeName},{TkId},{TkLParentesis},{Expression},{TkRParentesis}},{0,1,3}},
 
@@ -349,23 +367,73 @@ RachelGrammar grammar(symbolToString,{
   {ReturnStm,{{TkReturn},{Expression}},{1}},
   {ReturnStm,{{TkReturn}},{1}},
 
-  {Expression,{{FunctionCall}}},
-  {Expression,{{TkInteger}}},
-  {Expression,{{TkString}}},
-  {Expression,{{TkChar}}},
-  {Expression,{{VariableAccess}}},
-  {Expression,{{Set}}},
+  {Expression,{{Literal}}},
+  {Expression,{{NonLiteral}}},
 
-  /* coisas como {2,3,"aa",{2,54,"ee",342}}  */
-  {Set,{{TkLBlock},{SetContent},{TkRBlock}},{1}},
-  {SetContent,{{Expression},{SetContentExt}}},
-  {SetContent,{}},
-  {SetContentExt,{{TkComma},{Expression},{SetContentExt}},{1,2}},
-  {SetContentExt,{}}
-  
+  /* NonLiteral é um valor calculado */
+  {NonLiteral,{{FunctionCall}}},
+  {NonLiteral,{{VariableAccess}}},
+ 
+  /* literal é um valor constante inserido no código */
+  {Literal,{{TkInteger}}},
+  {Literal,{{TkString}}},
+  {Literal,{{TkChar}}},
+  {Literal,{{LiteralSet}}},
+  {LiteralSet,{{TkLBlock},{LiteralSetContent},{TkRBlock}},{1}},
+  {LiteralSetContent,{{Literal},{LiteralSetContentExt}}},
+  {LiteralSetContent,{}},
+  {LiteralSetContentExt,{{TkComma},{Literal},{LiteralSetContentExt}},{1,2}},
+  {LiteralSetContentExt,{}}
 },TEOF,INVALID);
 
 TransitionTable<LexState,TokenType> automata(start,invalid,final);
+
+/*
+ * Para cada nó não-folha lido, chama uma função que processa o nó em questão. 
+ * Para a análise, há somente retorno true/false
+ * Toda função deve ter conhecimento da função atual (descrição na tabela de símbolos)
+ * bem como das tabelas de tipos e da de variáveis
+ * 
+ * Por exemplo, numa atribuição, a função tratadora deve olhar se o 
+ * tipo do parâmetro da esquerda e o da direita são iguais, retornando um erro caso sejam diferentes
+ *
+ * Numa instrução de retorno, deve-ve verificar se o tipo do 
+ * mapa[FunctionCall] = new FunctionCallAnalyzer(tabelaDeVariaveis,TabelaDeFuncoes,TabelaDeTipos)
+ *
+*/
+
+struct NodeAnalyzer;
+
+map<NonTerminal,NodeAnalyzer *> aMap;
+
+struct NodeAnalyzer
+{
+  // retorna o código gerado por aquele nó
+  virtual string getCode(Tree<TokenType,RachelGrammar::Symbol> &t) = 0;
+  
+  virtual NodeAnalyzer *getAnalyzer(Tree<TokenType,RachelGrammar::Symbol> &t)
+  {
+    return aMap[t.getHead()._nonTerminal];
+  }
+};
+
+struct LiteralAnalyzer: public NodeAnalyzer
+{
+  // retorna o código gerado por aquele nó
+  virtual string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
+  {
+    return "literalCode";
+  }
+};
+
+struct ProgramAnalyzer: public NodeAnalyzer
+{
+  // retorna o código gerado por aquele nó
+  virtual string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
+  {
+    //return getAnalyzer(get<1>(t._tree[0]))->getCode() + "programCode";
+  }
+};
 
 int main(int argc, char **argv)
 {
@@ -553,7 +621,7 @@ int main(int argc, char **argv)
     return lexer.getToken();
   });
 
-  Syntatical::Analyzer<NonTerminal,TokenType> parser(grammar,getToken);
+  Syntatical::Analyzer<NonTerminal,TokenType> parser(grammar2,getToken);
 
   if (!parser.parse()) {
     cerr << "Erro!" << endl;
@@ -563,8 +631,9 @@ int main(int argc, char **argv)
   Tree<TokenType,RachelGrammar::Symbol> tree(parser.getTree());
 
   //cerr << tree.toString<function<string(const RachelGrammar::Symbol &)>>(symbolToString) << endl;
+  //tree.generateGraph<function<string(const RachelGrammar::Symbol &)>>(symbolToString);
 
-  tree.generateGraph<function<string(const RachelGrammar::Symbol &)>>(symbolToString);
+  cout << aMap[tree.getHead()._nonTerminal]->getCode() << endl;
 
   tree.dispose();
 
