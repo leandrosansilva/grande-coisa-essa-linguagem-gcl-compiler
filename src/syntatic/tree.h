@@ -43,12 +43,27 @@ struct Tree
   Type _type;
 
   Token<TokenTypeT> _token;
+
+  const Token<TokenTypeT> &getToken() const
+  {
+    return _token;
+  }
   
   TreeMap _tree;
   
   Tree &getChild(int i) const
   {
     return *(get<1>(_tree[i]));
+  }
+
+  SymbolT &symbol(int i) const
+  {
+    return get<0>(_tree[i]);
+  }
+
+  int size() const
+  {
+    return _tree.size();
   }
 
   /* construtor vazio, só pra compilar */

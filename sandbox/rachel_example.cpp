@@ -268,13 +268,6 @@ static string symbolToString(const RachelGrammar::Symbol &s)
   }
 }
 
-RachelGrammar grammar2(symbolToString,{
-  {EL,{{Program},{TEOF}}},
-  {Program,{{Literal}}},
-  {Literal,{{TkString}}},
-  {Literal,{{TkInteger}}}
-},TEOF,INVALID);
-
 RachelGrammar grammar(symbolToString,{
   {EL,{{Program},{TEOF}}},
   {Program,{{Function},{FunctionList}}},
@@ -402,45 +395,193 @@ TransitionTable<LexState,TokenType> automata(start,invalid,final);
  *
 */
 
-struct NodeAnalyser;
+namespace Semantic {
 
-map<NonTerminal,NodeAnalyser *> aMap;
+struct Analyser {
 
-struct NodeAnalyser
-{
-  // retorna o código gerado por aquele nó
-  virtual string getCode(Tree<TokenType,RachelGrammar::Symbol> &t) = 0;
-  
-  virtual NodeAnalyser *getAnalyser(Tree<TokenType,RachelGrammar::Symbol> &t)
+  struct NodeAnalyser;
+
+  map<NonTerminal,NodeAnalyser *> _aMap;
+
+  Tree<TokenType,RachelGrammar::Symbol> &_tree;
+
+  Analyser(Tree<TokenType,RachelGrammar::Symbol> &tree, const map<NonTerminal,NodeAnalyser *> &aMap):
+  _tree(tree),
+  _aMap(aMap)
   {
-    return aMap[t.getHead()._nonTerminal];
+    cout << _aMap.size() << endl;
+    // coloco uma referência ao mapa nó-objeto em cada um dos objetos novos
+    for (auto i(_aMap.begin()); i != _aMap.end(); i++) {
+      cout << symbolToString(i->first) << endl;
+      i->second->setAMap(&_aMap);
+    }
   }
+
+  string getCode()
+  {
+    auto found(_aMap.find(_tree.getHead()._nonTerminal));
+    return found->second->getCode(_tree); 
+  }
+
+  struct NodeAnalyser
+  {
+    map<NonTerminal,NodeAnalyser *> *_aMap;
+
+    NodeAnalyser():_aMap(NULL)
+    {
+    }
+
+    void setAMap(map<NonTerminal,NodeAnalyser *> *a)
+    {
+      _aMap = a;
+    }
+
+    virtual string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
+    {
+      return string();
+
+      if (!t.size()) {
+        return "<" + symbolToString(t.getHead()) + "/>";
+      } else {
+        string s;
+        for (int i(0); i < t.size(); i++) {
+          s += getAnalyser(t.getChild(i))->getCode(t.getChild(i));
+        }
+
+        return  "<" + symbolToString(t.getHead()) + ">" +
+                s +
+                "</" + symbolToString(t.getHead()) + ">";
+      }
+    }; 
+    
+    virtual NodeAnalyser *getAnalyser(Tree<TokenType,RachelGrammar::Symbol> &t)
+    {
+      if (!_aMap) {
+        return this;
+      }
+
+      auto found(_aMap->find(t.getHead()._nonTerminal));
+      return found == _aMap->end() ? this : found->second;
+    }
+  };
 };
 
-struct LiteralAnalyser: public NodeAnalyser
+}
+
+struct LiteralAnalyser: public Semantic::Analyser::NodeAnalyser
 {
   // retorna o código gerado por aquele nó
   virtual string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
   {
-    return "literalCode";
+    return "<" + t.getChild(0).getToken().getLexema() + ">";
   }
 };
 
-struct ProgramAnalyser: public NodeAnalyser
+struct ProgramAnalyser: public Semantic::Analyser::NodeAnalyser
 {
   // retorna o código gerado por aquele nó
   virtual string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
   {
-    return "{" + getAnalyser(t.getChild(0))->getCode(t.getChild(1)) + "}";
+    return getAnalyser(t.getChild(0))->getCode(t.getChild(0)) +
+           getAnalyser(t.getChild(1))->getCode(t.getChild(1));
+  }
+};
+
+struct FunctionListAnalyser: public Semantic::Analyser::NodeAnalyser
+{
+  // retorna o código gerado por aquele nó
+  virtual string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
+  {
+    // se houver uma "cauda", ou seja, mais funções à frente, processa
+    if (t.size()) {
+      string s0(getAnalyser(t.getChild(0))->getCode(t.getChild(0)));
+      string s1(getAnalyser(t.getChild(1))->getCode(t.getChild(1)));
+      return s0 + s1;
+    }
+    return "";
+  }
+};
+
+struct FunctionAnalyser: public Semantic::Analyser::NodeAnalyser
+{
+  // retorna o código gerado por aquele nó
+  virtual string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
+  {
+    return getAnalyser(t.getChild(0))->getCode(t.getChild(0));
+  }
+};
+
+typedef map<string,bool> FunctionTable;
+
+// 
+typedef map<string,string> VariableTable;
+
+FunctionTable functionTable;
+
+struct FunctionDeclAnalyser: public Semantic::Analyser::NodeAnalyser
+{
+  FunctionTable &_functionTable;
+
+  FunctionDeclAnalyser(FunctionTable &functionTable):
+  _functionTable(functionTable)
+  {
+  }
+
+  // retorna o código gerado por aquele nó
+  virtual string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
+  {
+    string functionName(t.getChild(0).getToken().getLexema());
+
+    FunctionTable::const_iterator found(_functionTable.find(functionName));
+
+    // se achou, verifica se já está definida
+    if (found != _functionTable.end()) {
+      // se já está definida, não posso declará-la novamente
+      if (found->second) {
+        throw string("function is already defined(decl) - " + functionName);
+      }
+    } else { // é uma declaração nova
+      _functionTable[functionName] = false;
+    }
+    
+    return functionName;
+  }
+};
+
+struct FunctionImplAnalyser: public Semantic::Analyser::NodeAnalyser
+{
+  FunctionTable &_functionTable;
+
+  FunctionImplAnalyser(FunctionTable &functionTable):
+  _functionTable(functionTable)
+  {
+  }
+
+  // retorna o código gerado por aquele nó
+  virtual string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
+  {
+    string functionName(t.getChild(0).getToken().getLexema());
+
+    auto found(_functionTable.find(functionName));
+
+    // se achou, verifica se já está definida
+    if (found != _functionTable.end()) {
+
+      // se já está definida, é um erro definir de novo
+      if (found->second) {
+        throw string("function is already defined(impl) - " + functionName);
+      }
+    }
+
+    _functionTable[functionName] = true;
+
+    return functionName;
   }
 };
 
 int main(int argc, char **argv)
 {
-  /* Adiciona os tratadores semânticos */
-  aMap[Program] = new ProgramAnalyser;
-  aMap[Literal] = new LiteralAnalyser;
-  
+
   /* Consome espaços em branco */
   automata.addTransition(start,spaces,s);
   automata.addTransition(s,spaces,s);
@@ -625,7 +766,7 @@ int main(int argc, char **argv)
     return lexer.getToken();
   });
 
-  Syntatical::Analyser<NonTerminal,TokenType> parser(grammar2,getToken);
+  Syntatical::Analyser<NonTerminal,TokenType> parser(grammar,getToken);
 
   if (!parser.parse()) {
     cerr << "Erro!" << endl;
@@ -637,8 +778,36 @@ int main(int argc, char **argv)
   //cerr << tree.toString<function<string(const RachelGrammar::Symbol &)>>(symbolToString) << endl;
   //tree.generateGraph<function<string(const RachelGrammar::Symbol &)>>(symbolToString);
 
-  cout << aMap[tree.getHead()._nonTerminal]->getCode(tree) << endl;
-  
+  Semantic::Analyser a(tree,{
+    {Program,new ProgramAnalyser},
+    {FunctionList,new FunctionListAnalyser},
+    {Function,new FunctionAnalyser},
+    {FunctionImpl,new FunctionImplAnalyser(functionTable)},
+    {FunctionDecl,new FunctionDeclAnalyser(functionTable)}
+  });
+
+  try {
+    cout << a.getCode() << endl;
+  } catch(const string &a) {
+    cout << "Error: " << a << endl;
+  }
+
+
+  /* Adiciona os tratadores semânticos */
+  /*aMap[Program] = new ProgramAnalyser;
+  aMap[FunctionList] = new FunctionListAnalyser;
+  aMap[Function] = new FunctionAnalyser;
+  aMap[FunctionImpl] = new FunctionImplAnalyser(functionTable);
+  aMap[FunctionDecl] = new FunctionDeclAnalyser(functionTable);
+  */
+
+
+
+  // Imprime quais funções foram definidas
+  for (auto i(functionTable.begin()); i != functionTable.end(); i++) {
+    cout << i->first << "  " << (i->second ? "TRUE" : "FALSE") << endl;
+  }
+
   tree.dispose();
 
   return 0;
