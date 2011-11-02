@@ -409,10 +409,8 @@ struct Analyser {
   _tree(tree),
   _aMap(aMap)
   {
-    cout << _aMap.size() << endl;
     // coloco uma referência ao mapa nó-objeto em cada um dos objetos novos
     for (auto i(_aMap.begin()); i != _aMap.end(); i++) {
-      cout << symbolToString(i->first) << endl;
       i->second->setAMap(&_aMap);
     }
   }
@@ -436,28 +434,12 @@ struct Analyser {
       _aMap = a;
     }
 
-    virtual string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
-    {
-      return string();
-
-      if (!t.size()) {
-        return "<" + symbolToString(t.getHead()) + "/>";
-      } else {
-        string s;
-        for (int i(0); i < t.size(); i++) {
-          s += getAnalyser(t.getChild(i))->getCode(t.getChild(i));
-        }
-
-        return  "<" + symbolToString(t.getHead()) + ">" +
-                s +
-                "</" + symbolToString(t.getHead()) + ">";
-      }
-    }; 
+    virtual string getCode(Tree<TokenType,RachelGrammar::Symbol> &t) = 0;
     
     virtual NodeAnalyser *getAnalyser(Tree<TokenType,RachelGrammar::Symbol> &t)
     {
       if (!_aMap) {
-        return this;
+        return NULL;
       }
 
       auto found(_aMap->find(t.getHead()._nonTerminal));
