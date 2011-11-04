@@ -167,7 +167,6 @@ typedef enum {
   Expression,
   Funcao,
   Function,
-  FunctionBody,
   FunctionCall,
   FunctionContent,
   FunctionImpl,
@@ -182,12 +181,11 @@ typedef enum {
   ListOfParamDefExt,
   ParamDef,
   Program,
-  Rachel,
-  RApid,
   RealParameters,
   ReturnStm,
   Stm,
   StmList,
+  StmListExt,
   TypeName,
   VariableAccess,
   VariableDeclarationList,
@@ -216,7 +214,6 @@ static map<NonTerminal,string> NonTerminalMap {
   {Expression,"Expression"},
   {Funcao,"Funcao"},
   {Function,"Function"},
-  {FunctionBody,"FunctionBody"},
   {FunctionCall,"FunctionCall"},
   {FunctionContent,"FunctionContent"},
   {FunctionImpl,"FunctionImpl"},
@@ -231,12 +228,11 @@ static map<NonTerminal,string> NonTerminalMap {
   {ListOfParamDefExt,"ListOfParamDefExt"},
   {ParamDef,"ParamDef"},
   {Program,"Program"},
-  {Rachel,"Rachel"},
-  {RApid,"RApid"},
   {RealParameters,"RealParameters"},
   {ReturnStm,"ReturnStm"},
   {Stm,"Stm"},
   {StmList,"StmList"},
+  {StmListExt,"StmListExt"},
   {TypeName,"TypeName"},
   {VariableAccess,"VariableAccess"},
   {VariableDeclarationList,"VariableDeclarationList"},
@@ -271,7 +267,9 @@ static string symbolToString(const RachelGrammar::Symbol &s)
 
 RachelGrammar grammar(symbolToString,{
   {EL,{{Program},{TEOF}}},
+
   {Program,{{Function},{FunctionList}}},
+
   {FunctionList,{{Function},{FunctionList}}},
   {FunctionList,{}},
   {Function,{{FunctionImpl}}},
@@ -303,7 +301,7 @@ RachelGrammar grammar(symbolToString,{
 
   {ParamDef,{{TypeName},{TkId}}},
 
-  {FunctionContent,{{VariableDeclarationList},{FunctionBody}}},
+  {FunctionContent,{{VariableDeclarationList},{StmList}}},
 
   {VariableDeclarationList,{}},
   {VariableDeclarationList,{{VariableInitialization},{VariableInitializationListExt},{TkEnd}},{0,1}},
@@ -311,10 +309,12 @@ RachelGrammar grammar(symbolToString,{
   {VariableInitializationListExt,{}},
   {VariableInitialization,{{TypeName},{TkId},{TkLParentesis},{Expression},{TkRParentesis}},{0,1,3}},
 
-  {FunctionBody,{{StmList}}},
-
-  {StmList,{{Stm},{TkEnd},{StmList}},{0,2}},
+  // a última instrução não pode terminar com ponto-e-vírgula
   {StmList,{}},
+  {StmList,{{Stm},{StmListExt}}},
+  {StmListExt,{{TkEnd},{Stm},{StmListExt}},{1,2}},
+  {StmListExt,{}},
+
   {Stm,{{FunctionCall}}},
   {Stm,{{AttrStm}}},
   {Stm,{{IfStm}}},
@@ -378,14 +378,15 @@ RachelGrammar grammar(symbolToString,{
   {LiteralSetContent,{}},
   {LiteralSetContentExt,{{TkComma},{Literal},{LiteralSetContentExt}},{1,2}},
   {LiteralSetContentExt,{}}
+
 },TEOF,INVALID);
 
-typedef Semantic::Analyser<NonTerminal,RachelGrammar::Symbol,TokenType> RachelSemanticAnalyser;
+typedef Semantic::Analyser<NonTerminal,TokenType,string> RachelSemanticAnalyser;
 
 struct ProgramAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
   // retorna o código gerado por aquele nó
-  virtual string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
+  string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
   {
     return getAnalyser(t.getChild(0))->getCode(t.getChild(0)) +
            getAnalyser(t.getChild(1))->getCode(t.getChild(1));
@@ -395,7 +396,7 @@ struct ProgramAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 struct FunctionListAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
   // retorna o código gerado por aquele nó
-  virtual string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
+  string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
   {
     // se houver uma "cauda", ou seja, mais funções à frente, processa
     if (t.size()) {
@@ -410,7 +411,7 @@ struct FunctionListAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 struct FunctionAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
   // retorna o código gerado por aquele nó
-  virtual string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
+  string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
   {
     return getAnalyser(t.getChild(0))->getCode(t.getChild(0));
   }
@@ -418,10 +419,14 @@ struct FunctionAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 
 typedef map<string,bool> FunctionTable;
 
-// 
+// Uma tabela de variáveis 
 typedef map<string,string> VariableTable;
 
+// Uma tabela com todas as funções declaradas
 FunctionTable functionTable;
+
+// Uma lista de variáveis, referindo-se a função corrente
+VariableTable variableTable;
 
 struct FunctionDeclAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
@@ -433,7 +438,7 @@ struct FunctionDeclAnalyser: public RachelSemanticAnalyser::NodeAnalyser
   }
 
   // retorna o código gerado por aquele nó
-  virtual string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
+  string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
   {
     throw string("Função sem corpo ainda não implementado!");
   }
@@ -449,7 +454,7 @@ struct FunctionImplAnalyser: public RachelSemanticAnalyser::NodeAnalyser
   }
 
   // retorna o código gerado por aquele nó
-  virtual string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
+  string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
   {
     string functionName(t.getChild(0).getToken().getLexema());
 
@@ -473,7 +478,7 @@ struct FunctionImplAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 struct ListOfFormalParamsAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
   // retorna o código gerado por aquele nó
-  virtual string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
+  string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
   {
     if (t.getChild(0).size() == 0) {
       cout << "a função não possui parametros" << endl;
@@ -682,7 +687,9 @@ int main(int argc, char **argv)
   Tree<TokenType,RachelGrammar::Symbol> tree(parser.getTree());
 
   //cerr << tree.toString<function<string(const RachelGrammar::Symbol &)>>(symbolToString) << endl;
-  //tree.generateGraph<function<string(const RachelGrammar::Symbol &)>>(symbolToString);
+  tree.generateGraph<function<string(const RachelGrammar::Symbol &)>>(symbolToString);
+
+  return 0;
 
   RachelSemanticAnalyser a(tree,{
     {Program,new ProgramAnalyser},

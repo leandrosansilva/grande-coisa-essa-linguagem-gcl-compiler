@@ -19,16 +19,18 @@ namespace Semantic {
  *
 */
 
-template<typename NonTerminalT,typename SymbolT,typename TokenTypeT, typename CodeType = string>
+template<typename NonTerminalT,typename TokenTypeT, typename CodeType = string>
 struct Analyser {
 
   struct NodeAnalyser;
 
   map<NonTerminalT,NodeAnalyser *> _aMap;
 
-  Syntatical::Tree<TokenTypeT,SymbolT> &_tree;
+  typedef typename Syntatical::Grammar<NonTerminalT,TokenTypeT>::Symbol Symbol;
 
-  Analyser(Syntatical::Tree<TokenTypeT,SymbolT> &tree, const map<NonTerminalT,NodeAnalyser *> &aMap):
+  Syntatical::Tree<TokenTypeT,Symbol> &_tree;
+
+  Analyser(Syntatical::Tree<TokenTypeT,Symbol> &tree, const map<NonTerminalT,NodeAnalyser *> &aMap):
   _tree(tree),
   _aMap(aMap)
   {
@@ -62,9 +64,9 @@ struct Analyser {
       _aMap = a;
     }
 
-    virtual CodeType getCode(Syntatical::Tree<TokenTypeT,SymbolT> &t) = 0;
+    virtual CodeType getCode(Syntatical::Tree<TokenTypeT,Symbol> &t) = 0;
     
-    virtual NodeAnalyser *getAnalyser(Syntatical::Tree<TokenTypeT,SymbolT> &t)
+    virtual NodeAnalyser *getAnalyser(Syntatical::Tree<TokenTypeT,Symbol> &t)
     {
       auto found(_aMap->find(t.getHead()._nonTerminal));
 
