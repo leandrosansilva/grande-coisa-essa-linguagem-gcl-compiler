@@ -5,6 +5,7 @@
 #include <lexical/analyser.h>
 #include <syntatic/grammar.h>
 #include <syntatic/analyser.h>
+#include <semantic/analyser.h>
 
 #include <iostream>
 #include <functional>
@@ -379,87 +380,9 @@ RachelGrammar grammar(symbolToString,{
   {LiteralSetContentExt,{}}
 },TEOF,INVALID);
 
-TransitionTable<LexState,TokenType> automata(start,invalid,final);
+typedef Semantic::Analyser<NonTerminal,RachelGrammar::Symbol,TokenType> RachelSemanticAnalyser;
 
-/*
- * Para cada nó não-folha lido, chama uma função que processa o nó em questão. 
- * Para a análise, há somente retorno true/false
- * Toda função deve ter conhecimento da função atual (descrição na tabela de símbolos)
- * bem como das tabelas de tipos e da de variáveis
- * 
- * Por exemplo, numa atribuição, a função tratadora deve olhar se o 
- * tipo do parâmetro da esquerda e o da direita são iguais, retornando um erro caso sejam diferentes
- *
- * Numa instrução de retorno, deve-ve verificar se o tipo do 
- * mapa[FunctionCall] = new FunctionCallAnalyser(tabelaDeVariaveis,TabelaDeFuncoes,TabelaDeTipos)
- *
-*/
-
-namespace Semantic {
-
-struct Analyser {
-
-  struct NodeAnalyser;
-
-  map<NonTerminal,NodeAnalyser *> _aMap;
-
-  Tree<TokenType,RachelGrammar::Symbol> &_tree;
-
-  Analyser(Tree<TokenType,RachelGrammar::Symbol> &tree, const map<NonTerminal,NodeAnalyser *> &aMap):
-  _tree(tree),
-  _aMap(aMap)
-  {
-    // coloco uma referência ao mapa nó-objeto em cada um dos objetos novos
-    for (auto i(_aMap.begin()); i != _aMap.end(); i++) {
-      i->second->setAMap(&_aMap);
-    }
-  }
-
-  string getCode()
-  {
-    auto found(_aMap.find(_tree.getHead()._nonTerminal));
-    return found->second->getCode(_tree); 
-  }
-
-  struct NodeAnalyser
-  {
-    map<NonTerminal,NodeAnalyser *> *_aMap;
-
-    NodeAnalyser():_aMap(NULL)
-    {
-    }
-
-    void setAMap(map<NonTerminal,NodeAnalyser *> *a)
-    {
-      _aMap = a;
-    }
-
-    virtual string getCode(Tree<TokenType,RachelGrammar::Symbol> &t) = 0;
-    
-    virtual NodeAnalyser *getAnalyser(Tree<TokenType,RachelGrammar::Symbol> &t)
-    {
-      if (!_aMap) {
-        return NULL;
-      }
-
-      auto found(_aMap->find(t.getHead()._nonTerminal));
-      return found == _aMap->end() ? this : found->second;
-    }
-  };
-};
-
-}
-
-struct LiteralAnalyser: public Semantic::Analyser::NodeAnalyser
-{
-  // retorna o código gerado por aquele nó
-  virtual string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
-  {
-    return "<" + t.getChild(0).getToken().getLexema() + ">";
-  }
-};
-
-struct ProgramAnalyser: public Semantic::Analyser::NodeAnalyser
+struct ProgramAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
   // retorna o código gerado por aquele nó
   virtual string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
@@ -469,7 +392,7 @@ struct ProgramAnalyser: public Semantic::Analyser::NodeAnalyser
   }
 };
 
-struct FunctionListAnalyser: public Semantic::Analyser::NodeAnalyser
+struct FunctionListAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
   // retorna o código gerado por aquele nó
   virtual string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
@@ -484,7 +407,7 @@ struct FunctionListAnalyser: public Semantic::Analyser::NodeAnalyser
   }
 };
 
-struct FunctionAnalyser: public Semantic::Analyser::NodeAnalyser
+struct FunctionAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
   // retorna o código gerado por aquele nó
   virtual string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
@@ -500,7 +423,7 @@ typedef map<string,string> VariableTable;
 
 FunctionTable functionTable;
 
-struct FunctionDeclAnalyser: public Semantic::Analyser::NodeAnalyser
+struct FunctionDeclAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
   FunctionTable &_functionTable;
 
@@ -512,25 +435,11 @@ struct FunctionDeclAnalyser: public Semantic::Analyser::NodeAnalyser
   // retorna o código gerado por aquele nó
   virtual string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
   {
-    string functionName(t.getChild(0).getToken().getLexema());
-
-    FunctionTable::const_iterator found(_functionTable.find(functionName));
-
-    // se achou, verifica se já está definida
-    if (found != _functionTable.end()) {
-      // se já está definida, não posso declará-la novamente
-      if (found->second) {
-        throw string("function is already defined(decl) - " + functionName);
-      }
-    } else { // é uma declaração nova
-      _functionTable[functionName] = false;
-    }
-    
-    return functionName;
+    throw string("Função sem corpo ainda não implementado!");
   }
 };
 
-struct FunctionImplAnalyser: public Semantic::Analyser::NodeAnalyser
+struct FunctionImplAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
   FunctionTable &_functionTable;
 
@@ -557,12 +466,27 @@ struct FunctionImplAnalyser: public Semantic::Analyser::NodeAnalyser
 
     _functionTable[functionName] = true;
 
-    return functionName;
+    return functionName + getAnalyser(t.getChild(1))->getCode(t.getChild(1));
+  }
+};
+
+struct ListOfFormalParamsAnalyser: public RachelSemanticAnalyser::NodeAnalyser
+{
+  // retorna o código gerado por aquele nó
+  virtual string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
+  {
+    if (t.getChild(0).size() == 0) {
+      cout << "a função não possui parametros" << endl;
+      return "";
+    }
+
+    return getAnalyser(t.getChild(0))->getCode(t.getChild(0));
   }
 };
 
 int main(int argc, char **argv)
 {
+  TransitionTable<LexState,TokenType> automata(start,invalid,final);
 
   /* Consome espaços em branco */
   automata.addTransition(start,spaces,s);
@@ -605,7 +529,7 @@ int main(int argc, char **argv)
   automata.addTransition(start,")",m2);
   automata.addFinalTransition(m2,any,TkRParentesis);
   
-  /* Para = e ==*/
+  /* Para = e == */
   automata.addTransition(start,"=",n1);
   automata.addTransition(n1,"=",n2);
   automata.addFinalTransition(n1,any - "=",TkAttr);
@@ -628,7 +552,7 @@ int main(int argc, char **argv)
   automata.addTransition(s1,"&",s2);
   automata.addFinalTransition(s2,any,TkAnd);
   
-  /* Para || */
+  /* Para || e | */
   automata.addTransition(start,"|",t1);
   automata.addTransition(t1,"|",t2);
   automata.addFinalTransition(t2,any,TkOr);
@@ -683,7 +607,7 @@ int main(int argc, char **argv)
   automata.addTransition(start,"{",q1);
   automata.addFinalTransition(q1,any,TkLBlock);
 
-  /* para símbolo { */
+  /* para símbolo } */
   automata.addTransition(start,"}",q2);
   automata.addFinalTransition(q2,any,TkRBlock);
 
@@ -696,9 +620,6 @@ int main(int argc, char **argv)
   automata.addTransition(yy2,"=",yy3);
   automata.addFinalTransition(yy3,any,TkDiff);
 
-  /* um cara que lê um arquivo do disco */
-  FileReader reader(argv[1]);
-  
   /* Estrutura com as palavras reservadas */
   TokenHash<TokenType> reservedWords(
     TkNone,{
@@ -728,7 +649,10 @@ int main(int argc, char **argv)
       {"div",TkReturn}
     }
   );
-  
+
+  /* um cara que lê um arquivo do disco */
+  FileReader reader(argv[1]);
+
   /* Analisador léxico */
   Lexical::Analyser<LexState,TokenType> lexer(reader,automata,reservedWords,TEOF);
   
@@ -760,12 +684,13 @@ int main(int argc, char **argv)
   //cerr << tree.toString<function<string(const RachelGrammar::Symbol &)>>(symbolToString) << endl;
   //tree.generateGraph<function<string(const RachelGrammar::Symbol &)>>(symbolToString);
 
-  Semantic::Analyser a(tree,{
+  RachelSemanticAnalyser a(tree,{
     {Program,new ProgramAnalyser},
     {FunctionList,new FunctionListAnalyser},
     {Function,new FunctionAnalyser},
     {FunctionImpl,new FunctionImplAnalyser(functionTable)},
-    {FunctionDecl,new FunctionDeclAnalyser(functionTable)}
+    {FunctionDecl,new FunctionDeclAnalyser(functionTable)},
+    {ListOfFormalParams,new ListOfFormalParamsAnalyser}
   });
 
   try {
@@ -773,17 +698,6 @@ int main(int argc, char **argv)
   } catch(const string &a) {
     cout << "Error: " << a << endl;
   }
-
-
-  /* Adiciona os tratadores semânticos */
-  /*aMap[Program] = new ProgramAnalyser;
-  aMap[FunctionList] = new FunctionListAnalyser;
-  aMap[Function] = new FunctionAnalyser;
-  aMap[FunctionImpl] = new FunctionImplAnalyser(functionTable);
-  aMap[FunctionDecl] = new FunctionDeclAnalyser(functionTable);
-  */
-
-
 
   // Imprime quais funções foram definidas
   for (auto i(functionTable.begin()); i != functionTable.end(); i++) {
