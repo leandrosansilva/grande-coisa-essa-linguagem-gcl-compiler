@@ -1,0 +1,2 @@
+pra interpretar com o llvm:
+$ cat teste.ll | llvm-as -f -o - | lli

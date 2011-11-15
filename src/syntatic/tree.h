@@ -56,7 +56,7 @@ struct Tree
     return *(get<1>(_tree[i]));
   }
 
-  SymbolT &symbol(int i) const
+  const SymbolT &symbol(int i) const
   {
     return get<0>(_tree[i]);
   }
