@@ -52,7 +52,7 @@ public:
     return _type;
   }
   
-  String getLexema() const
+  const String &getLexema() const
   {
     return _lexema;
   }

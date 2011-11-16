@@ -7,6 +7,7 @@
 #include <syntatic/analyser.h>
 #include <semantic/analyser.h>
 
+#include <stack>
 #include <iostream>
 #include <functional>
 
@@ -384,6 +385,7 @@ RachelGrammar grammar(symbolToString,{
 },TEOF,INVALID);
 
 typedef Semantic::Analyser<NonTerminal,TokenType,string> RachelSemanticAnalyser;
+typedef Tree<TokenType,RachelGrammar::Symbol> RachelTree;
 
 // Uma tabela de variáveis. nome -> tipo 
 typedef map<string,string> VariableTable;
@@ -394,6 +396,30 @@ typedef map<string,tuple<string,list<string>>> FunctionTable;
 
 // um mapa de tipos da linguagem para tipos do llvm
 typedef map<string,string> TypeTable;
+
+// qual a função em que estou?
+string currentFunction;
+
+// identifica a variável que estou manipulando num determinado nó
+stack<string> varStack;
+
+TypeTable typeTable {
+  {"int","i32"},
+  {"char","i8"},
+  {"void","void"}
+};
+
+// mapeia um tipo para seu alinhamento
+map<string,int> typeAlign {
+  {"i32",4},
+  {"i8",1}
+};
+
+// Uma tabela com todas as funções declaradas
+FunctionTable functionTable;
+
+// Uma lista de variáveis, referindo-se a função corrente
+VariableTable variableTable;
 
 // obtem um novo nome para um temporário
 string createNewTempName()
@@ -415,16 +441,17 @@ string createNewLabelName()
 
 struct ProgramAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
-  string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
+  string getCode(RachelTree &t)
   {
-    return getAnalyser(t.getChild(0))->getCode(t.getChild(0)) +
-           getAnalyser(t.getChild(1))->getCode(t.getChild(1));
+    string s0(getAnalyser(t.getChild(0))->getCode(t.getChild(0)));
+    string s1(getAnalyser(t.getChild(1))->getCode(t.getChild(1)));
+    return s0 + s1;
   }
 };
 
 struct FunctionListAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
-  string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
+  string getCode(RachelTree &t)
   {
     // se houver uma "cauda", ou seja, mais funções à frente, processa
     if (t.size()) {
@@ -438,7 +465,7 @@ struct FunctionListAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 
 struct FunctionAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
-  string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
+  string getCode(RachelTree &t)
   {
     return getAnalyser(t.getChild(0))->getCode(t.getChild(0));
   }
@@ -446,7 +473,7 @@ struct FunctionAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 
 struct ArrayTypeNameAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
-  string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
+  string getCode(RachelTree &t)
   {
     throw string("tipo array não implementado!");
   }
@@ -454,14 +481,7 @@ struct ArrayTypeNameAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 
 struct BasicTypeNameAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
-  TypeTable &_typeTable;
-
-  BasicTypeNameAnalyser(TypeTable &typeTable):
-  _typeTable(typeTable)
-  {
-  }
-
-  string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
+  string getCode(RachelTree &t)
   {
     string typeName(t.getChild(0).getToken().getLexema());
   
@@ -469,43 +489,30 @@ struct BasicTypeNameAnalyser: public RachelSemanticAnalyser::NodeAnalyser
       throw string("tipo string não implementado");
     }
 
-    return _typeTable[typeName];
+    return typeTable[typeName];
   }
 };
 
 struct TypeNameAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
-  string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
+  string getCode(RachelTree &t)
   {
     return getAnalyser(t.getChild(0))->getCode(t.getChild(0));
   }
 };
 
-// qual a função em que estou?
-string currentFunction;
-
 struct FunctionImplAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
-  FunctionTable &_functionTable;
-  VariableTable &_variableTable;
-  TypeTable &_typeTable;
-
-  FunctionImplAnalyser(FunctionTable &functionTable, TypeTable &typeTable, VariableTable &variableTable):
-  _functionTable(functionTable),
-  _variableTable(variableTable),
-  _typeTable(typeTable)
-  {
-  }
-
-  // retorna o código gerado por aquele nó
-  string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
+  string getCode(RachelTree &t)
   {
     string functionName(t.getChild(0).getToken().getLexema());
+    
+    cout << "declarou função " << functionName << endl;
 
-    auto found(_functionTable.find(functionName));
+    auto found(functionTable.find(functionName));
 
     // se achou, verifica se já está definida
-    if (found != _functionTable.end()) {
+    if (found != functionTable.end()) {
       throw string("função " + functionName + " já está definida");
     }
 
@@ -513,7 +520,7 @@ struct FunctionImplAnalyser: public RachelSemanticAnalyser::NodeAnalyser
     int contentNode((t.symbol(2) == FunctionContent) ? 2 : 3);
 
     // por omissão de tipo, uma função é void
-    string functionType(_typeTable["void"]);
+    string functionType(typeTable["void"]);
 
     // se o corpo está no nó 3, o nó 2 possui o tipo de retorno da função 
     if (contentNode == 3) {
@@ -525,11 +532,11 @@ struct FunctionImplAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 
     // FIXME: que estrutura usar para a assinatura da função? 
     // uma tupla com um tipo de retorno e uma lista de tipos
-    _functionTable[functionName] = {};
-    get<0>(_functionTable[currentFunction]) = functionType;
-
+    functionTable[functionName] = {};
+    get<0>(functionTable[currentFunction]) = functionType;
+    
     // zero a tabela de variáveis, pois entrei numa nova função
-    _variableTable = {};
+    variableTable.clear();
     
     return "define " + functionType + " @" + functionName + // nome da função
            "(" + getAnalyser(t.getChild(1))->getCode(t.getChild(1)) + ") {\n" +  // parametros
@@ -540,8 +547,7 @@ struct FunctionImplAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 
 struct ListOfFormalParamsAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
-  // retorna o código gerado por aquele nó
-  string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
+  string getCode(RachelTree &t)
   {
     return (t.getChild(0).size() == 0) 
       ? ""
@@ -551,8 +557,7 @@ struct ListOfFormalParamsAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 
 struct ListOfParamDefAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
-  // retorna o código gerado por aquele nó
-  string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
+  string getCode(RachelTree &t)
   {
     return getAnalyser(t.getChild(0))->getCode(t.getChild(0)) + 
            getAnalyser(t.getChild(1))->getCode(t.getChild(1));
@@ -561,8 +566,7 @@ struct ListOfParamDefAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 
 struct ListOfParamDefExtAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
-  // retorna o código gerado por aquele nó
-  string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
+  string getCode(RachelTree &t)
   {
     return (t.size() 
             ? ", " + getAnalyser(t.getChild(0))->getCode(t.getChild(0)) + 
@@ -573,19 +577,7 @@ struct ListOfParamDefExtAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 
 struct ParamDefAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
-  FunctionTable &_functionTable;
-  TypeTable &_typeTable;
-  VariableTable &_variableTable;
-
-  ParamDefAnalyser(FunctionTable &functionTable, TypeTable &typeTable, VariableTable &variableTable):
-  _functionTable(functionTable),
-  _typeTable(typeTable),
-  _variableTable(variableTable)
-  {
-  }
-
-  // retorna o código gerado por aquele nó
-  string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
+  string getCode(RachelTree &t)
   {
     // o nome da variável
     string varName(t.getChild(1).getToken().getLexema());
@@ -593,15 +585,15 @@ struct ParamDefAnalyser: public RachelSemanticAnalyser::NodeAnalyser
     // o tipo da variável
     string typeName(getAnalyser(t.getChild(0))->getCode(t.getChild(0)));
 
-    if (_variableTable.find(varName) != _variableTable.end()) {
+    if (variableTable.find(varName) != variableTable.end()) {
       throw string("variável " + varName + " já foi definida!");
     }
 
     // coloco a variável na tabela de variável
-    _variableTable[varName] = typeName;
+    variableTable[varName] = typeName;
     
     // insiro o tipo na assinatura da função
-    get<1>(_functionTable[currentFunction]).push_front(typeName);
+    get<1>(functionTable[currentFunction]).push_front(typeName);
 
     return typeName + " %" + varName;
   }
@@ -609,28 +601,36 @@ struct ParamDefAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 
 struct FunctionCallAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
-  FunctionTable &_functionTable;
-  TypeTable &_typeTable;
-  VariableTable &_variableTable;
-
-  FunctionCallAnalyser(FunctionTable &functionTable, TypeTable &typeTable, VariableTable &variableTable):
-  _functionTable(functionTable),
-  _typeTable(typeTable),
-  _variableTable(variableTable)
+  string getCode(RachelTree &t)
   {
-  }
-
-  // retorna o código gerado por aquele nó
-  string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
-  {
-    return "  call " + t.getChild(0).getChild(0).getToken().getLexema() + "\n";
+    // no caso seja uma função não-padrão
+    if (t.getChild(0).getChild(0).getHead() == TkId) {
+      string functionName(t.getChild(0).getChild(0).getToken().getLexema());
+      auto found(functionTable.find(functionName));
+      
+      // se não achou a função, é erro
+      if (found == functionTable.end()) {
+        throw "função desconhecida: " + functionName;
+      }
+      
+      // aqui gera o código de chamada da função
+      // obtem a quantidade de parâmetros da função
+      RachelTree &paramTree(t.getChild(1));
+      int paramCount(0);
+      while (paramTree.size()) {
+        paramCount++;
+        paramTree = paramTree.getChild(1);
+      }
+      
+      cout << "chamou " << functionName << " com " << paramCount << " parametros" << endl;
+    }
+    return "";
   }
 };
 
 struct ExpressionAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
-  // retorna o código gerado por aquele nó
-  string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
+  string getCode(RachelTree &t)
   {
     return getAnalyser(t.getChild(0))->getCode(t.getChild(0));
   }
@@ -638,8 +638,7 @@ struct ExpressionAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 
 struct LiteralAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
-  // retorna o código gerado por aquele nó
-  string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
+  string getCode(RachelTree &t)
   {
     // faz as checagens de coisas ainda não implementadas
     if (t.getChild(0).getHead() == LiteralSet) {
@@ -650,8 +649,16 @@ struct LiteralAnalyser: public RachelSemanticAnalyser::NodeAnalyser
       throw string("string não implementada");
     }
     
+    string value;
+    
+    string varName(varStack.top());
+    string typeName(variableTable[varStack.top()]);
+    
     if (t.getChild(0).getHead() == TkInteger) {
-      return t.getChild(0).getToken().getLexema();
+      value = t.getChild(0).getToken().getLexema();
+      if (typeName != "i32") {
+        throw string("tipos incompatíveis na inicialização");
+      }
     }
     
     // finalmente, só pode ser um char
@@ -659,19 +666,27 @@ struct LiteralAnalyser: public RachelSemanticAnalyser::NodeAnalyser
       char a(t.getChild(0).getToken().getLexema()[0]);
       stringstream r;
       r << int(a);
-      return r.str();
+      value = r.str();
+      if (typeName != "i8") {
+        throw string("tipos incompatíveis na inicialização");
+      }
     }
+   
+    // formato:
+    // store i32 34, i32* %c, align 4
+    stringstream r;
+
+    r << "  store " << typeName << " " << value
+      << ", " << typeName << "* %" << varName
+      << ", align " << typeAlign[typeName] << "\n";
+      
+    return r.str();
   }
 };
 
 struct NonLiteralAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
-  NonLiteralAnalyser()
-  {
-  }
-
-  // retorna o código gerado por aquele nó
-  string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
+  string getCode(RachelTree &t)
   {
     return getAnalyser(t.getChild(0))->getCode(t.getChild(0));
   }
@@ -679,9 +694,8 @@ struct NonLiteralAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 
 struct FunctionContentAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
-  string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
+  string getCode(RachelTree &t)
   {
-    // retorna o código das inicializações + o código do corpo em si
     return getAnalyser(t.getChild(0))->getCode(t.getChild(0)) + 
     getAnalyser(t.getChild(1))->getCode(t.getChild(1)); 
   }
@@ -689,19 +703,7 @@ struct FunctionContentAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 
 struct VariableDeclarationListAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
-  FunctionTable &_functionTable;
-  TypeTable &_typeTable;
-  VariableTable &_variableTable;
-
-  VariableDeclarationListAnalyser(FunctionTable &functionTable, TypeTable &typeTable, VariableTable &variableTable):
-  _functionTable(functionTable),
-  _typeTable(typeTable),
-  _variableTable(variableTable)
-  {
-  }
-
-  // retorna o código gerado por aquele nó
-  string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
+  string getCode(RachelTree &t)
   {
     return (t.size())
       ? getAnalyser(t.getChild(0))->getCode(t.getChild(0)) + 
@@ -710,69 +712,47 @@ struct VariableDeclarationListAnalyser: public RachelSemanticAnalyser::NodeAnaly
   }
 };
 
-// mapeia um tipo para seu alinhamento
-map<string,int> typeAlign {
-  {"i32",4},
-  {"i8",1}
-};
-
 struct VariableInitializationAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
-  FunctionTable &_functionTable;
-  TypeTable &_typeTable;
-  VariableTable &_variableTable;
-
-  VariableInitializationAnalyser(FunctionTable &functionTable, TypeTable &typeTable, VariableTable &variableTable):
-  _functionTable(functionTable),
-  _typeTable(typeTable),
-  _variableTable(variableTable)
-  {
-  }
-
-  string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
+  string getCode(RachelTree &t)
   {
     string varName(t.getChild(1).getToken().getLexema());
     string typeName(getAnalyser(t.getChild(0))->getCode(t.getChild(0)));
 
     // a variável já foi declarada?
-    if (_variableTable.find(varName) != _variableTable.end()) {
+    if (variableTable.find(varName) != variableTable.end()) {
       throw string("variável " + varName + " já está definida!");
     }
 
     // a cara é %<var> = alloca <tipo>, align <size>
-    stringstream r;
-    r << "  %" << varName
+    stringstream c;
+    c << "  %" << varName
       << " = alloca " << typeName 
       << ", align " << typeAlign[typeName] 
       << "\n";
 
     // insiro a variável na tabela de símbolos
-    _variableTable[varName] = typeName;
+    variableTable[varName] = typeName;
+    
+    // informo estar analisando a variável
+    varStack.push(varName);
 
-    // inicializo a variável
-    // por agora não implementei inicializar com chamada de função
-    return r.str() + getAnalyser(t.getChild(2))->getCode(t.getChild(2));
+    // retorna alocação + código de inicialização da variável
+    string r(c.str() + getAnalyser(t.getChild(2))->getCode(t.getChild(2)));
+    
+    // retiro a variável da pilha
+    varStack.pop();
+    
+    return r;
   }
 };
 
 struct VariableInitializationListExtAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
-  FunctionTable &_functionTable;
-  TypeTable &_typeTable;
-  VariableTable &_variableTable;
-
-  VariableInitializationListExtAnalyser(FunctionTable &functionTable, TypeTable &typeTable, VariableTable &variableTable):
-  _functionTable(functionTable),
-  _typeTable(typeTable),
-  _variableTable(variableTable)
-  {
-  }
-
-  // retorna o código gerado por aquele nó
-  string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
+  string getCode(RachelTree &t)
   {
     return (t.size())
-      ? getAnalyser(t.getChild(0))->getCode(t.getChild(0)) + 
+      ? getAnalyser(t.getChild(0))->getCode(t.getChild(0)) +
         getAnalyser(t.getChild(1))->getCode(t.getChild(1))
       : "";
   }
@@ -780,21 +760,9 @@ struct VariableInitializationListExtAnalyser: public RachelSemanticAnalyser::Nod
 
 struct StmListAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
-  FunctionTable &_functionTable;
-  TypeTable &_typeTable;
-  VariableTable &_variableTable;
-
-  StmListAnalyser(FunctionTable &functionTable, TypeTable &typeTable, VariableTable &variableTable):
-  _functionTable(functionTable),
-  _typeTable(typeTable),
-  _variableTable(variableTable)
+  string getCode(RachelTree &t)
   {
-  }
-
-  // retorna o código gerado por aquele nó
-  string getCode(Tree<TokenType,RachelGrammar::Symbol> &t)
-  {
-    return "a";
+    return "  ret i32 2\n";
   }
 };
 
@@ -994,44 +962,34 @@ int main(int argc, char **argv)
     return 1;
   }
 
-  Tree<TokenType,RachelGrammar::Symbol> tree(parser.getTree());
+  RachelTree tree(parser.getTree());
 
   //cerr << tree.toString<function<string(const RachelGrammar::Symbol &)>>(symbolToString) << endl;
   //tree.generateGraph<function<string(const RachelGrammar::Symbol &)>>(symbolToString);
 
-  TypeTable typeTable {
-    {"int","i32"},
-    {"char","i8"},
-    {"void","void"}
-  };
 
-  // Uma tabela com todas as funções declaradas
-  FunctionTable functionTable;
-
-  // Uma lista de variáveis, referindo-se a função corrente
-  VariableTable variableTable;
 
   RachelSemanticAnalyser a(tree,{
     {Program,new ProgramAnalyser},
     {FunctionList,new FunctionListAnalyser},
     {Function,new FunctionAnalyser},
-    {FunctionImpl,new FunctionImplAnalyser(functionTable,typeTable, variableTable)},
+    {FunctionImpl,new FunctionImplAnalyser},
     {ListOfFormalParams,new ListOfFormalParamsAnalyser},
-    {BasicTypeName,new BasicTypeNameAnalyser(typeTable)},
+    {BasicTypeName,new BasicTypeNameAnalyser},
     {ArrayTypeName,new ArrayTypeNameAnalyser},
     {TypeName,new TypeNameAnalyser},
     {FunctionContent,new FunctionContentAnalyser},
-    {VariableDeclarationList,new VariableDeclarationListAnalyser(functionTable,typeTable,variableTable)},
-    {VariableInitializationListExt,new VariableInitializationListExtAnalyser(functionTable,typeTable,variableTable)},
-    {VariableInitialization,new VariableInitializationAnalyser(functionTable,typeTable,variableTable)},
-    {StmList,new StmListAnalyser(functionTable,typeTable,variableTable)},
+    {VariableDeclarationList,new VariableDeclarationListAnalyser},
+    {VariableInitializationListExt,new VariableInitializationListExtAnalyser},
+    {VariableInitialization,new VariableInitializationAnalyser},
+    {StmList,new StmListAnalyser},
     {ListOfParamDef,new ListOfParamDefAnalyser},
     {ListOfParamDefExt,new ListOfParamDefExtAnalyser},
-    {ParamDef,new ParamDefAnalyser(functionTable,typeTable,variableTable)},
+    {ParamDef,new ParamDefAnalyser},
     {Expression,new ExpressionAnalyser},
     {Literal,new LiteralAnalyser},
     {NonLiteral,new NonLiteralAnalyser},
-    {FunctionCall,new FunctionCallAnalyser(functionTable,typeTable,variableTable)}
+    {FunctionCall,new FunctionCallAnalyser}
   });
 
   try {
