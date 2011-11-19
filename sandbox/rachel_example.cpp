@@ -424,18 +424,18 @@ VariableTable variableTable;
 // obtem um novo nome para um temporário
 string createNewTempName()
 {
-  static int counter(0);
+  static int counter(1);
   stringstream ss;
-  ss << "_t" << counter++;
+  ss << counter++;
   return ss.str();
 }
 
 // obtem um novo nome para uma label
 string createNewLabelName()
 {
-  static int counter(0);
+  static int counter(1);
   stringstream ss;
-  ss << "_label" << counter++;
+  ss << "__label" << counter++ << "__";
   return ss.str();
 }
 
@@ -507,8 +507,6 @@ struct FunctionImplAnalyser: public RachelSemanticAnalyser::NodeAnalyser
   {
     string functionName(t.getChild(0).getToken().getLexema());
     
-    cout << "declarou função " << functionName << endl;
-
     auto found(functionTable.find(functionName));
 
     // se achou, verifica se já está definida
@@ -603,7 +601,7 @@ struct FunctionCallAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
   string getCode(RachelTree &t)
   {
-    // no caso seja uma função não-padrão
+    // no caso seja uma função definida pelo usuário
     if (t.getChild(0).getChild(0).getHead() == TkId) {
       string functionName(t.getChild(0).getChild(0).getToken().getLexema());
       auto found(functionTable.find(functionName));
@@ -613,18 +611,102 @@ struct FunctionCallAnalyser: public RachelSemanticAnalyser::NodeAnalyser
         throw "função desconhecida: " + functionName;
       }
       
-      // aqui gera o código de chamada da função
       // obtem a quantidade de parâmetros da função
-      RachelTree &paramTree(t.getChild(1));
+      // deve ser uma cópia de t, não uma referência
+      RachelTree paramTree(t.getChild(1));
       int paramCount(0);
       while (paramTree.size()) {
         paramCount++;
         paramTree = paramTree.getChild(1);
       }
+      //cout << "chamou " << functionName << " com " << paramCount << " parametros" << endl;
       
-      cout << "chamou " << functionName << " com " << paramCount << " parametros" << endl;
+      // checa se a quantidade de parâmetros na chamada é a mesma que a da declaração
+      // da função
+      if (get<1>(found->second).size() != paramCount) {
+        stringstream r;
+        r << "número de parametros passados em " << functionName << ": " << paramCount  << " contra " 
+          << get<1>(found->second).size() << " declarados";
+        throw r.str();
+      }
+      
+      // tendo certeza que o número de parâmetros está ok, 
+      // posso gerar o código dos parâmetros
+      string s0(getAnalyser(t.getChild(1))->getCode(t.getChild(1)));
+      
+      // chegando neste ponto já devo ter na pilha os parâmetros que vou usar
+      list<tuple<string,string>> params;
+      
+      stringstream r;
+      
+      // retiro-os da pilha, um a um, o jogo num novo temporário (instrução load)
+      // e uso este temporário para a operação
+      // %3 = load i32* %1, align 4
+      for (int i(0); i < paramCount; i++) {
+        string tempName(createNewTempName());
+        
+        r << "  %" << tempName << " = " << "load " << variableTable[varStack.top()]
+          << "* " << "%" << varStack.top() << ", " << "align " << typeAlign[variableTable[varStack.top()]] << "\n";
+          
+        // variavel -> tipo
+        params.push_front(make_tuple(tempName,variableTable[varStack.top()]));
+        
+        varStack.pop();
+      }
+      
+      // removo a variável do topo e coloco um temporário em seu lugar
+      varStack.top();
+      string left(createNewTempName());
+      variableTable[left] = variableTable[varStack.top()];
+      varStack.pop();
+      varStack.push(left);
+      
+      // FIXME: algumas funções são void e não retornam coisa alguma.
+      // tratar este caso e fazer a verificação dos tipos de retorno
+      r << "  %" << left << " = call " << get<0>(found->second) << " @" << functionName << "(";
+      
+      for (auto i(params.begin()); i!= params.end(); i++) {
+        r << get<1>(*i) << " %" << get<0>(*i);
+        
+        if (distance(params.begin(), i) < params.size() - 1) {
+          r << ", ";
+        }
+      }
+      
+      r << ")\n";
+      
+      // retorna a criação do código das chamadas de função mais a chamada em si
+      return s0 + r.str();
     }
     return "";
+  }
+};
+
+struct RealParametersAnalyser: public RachelSemanticAnalyser::NodeAnalyser
+{
+  string getCode(RachelTree& t)
+  {
+    // se é o último parâmetro, não há nada
+    if (t.size() == 0) {
+      return "";
+    }
+    
+    // o novo temporário que receberá o resultado do parâmetro
+    string varName(createNewTempName());
+    varStack.push(varName);
+    
+    // FIXME: pegar o tempo a partir do real do parametro
+    variableTable[varName] = typeTable["int"];
+    
+    stringstream c;
+    c << "  %" << varName << " = " << "alloca " << variableTable[varName]
+      << ", " << "align " << typeAlign[variableTable[varName]] << "\n";
+    
+    string s0(getAnalyser(t.getChild(0))->getCode(t.getChild(0)));
+    
+    string s1(getAnalyser(t.getChild(1))->getCode(t.getChild(1)));
+    
+    return c.str() + s0 + s1;
   }
 };
 
@@ -705,10 +787,12 @@ struct VariableDeclarationListAnalyser: public RachelSemanticAnalyser::NodeAnaly
 {
   string getCode(RachelTree &t)
   {
-    return (t.size())
-      ? getAnalyser(t.getChild(0))->getCode(t.getChild(0)) + 
-        getAnalyser(t.getChild(1))->getCode(t.getChild(1))
-      : "";
+    if (t.size()) {
+      string s0(getAnalyser(t.getChild(0))->getCode(t.getChild(0)));
+      string s1(getAnalyser(t.getChild(1))->getCode(t.getChild(1)));
+      return s0 + s1;
+    }
+    else return "";
   }
 };
 
@@ -728,7 +812,7 @@ struct VariableInitializationAnalyser: public RachelSemanticAnalyser::NodeAnalys
     stringstream c;
     c << "  %" << varName
       << " = alloca " << typeName 
-      << ", align " << typeAlign[typeName] 
+      << ", align " << typeAlign[typeName]
       << "\n";
 
     // insiro a variável na tabela de símbolos
@@ -739,6 +823,17 @@ struct VariableInitializationAnalyser: public RachelSemanticAnalyser::NodeAnalys
 
     // retorna alocação + código de inicialização da variável
     string r(c.str() + getAnalyser(t.getChild(2))->getCode(t.getChild(2)));
+    
+    // FIXME: gambiarra!
+    // se inicializou com função, copio o valor do topo da pilha para a variável
+    
+    if (t.getChild(2).getChild(0).getChild(0).getHead() == FunctionCall) {
+      stringstream c;
+      c << "  store " << typeName << " %" << varStack.top() << ", " << typeName 
+        << "* " << "%" << varName << ", " << "align " << typeAlign[typeName] 
+        << "\n";
+      r += c.str();
+    }
     
     // retiro a variável da pilha
     varStack.pop();
@@ -762,6 +857,9 @@ struct StmListAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
   string getCode(RachelTree &t)
   {
+    if (!t.size()) {
+      return "  ret i32 2\n";
+    }
     return "  ret i32 2\n";
   }
 };
@@ -989,7 +1087,8 @@ int main(int argc, char **argv)
     {Expression,new ExpressionAnalyser},
     {Literal,new LiteralAnalyser},
     {NonLiteral,new NonLiteralAnalyser},
-    {FunctionCall,new FunctionCallAnalyser}
+    {FunctionCall,new FunctionCallAnalyser},
+    {RealParameters,new RealParametersAnalyser}
   });
 
   try {
@@ -999,13 +1098,13 @@ int main(int argc, char **argv)
   }
 
   // Imprime quais funções foram definidas
-  for (auto i(functionTable.begin()); i != functionTable.end(); i++) {
+  /*for (auto i(functionTable.begin()); i != functionTable.end(); i++) {
     cout << i->first << " -> " << get<0>(i->second) << " -> ";
     for (auto j(get<1>(i->second).begin()); j != get<1>(i->second).end(); j++) {
       cout << *j << " ";
     }
     cout << endl;
-  }
+  }*/
 
   tree.dispose();
 

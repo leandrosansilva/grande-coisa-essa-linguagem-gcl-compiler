@@ -93,7 +93,7 @@ struct Tree
   }
 
   /* retorna qual o símbolo do nó */
-  SymbolT getHead() const
+  const SymbolT &getHead() const
   {
     return _head;
   }
