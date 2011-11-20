@@ -397,6 +397,9 @@ typedef map<string,tuple<string,list<string>>> FunctionTable;
 // um mapa de tipos da linguagem para tipos do llvm
 typedef map<string,string> TypeTable;
 
+// Quais valores estão em registradores?
+set<string> variablesInRegister;
+
 // qual a função em que estou?
 string currentFunction;
 
@@ -599,6 +602,20 @@ struct ParamDefAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 
 struct FunctionCallAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
+  int countParameters(RachelTree &t)
+  {
+    // obtem a quantidade de parâmetros da função
+    // deve ser uma cópia de t, não uma referência
+    RachelTree paramTree(t);
+    int c(0);
+    while (paramTree.size()) {
+      c++;
+      paramTree = paramTree.getChild(1);
+    }
+    
+    return c;
+  }
+  
   string getCode(RachelTree &t)
   {
     // no caso seja uma função definida pelo usuário
@@ -610,22 +627,15 @@ struct FunctionCallAnalyser: public RachelSemanticAnalyser::NodeAnalyser
       if (found == functionTable.end()) {
         throw "função desconhecida: " + functionName;
       }
-      
-      // obtem a quantidade de parâmetros da função
-      // deve ser uma cópia de t, não uma referência
-      RachelTree paramTree(t.getChild(1));
-      int paramCount(0);
-      while (paramTree.size()) {
-        paramCount++;
-        paramTree = paramTree.getChild(1);
-      }
-      //cout << "chamou " << functionName << " com " << paramCount << " parametros" << endl;
+     
+      // quantos parâmetros foram passados para a função?
+      int paramsC(countParameters(t.getChild(1)));
       
       // checa se a quantidade de parâmetros na chamada é a mesma que a da declaração
       // da função
-      if (get<1>(found->second).size() != paramCount) {
+      if (get<1>(found->second).size() != paramsC) {
         stringstream r;
-        r << "número de parametros passados em " << functionName << ": " << paramCount  << " contra " 
+        r << "número de parametros passados em " << functionName << ": " << paramsC  << " contra " 
           << get<1>(found->second).size() << " declarados";
         throw r.str();
       }
@@ -642,14 +652,28 @@ struct FunctionCallAnalyser: public RachelSemanticAnalyser::NodeAnalyser
       // retiro-os da pilha, um a um, o jogo num novo temporário (instrução load)
       // e uso este temporário para a operação
       // %3 = load i32* %1, align 4
-      for (int i(0); i < paramCount; i++) {
-        string tempName(createNewTempName());
+      for (int i(0); i < paramsC; i++) {
+        // FIXME: só crio um novo temporário caso o parâmetro não esteja em registrador
         
-        r << "  %" << tempName << " = " << "load " << variableTable[varStack.top()]
-          << "* " << "%" << varStack.top() << ", " << "align " << typeAlign[variableTable[varStack.top()]] << "\n";
+        bool isTemp(variablesInRegister.find(varStack.top()) != variablesInRegister.end());
+        
+        string varName,typeName;
+        
+        if (isTemp) {
+          varName = varStack.top();
+        } else {
+          varName = createNewTempName();
+          // digo que se trata de um valor em registrador
+          variablesInRegister.insert(varName);
           
+          r << "  %" << varName << " = " << "load " << variableTable[varStack.top()]
+            << "* " << "%" << varStack.top() << ", " << "align " << typeAlign[variableTable[varStack.top()]] << "\n";         
+        }
+        
+        typeName = variableTable[varStack.top()];
+        
         // variavel -> tipo
-        params.push_front(make_tuple(tempName,variableTable[varStack.top()]));
+        params.push_front(make_tuple(varName,typeName));
         
         varStack.pop();
       }
@@ -660,6 +684,9 @@ struct FunctionCallAnalyser: public RachelSemanticAnalyser::NodeAnalyser
       variableTable[left] = variableTable[varStack.top()];
       varStack.pop();
       varStack.push(left);
+      
+      // digo que se trata de um valor em registrador
+      variablesInRegister.insert(left);
       
       // FIXME: algumas funções são void e não retornam coisa alguma.
       // tratar este caso e fazer a verificação dos tipos de retorno
