@@ -425,22 +425,40 @@ FunctionTable functionTable;
 VariableTable variableTable;
 
 // obtem um novo nome para um temporário
-string createNewTempName()
+class Counter
 {
-  static int counter(1);
-  stringstream ss;
-  ss << counter++;
-  return ss.str();
-}
+protected:
+  int _counter;
+  function<string(int)> _callBack;
+public:
+  Counter(function<string(int)> callBack):
+  _callBack(callBack),
+  _counter(0)
+  {
+  }
+  
+  void reset()
+  {
+    _counter = 0;
+  }
+  
+  string operator()()
+  {
+    return _callBack(++_counter);
+  }
+};
 
-// obtem um novo nome para uma label
-string createNewLabelName()
-{
-  static int counter(1);
-  stringstream ss;
-  ss << "__label" << counter++ << "__";
-  return ss.str();
-}
+Counter createNewTempName([](int counter){
+  stringstream r;
+  r << counter;
+  return r.str();
+});
+
+Counter createNewLabelName([](int counter){
+  stringstream r;
+  r << "__label" << counter << "__";
+  return r.str();
+});
 
 struct ProgramAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
@@ -508,6 +526,12 @@ struct FunctionImplAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
   string getCode(RachelTree &t)
   {
+    // zero as tabela
+    variableTable.clear();
+    variablesInRegister.clear();
+    while (varStack.size()) varStack.pop();
+    createNewTempName.reset();
+    
     string functionName(t.getChild(0).getToken().getLexema());
     
     auto found(functionTable.find(functionName));
@@ -536,8 +560,7 @@ struct FunctionImplAnalyser: public RachelSemanticAnalyser::NodeAnalyser
     functionTable[functionName] = {};
     get<0>(functionTable[currentFunction]) = functionType;
     
-    // zero a tabela de variáveis, pois entrei numa nova função
-    variableTable.clear();
+
     
     return "define " + functionType + " @" + functionName + // nome da função
            "(" + getAnalyser(t.getChild(1))->getCode(t.getChild(1)) + ") {\n" +  // parametros
@@ -718,16 +741,22 @@ struct RealParametersAnalyser: public RachelSemanticAnalyser::NodeAnalyser
       return "";
     }
     
-    // o novo temporário que receberá o resultado do parâmetro
-    string varName(createNewTempName());
-    varStack.push(varName);
-    
-    // FIXME: pegar o tempo a partir do real do parametro
-    variableTable[varName] = typeTable["int"];
-    
     stringstream c;
-    c << "  %" << varName << " = " << "alloca " << variableTable[varName]
-      << ", " << "align " << typeAlign[variableTable[varName]] << "\n";
+    
+    // se for um literal, precido criar uma variável para ele
+    // FIXME: corrigir isso para não gerar temporário inútil
+    if (/*t.getChild(0).getChild(0).getHead() == Literal*/ true) {
+      // o novo temporário que receberá o resultado do parâmetro
+      string varName(createNewTempName());
+      
+      varStack.push(varName);
+      
+      // FIXME: pegar o tempo a partir do real do parametro
+      variableTable[varName] = typeTable["int"];
+      
+      c << "  %" << varName << " = " << "alloca " << variableTable[varName]
+        << ", " << "align " << typeAlign[variableTable[varName]] << "\n";
+    }
     
     string s0(getAnalyser(t.getChild(0))->getCode(t.getChild(0)));
     
@@ -749,6 +778,7 @@ struct LiteralAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
   string getCode(RachelTree &t)
   {
+
     // faz as checagens de coisas ainda não implementadas
     if (t.getChild(0).getHead() == LiteralSet) {
       throw string("literalset não implementado");
@@ -801,12 +831,41 @@ struct NonLiteralAnalyser: public RachelSemanticAnalyser::NodeAnalyser
   }
 };
 
+struct VariableAccessAnalyser: public RachelSemanticAnalyser::NodeAnalyser
+{
+  string getCode(RachelTree &t)
+  {
+    // se estiver acessando um índice de array, 
+    // é erro, pois ainda não foi implementado
+    if (t.size() == 2) {
+      throw string("Acesso em array ainda não implementado");
+    }
+    
+    // se chegou aqui, devo buscar a variável da memória 
+    // e colocar num temporário
+    string varName(t.getChild(0).getToken().getLexema());
+    
+    // se não achou a variável, é erro
+    if (variableTable.find(varName) == variableTable.end()) {
+      throw string("variável " + varName + " não declarada!");
+    }
+    
+    // variável encontrada
+    // Insiro-la na pilha de variáveis
+    varStack.push(varName);
+    
+    // não há o que retornar
+    return "";
+  }
+};
+
 struct FunctionContentAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
   string getCode(RachelTree &t)
   {
-    return getAnalyser(t.getChild(0))->getCode(t.getChild(0)) + 
-    getAnalyser(t.getChild(1))->getCode(t.getChild(1)); 
+    string s0(getAnalyser(t.getChild(0))->getCode(t.getChild(0)));
+    string s1(getAnalyser(t.getChild(1))->getCode(t.getChild(1))); 
+    return s0 + s1;
   }
 };
 
@@ -873,10 +932,13 @@ struct VariableInitializationListExtAnalyser: public RachelSemanticAnalyser::Nod
 {
   string getCode(RachelTree &t)
   {
-    return (t.size())
-      ? getAnalyser(t.getChild(0))->getCode(t.getChild(0)) +
-        getAnalyser(t.getChild(1))->getCode(t.getChild(1))
-      : "";
+    if (t.size()) {
+      string s0(getAnalyser(t.getChild(0))->getCode(t.getChild(0)));
+      string s1(getAnalyser(t.getChild(1))->getCode(t.getChild(1)));
+      return s0 + s1;
+    } else {
+      return "";
+    }
   }
 };
 
@@ -1053,7 +1115,7 @@ int main(int argc, char **argv)
       {"equal",TkReturn},
       {"sum",TkReturn},
       {"sub",TkReturn},
-      {"times",TkReturn},
+      {"mul",TkReturn},
       {"div",TkReturn}
     }
   );
@@ -1091,8 +1153,7 @@ int main(int argc, char **argv)
 
   //cerr << tree.toString<function<string(const RachelGrammar::Symbol &)>>(symbolToString) << endl;
   //tree.generateGraph<function<string(const RachelGrammar::Symbol &)>>(symbolToString);
-
-
+  
 
   RachelSemanticAnalyser a(tree,{
     {Program,new ProgramAnalyser},
@@ -1115,7 +1176,8 @@ int main(int argc, char **argv)
     {Literal,new LiteralAnalyser},
     {NonLiteral,new NonLiteralAnalyser},
     {FunctionCall,new FunctionCallAnalyser},
-    {RealParameters,new RealParametersAnalyser}
+    {RealParameters,new RealParametersAnalyser},
+    {VariableAccess,new VariableAccessAnalyser}
   });
 
   try {
