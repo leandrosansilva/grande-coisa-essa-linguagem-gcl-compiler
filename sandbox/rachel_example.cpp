@@ -859,9 +859,9 @@ struct FunctionContentAnalyser: public RachelSemanticAnalyser::NodeAnalyser
     
     string sr(
       // FIXME: nem sempre! 
-      // ao menos ums instrução pulando para o return
-      //"  br label %return\n"
+      //"  ret i32 42\n"
       
+      // e a label de saída da função
       "return:\n"
       "  %" + returnTemp + " = load i32* %__retval__\n"
       "  ret i32 %" + returnTemp + "\n"
@@ -1041,7 +1041,24 @@ struct IfStmAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 
 struct AttrStmAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
-  string getCode(RachelTree &t);
+  string getCode(RachelTree &t)
+  {
+    // Primeiro coloco no topo da pilha o resultado da expressão da direita
+    string s0(getAnalyser(t.getChild(1))->getCode(t.getChild(1)));
+    
+    // pego o resultado da expressão
+    string result(varStack.top());
+    varStack.pop();
+    
+    // coloco o nome da variável na pilha
+    getAnalyser(t.getChild(0))->getCode(t.getChild(0));
+    
+    string s1("  store i32 %" + result + ", i32* %" + varStack.top() + "\n");
+    
+    varStack.pop();
+    
+    return s0 + s1;
+  }
 };
 
 int main(int argc, char **argv)
