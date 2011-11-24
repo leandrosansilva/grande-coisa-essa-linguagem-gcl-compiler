@@ -444,19 +444,19 @@ public:
   
   string operator()()
   {
-    return _callBack(++_counter);
+    return _callBack(_counter++);
   }
 };
 
-Counter createNewTempName([](int counter){
+Counter createNewTempName([](int counter) -> string {
   stringstream r;
   r << counter;
   return r.str();
 });
 
-Counter createNewLabelName([](int counter){
+Counter createNewLabelName([](int counter) -> string {
   stringstream r;
-  r << "__label" << counter << "__";
+  r << "label" << counter;
   return r.str();
 });
 
@@ -560,8 +560,6 @@ struct FunctionImplAnalyser: public RachelSemanticAnalyser::NodeAnalyser
     functionTable[functionName] = {};
     get<0>(functionTable[currentFunction]) = functionType;
     
-
-    
     return "define " + functionType + " @" + functionName + // nome da função
            "(" + getAnalyser(t.getChild(1))->getCode(t.getChild(1)) + ") {\n" +  // parametros
             getAnalyser(t.getChild(contentNode))->getCode(t.getChild(contentNode)) + // corpo
@@ -583,8 +581,9 @@ struct ListOfParamDefAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
   string getCode(RachelTree &t)
   {
-    return getAnalyser(t.getChild(0))->getCode(t.getChild(0)) + 
-           getAnalyser(t.getChild(1))->getCode(t.getChild(1));
+    string s0(getAnalyser(t.getChild(0))->getCode(t.getChild(0))); 
+    string s1(getAnalyser(t.getChild(1))->getCode(t.getChild(1)));
+    return s0 + s1;
   }
 };
 
@@ -592,10 +591,11 @@ struct ListOfParamDefExtAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
   string getCode(RachelTree &t)
   {
-    return (t.size() 
-            ? ", " + getAnalyser(t.getChild(0))->getCode(t.getChild(0)) + 
-                     getAnalyser(t.getChild(1))->getCode(t.getChild(1)) 
-            : "");
+    if(t.size()) {
+      string s0(getAnalyser(t.getChild(0))->getCode(t.getChild(0)));
+      string s1(getAnalyser(t.getChild(1))->getCode(t.getChild(1)));
+      return ", " + s0 + s1;
+    } else return "";
   }
 };
 
@@ -643,6 +643,7 @@ struct FunctionCallAnalyser: public RachelSemanticAnalyser::NodeAnalyser
   {
     // no caso seja uma função definida pelo usuário
     if (t.getChild(0).getChild(0).getHead() == TkId) {
+      
       string functionName(t.getChild(0).getChild(0).getToken().getLexema());
       auto found(functionTable.find(functionName));
       
@@ -664,7 +665,7 @@ struct FunctionCallAnalyser: public RachelSemanticAnalyser::NodeAnalyser
       }
       
       // tendo certeza que o número de parâmetros está ok, 
-      // posso gerar o código dos parâmetros
+      // posso gerar o código dos parâmetros passados
       string s0(getAnalyser(t.getChild(1))->getCode(t.getChild(1)));
       
       // chegando neste ponto já devo ter na pilha os parâmetros que vou usar
@@ -676,15 +677,13 @@ struct FunctionCallAnalyser: public RachelSemanticAnalyser::NodeAnalyser
       // e uso este temporário para a operação
       // %3 = load i32* %1, align 4
       for (int i(0); i < paramsC; i++) {
-        // FIXME: só crio um novo temporário caso o parâmetro não esteja em registrador
-        
-        bool isTemp(variablesInRegister.find(varStack.top()) != variablesInRegister.end());
-        
         string varName,typeName;
-        
-        if (isTemp) {
+       
+        // se o valor está em registrador, não preciso carregá-lo da memória
+        if (variablesInRegister.find(varStack.top()) != variablesInRegister.end()) {
           varName = varStack.top();
         } else {
+          // caso contrário, preciso criar um novo temporário com o que vem da memória
           varName = createNewTempName();
           // digo que se trata de um valor em registrador
           variablesInRegister.insert(varName);
@@ -700,13 +699,13 @@ struct FunctionCallAnalyser: public RachelSemanticAnalyser::NodeAnalyser
         
         varStack.pop();
       }
-      
-      // removo a variável do topo e coloco um temporário em seu lugar
-      varStack.top();
+
+      // empilha o temporário que guarda o resultado da função
       string left(createNewTempName());
-      variableTable[left] = variableTable[varStack.top()];
-      varStack.pop();
+      
       varStack.push(left);
+      
+      variableTable[left] = get<0>(found->second);
       
       // digo que se trata de um valor em registrador
       variablesInRegister.insert(left);
@@ -714,7 +713,8 @@ struct FunctionCallAnalyser: public RachelSemanticAnalyser::NodeAnalyser
       // FIXME: algumas funções são void e não retornam coisa alguma.
       // tratar este caso e fazer a verificação dos tipos de retorno
       r << "  %" << left << " = call " << get<0>(found->second) << " @" << functionName << "(";
-      
+     
+      // emito o código dos parâmetros
       for (auto i(params.begin()); i!= params.end(); i++) {
         r << get<1>(*i) << " %" << get<0>(*i);
         
@@ -741,28 +741,16 @@ struct RealParametersAnalyser: public RachelSemanticAnalyser::NodeAnalyser
       return "";
     }
     
-    stringstream c;
-    
-    // se for um literal, precido criar uma variável para ele
-    // FIXME: corrigir isso para não gerar temporário inútil
-    if (/*t.getChild(0).getChild(0).getHead() == Literal*/ true) {
-      // o novo temporário que receberá o resultado do parâmetro
-      string varName(createNewTempName());
-      
-      varStack.push(varName);
-      
-      // FIXME: pegar o tempo a partir do real do parametro
-      variableTable[varName] = typeTable["int"];
-      
-      c << "  %" << varName << " = " << "alloca " << variableTable[varName]
-        << ", " << "align " << typeAlign[variableTable[varName]] << "\n";
-    }
-    
+    // gero o código do parâmetro
     string s0(getAnalyser(t.getChild(0))->getCode(t.getChild(0)));
+    
+    // neste momento tenho no topo da pilha o temporário 
+    // que guarda o valor do parâmetro
+     
     
     string s1(getAnalyser(t.getChild(1))->getCode(t.getChild(1)));
     
-    return c.str() + s0 + s1;
+    return s0 + s1;
   }
 };
 
@@ -778,7 +766,6 @@ struct LiteralAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
   string getCode(RachelTree &t)
   {
-
     // faz as checagens de coisas ainda não implementadas
     if (t.getChild(0).getHead() == LiteralSet) {
       throw string("literalset não implementado");
@@ -788,37 +775,34 @@ struct LiteralAnalyser: public RachelSemanticAnalyser::NodeAnalyser
       throw string("string não implementada");
     }
     
-    string value;
+    if (t.getChild(0).getHead() == TkChar) {
+      throw string("char não implementada :-(");
+    }
     
-    string varName(varStack.top());
-    string typeName(variableTable[varStack.top()]);
+    string value, type;
     
     if (t.getChild(0).getHead() == TkInteger) {
       value = t.getChild(0).getToken().getLexema();
-      if (typeName != "i32") {
-        throw string("tipos incompatíveis na inicialização");
-      }
+      type = typeTable["int"];
     }
     
-    // finalmente, só pode ser um char
-    if (t.getChild(0).getHead() == TkChar) {
-      char a(t.getChild(0).getToken().getLexema()[0]);
-      stringstream r;
-      r << int(a);
-      value = r.str();
-      if (typeName != "i8") {
-        throw string("tipos incompatíveis na inicialização");
-      }
-    }
-   
-    // formato:
-    // store i32 34, i32* %c, align 4
     stringstream r;
 
-    r << "  store " << typeName << " " << value
-      << ", " << typeName << "* %" << varName
-      << ", align " << typeAlign[typeName] << "\n";
-      
+    string tempName(createNewTempName());
+    
+    r << "  %" << tempName << " = " << "alloca i32, align 4" << "\n";
+    r << "  store i32 " << value << ", i32* %" << tempName << ", align 4" << "\n";
+    
+    string tempName2(createNewTempName());
+    
+    r << "  %" << tempName2 << " = load i32* %" << tempName << ", align 4" << "\n";
+    
+    varStack.push(tempName2);
+    
+    variablesInRegister.insert(tempName2);
+    
+    variableTable[tempName2] = type;
+    
     return r.str();
   }
 };
@@ -863,9 +847,27 @@ struct FunctionContentAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
   string getCode(RachelTree &t)
   {
+    // Aloca a variável de retorno
+    string sEntry("entry:\n");
+    string sp("  %__retval__ = alloca i32, align 4\n");
+    
     string s0(getAnalyser(t.getChild(0))->getCode(t.getChild(0)));
     string s1(getAnalyser(t.getChild(1))->getCode(t.getChild(1))); 
-    return s0 + s1;
+    
+    // define o final da função, com o último bloco
+    string returnTemp(createNewTempName());
+    
+    string sr(
+      // FIXME: nem sempre! 
+      // ao menos ums instrução pulando para o return
+      //"  br label %return\n"
+      
+      "return:\n"
+      "  %" + returnTemp + " = load i32* %__retval__\n"
+      "  ret i32 %" + returnTemp + "\n"
+    );
+    
+    return sEntry + sp + s0 + s1 + sr;
   }
 };
 
@@ -904,27 +906,19 @@ struct VariableInitializationAnalyser: public RachelSemanticAnalyser::NodeAnalys
     // insiro a variável na tabela de símbolos
     variableTable[varName] = typeName;
     
-    // informo estar analisando a variável
-    varStack.push(varName);
-
-    // retorna alocação + código de inicialização da variável
+    // retorna alocação + código de inicialização da variável e coloca um 
+    // temporário na pilha
     string r(c.str() + getAnalyser(t.getChild(2))->getCode(t.getChild(2)));
     
-    // FIXME: gambiarra!
-    // se inicializou com função, copio o valor do topo da pilha para a variável
+    stringstream f;
+    f << "  store " << typeName << " %" << varStack.top() << ", " << typeName 
+      << "* " << "%" << varName << ", " << "align " << typeAlign[typeName] 
+      << "\n";
     
-    if (t.getChild(2).getChild(0).getChild(0).getHead() == FunctionCall) {
-      stringstream c;
-      c << "  store " << typeName << " %" << varStack.top() << ", " << typeName 
-        << "* " << "%" << varName << ", " << "align " << typeAlign[typeName] 
-        << "\n";
-      r += c.str();
-    }
-    
-    // retiro a variável da pilha
+    // tiro a variável do topo da pilha
     varStack.pop();
     
-    return r;
+    return r + f.str();
   }
 };
 
@@ -946,13 +940,109 @@ struct StmListAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
   string getCode(RachelTree &t)
   {
-    if (!t.size()) {
-      return "  ret i32 2\n";
+    if (!t.size()) { 
+      // FIXME: tamanho 0, só pode passar caso a função seja void
+      return "";
     }
-    return "  ret i32 2\n";
+    
+    string s0(getAnalyser(t.getChild(0))->getCode(t.getChild(0)));
+    string s1(getAnalyser(t.getChild(1))->getCode(t.getChild(1)));
+
+    return s0 + s1;
   }
 };
 
+struct StmAnalyser: public RachelSemanticAnalyser::NodeAnalyser
+{
+  string getCode(RachelTree &t)
+  {
+    return getAnalyser(t.getChild(0))->getCode(t.getChild(0));
+  }
+};
+
+struct ReturnStmAnalyser: public RachelSemanticAnalyser::NodeAnalyser
+{
+  string getCode(RachelTree &t)
+  {
+    // pega o código gerado pela expressão e coloca na pilha
+    string s0(getAnalyser(t.getChild(0))->getCode(t.getChild(0)));
+    
+    // a variável do topo da pilha está em registrador? 
+    // Se não, preciso buscá-la da memória
+    string topVar(varStack.top());
+    string tempVar(topVar);
+    varStack.pop();
+    
+    string s1;
+    
+    if (variablesInRegister.find(topVar) == variablesInRegister.end()) {
+      tempVar = createNewTempName();
+      s1 = "  %" + tempVar + " = load i32* %" + topVar + ", align 4" + "\n";
+    }
+    
+    // coloca o valor na variável de retorno e pula para a label de saída
+    string s2(
+      "  store i32 %" + tempVar + ", i32* %__retval__\n"
+      "  br label %return\n\n"
+    );
+    
+    return s0 + s1 + s2;
+  }
+};
+
+struct IfStmAnalyser: public RachelSemanticAnalyser::NodeAnalyser
+{
+  string getCode(RachelTree &t)
+  {
+    // pega o código gerado pela expressão e coloca na pilha 
+    string s0(getAnalyser(t.getChild(0))->getCode(t.getChild(0)));
+    
+    // TODO: há dois tipos diferentes de if: com e sem else
+    
+    string cmpVar(createNewTempName());
+    
+    // possui o bloco else?
+    bool hasElse(t.size() == 3);
+    
+    string thenLabel(createNewLabelName());
+    string elseLabel;
+    // se possui else, cria uma nova label
+    if (hasElse) elseLabel = createNewLabelName();
+    
+    string ifEndLabel(createNewLabelName());
+    
+    stringstream r;
+    r << "  %" << cmpVar << " = icmp ne i32 %" << varStack.top() << ", 0\n";
+    r << "  br i1 %" << cmpVar << ", label %" << thenLabel;
+    r << ", label %" << (hasElse ? elseLabel : ifEndLabel) << "\n";
+    
+    // pego o código gerado pelo bloco then
+    string thenCode(getAnalyser(t.getChild(1))->getCode(t.getChild(1)));
+    
+    r << thenLabel << ":\n";
+    r << thenCode;
+    r << "  br label %" << ifEndLabel << "\n";
+    
+    // se possui else gero seu código
+    if (hasElse) {
+      string elseCode(getAnalyser(t.getChild(2))->getCode(t.getChild(2)));
+      r << elseLabel << ":\n";
+      r << elseCode;
+      r << "  br label %" << ifEndLabel << "\n";
+    }
+    
+    r << ifEndLabel << ":\n";
+
+    varStack.pop();
+    
+    return s0 + r.str();
+  }
+};
+
+struct AttrStmAnalyser: public RachelSemanticAnalyser::NodeAnalyser
+{
+  string getCode(RachelTree &t);
+};
 
 int main(int argc, char **argv)
 {
@@ -1138,11 +1228,9 @@ int main(int argc, char **argv)
   lexer.setTokenPadding(TkString,1,1);
   lexer.setTokenPadding(TkChar,1,1);
 
-  function<Token<TokenType>()> getToken([&lexer](){
+  Syntatical::Analyser<NonTerminal,TokenType> parser(grammar,[&lexer](){
     return lexer.getToken();
   });
-
-  Syntatical::Analyser<NonTerminal,TokenType> parser(grammar,getToken);
 
   if (!parser.parse()) {
     cerr << "Erro!" << endl;
@@ -1154,7 +1242,6 @@ int main(int argc, char **argv)
   //cerr << tree.toString<function<string(const RachelGrammar::Symbol &)>>(symbolToString) << endl;
   //tree.generateGraph<function<string(const RachelGrammar::Symbol &)>>(symbolToString);
   
-
   RachelSemanticAnalyser a(tree,{
     {Program,new ProgramAnalyser},
     {FunctionList,new FunctionListAnalyser},
@@ -1177,7 +1264,12 @@ int main(int argc, char **argv)
     {NonLiteral,new NonLiteralAnalyser},
     {FunctionCall,new FunctionCallAnalyser},
     {RealParameters,new RealParametersAnalyser},
-    {VariableAccess,new VariableAccessAnalyser}
+    {VariableAccess,new VariableAccessAnalyser},
+    {Stm,new StmAnalyser},
+    {StmListExt,new StmListAnalyser}, // usa o mesmo analisador que o StmList
+    {ReturnStm,new ReturnStmAnalyser},
+    {IfStm,new IfStmAnalyser},
+    {AttrStm,new AttrStmAnalyser}
   });
 
   try {
