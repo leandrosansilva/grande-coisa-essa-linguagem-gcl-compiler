@@ -818,6 +818,155 @@ struct FunctionCallAnalyser: public RachelSemanticAnalyser::NodeAnalyser
       
       return s0 + r.str();
     }
+    
+    // FIXME: é basicamente uma cópia da soma!
+    if (functionName == TkTimes) {
+      // uma soma precisa de ao menos um parâmetro
+      int paramCount(countParameters(t.getChild(1)));
+      
+      if (paramCount < 2) {
+        throw string("uma soma precisa de ao menos dois parâmetros!");
+      }
+      
+      // executa o corpo da função e em seguida tenha na pilha
+      // N variáveis, que são os valores dos N parâmetros
+      // Para executar, faço um laço removendo dois elementos
+      // jogando sua soma num novo temporário e em seguida empilhando-o
+      
+      // código dos parâmetros
+      string s0(getAnalyser(t.getChild(1))->getCode(t.getChild(1)));
+
+      // chegando neste ponto já devo ter na pilha os parâmetros que vou usar
+      list<tuple<string,string>> params;
+
+      stringstream r;
+
+      // obtem o código dos parâmetros e a lista deles em params
+      r << getParamsCode(paramCount,params);
+      
+      // a lista possui ao menos 2 parâmetros
+      do {
+        string op1(get<0>(params.front()));
+        params.pop_front();
+        string op2(get<0>(params.front()));
+        params.pop_front();
+        
+        string resultVar(createNewTempName());
+        
+        params.push_front(make_tuple(resultVar,"i32"));
+        
+        r << "  %" << resultVar << " = mul nsw i32 %" << op1 << ", %" << op2 << "\n";
+        
+        // informo que a variável está em registrador
+        variablesInRegister.insert(resultVar);
+      } while (params.size() > 1);
+      
+      // coloco o resultado disso na pilha e na tabela de variáveis
+      varStack.push(get<0>(params.front()));
+      variableTable[get<0>(params.front())] = get<1>(params.front());
+      
+      return s0 + r.str();
+    }
+    
+    // FIXME: é basicamente uma cópia da soma!
+    if (functionName == TkDiv) {
+      // uma soma precisa de ao menos um parâmetro
+      int paramCount(countParameters(t.getChild(1)));
+      
+      if (paramCount < 2) {
+        throw string("uma soma precisa de ao menos dois parâmetros!");
+      }
+      
+      // executa o corpo da função e em seguida tenha na pilha
+      // N variáveis, que são os valores dos N parâmetros
+      // Para executar, faço um laço removendo dois elementos
+      // jogando sua soma num novo temporário e em seguida empilhando-o
+      
+      // código dos parâmetros
+      string s0(getAnalyser(t.getChild(1))->getCode(t.getChild(1)));
+
+      // chegando neste ponto já devo ter na pilha os parâmetros que vou usar
+      list<tuple<string,string>> params;
+
+      stringstream r;
+
+      // obtem o código dos parâmetros e a lista deles em params
+      r << getParamsCode(paramCount,params);
+      
+      // a lista possui ao menos 2 parâmetros
+      do {
+        string op1(get<0>(params.front()));
+        params.pop_front();
+        string op2(get<0>(params.front()));
+        params.pop_front();
+        
+        string resultVar(createNewTempName());
+        
+        params.push_front(make_tuple(resultVar,"i32"));
+        
+        r << "  %" << resultVar << " = sdiv i32 %" << op1 << ", %" << op2 << "\n";
+        
+        // informo que a variável está em registrador
+        variablesInRegister.insert(resultVar);
+      } while (params.size() > 1);
+      
+      // coloco o resultado disso na pilha e na tabela de variáveis
+      varStack.push(get<0>(params.front()));
+      variableTable[get<0>(params.front())] = get<1>(params.front());
+      
+      return s0 + r.str();
+    }
+    
+    // FIXME: é basicamente uma cópia da soma!
+    if (functionName == TkMinus) {
+      // uma soma precisa de ao menos um parâmetro
+      int paramCount(countParameters(t.getChild(1)));
+      
+      if (paramCount < 2) {
+        throw string("uma soma precisa de ao menos dois parâmetros!");
+      }
+      
+      // executa o corpo da função e em seguida tenha na pilha
+      // N variáveis, que são os valores dos N parâmetros
+      // Para executar, faço um laço removendo dois elementos
+      // jogando sua soma num novo temporário e em seguida empilhando-o
+      
+      // código dos parâmetros
+      string s0(getAnalyser(t.getChild(1))->getCode(t.getChild(1)));
+
+      // chegando neste ponto já devo ter na pilha os parâmetros que vou usar
+      list<tuple<string,string>> params;
+
+      stringstream r;
+
+      // obtem o código dos parâmetros e a lista deles em params
+      r << getParamsCode(paramCount,params);
+      
+      // a lista possui ao menos 2 parâmetros
+      do {
+        string op1(get<0>(params.front()));
+        params.pop_front();
+        string op2(get<0>(params.front()));
+        params.pop_front();
+        
+        string resultVar(createNewTempName());
+        
+        params.push_front(make_tuple(resultVar,"i32"));
+        
+        r << "  %" << resultVar << " = sub nsw i32 %" << op1 << ", %" << op2 << "\n";
+        
+        // informo que a variável está em registrador
+        variablesInRegister.insert(resultVar);
+      } while (params.size() > 1);
+      
+      // coloco o resultado disso na pilha e na tabela de variáveis
+      varStack.push(get<0>(params.front()));
+      variableTable[get<0>(params.front())] = get<1>(params.front());
+      
+      return s0 + r.str();
+    }
+       
+    
     return "";
   }
 };
