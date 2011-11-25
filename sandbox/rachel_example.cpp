@@ -81,7 +81,7 @@ typedef enum {
   TkTimes,
   TkDot,
   TkMod,
-  TkDiff,
+    TkNEqual,
   TkEnd,
   TkString,
   TkStringWord,
@@ -133,7 +133,7 @@ static map<TokenType,string> TerminalMap {
   {TkTimes,"TkTimes"},
   {TkDot,"TkDot"},
   {TkMod,"TkMod"},
-  {TkDiff,"TkDiff"},
+  {TkNEqual,"TkDiff"},
   {TkEnd,"TkEnd"},
   {TkString,"TkString"},
   {TkStringWord,"TkStringWord"},
@@ -337,7 +337,7 @@ RachelGrammar grammar(symbolToString,{
   {FunctionName,{{TkOr}}},
   {FunctionName,{{TkNot}}},
   {FunctionName,{{TkEqual}}},
-  {FunctionName,{{TkDiff}}},
+  {FunctionName,{{TkNEqual}}},
   {FunctionName,{{TkGThan}}},
   {FunctionName,{{TkGEThan}}},
   {FunctionName,{{TkLThan}}},
@@ -702,6 +702,60 @@ struct FunctionCallAnalyser: public RachelSemanticAnalyser::NodeAnalyser
     return r.str();
   }
   
+  // retorna código de função que encolve comparação (<, >, >=, ==, etc.)
+  string getCompCode(const RachelTree &t, const string &code, const string &msg)
+  {
+    // uma soma precisa de ao menos um parâmetro
+    int paramCount(countParameters(t.getChild(1)));
+    
+    // uma operação de comparação precisa de exatamente dois parâmetros
+    if (paramCount != 2) {
+      throw msg;
+    }
+    
+    // executa o corpo da função e em seguida tenha na pilha
+    // N variáveis, que são os valores dos N parâmetros
+    // Para executar, faço um laço removendo dois elementos
+    // jogando sua soma num novo temporário e em seguida empilhando-o
+    
+    // código dos parâmetros
+    string s0(getAnalyser(t.getChild(1))->getCode(t.getChild(1)));
+
+    // chegando neste ponto já devo ter na pilha os parâmetros que vou usar
+    list<tuple<string,string>> params;
+
+    stringstream r;
+
+    // obtem o código dos parâmetros e a lista deles em params
+    r << getParamsCode(paramCount,params);
+    
+    // obtem os dois parâmetros
+    string op1(get<0>(params.front()));
+    params.pop_front();
+    string op2(get<0>(params.front()));
+    params.pop_front();
+    
+    // o inteiro de 1bit (boolean)
+    string resultVarAux(createNewTempName());
+    
+    // booleano convertido para i32
+    string resultVar(createNewTempName());
+    
+    r << "  %" << resultVarAux << " = icmp " << code << " i32 %" << op1 << ", %" << op2 << "\n";
+    r << "  %" << resultVar << " = zext i1 %" << resultVarAux << " to i32" << "\n";
+    
+    params.push_front(make_tuple(resultVar,"i32"));
+    
+    // informo que a variável está em registrador
+    variablesInRegister.insert(resultVar);
+    
+    // coloco o resultado disso na pilha e na tabela de variáveis
+    varStack.push(get<0>(params.front()));
+    variableTable[get<0>(params.front())] = get<1>(params.front());
+    
+    return s0 + r.str();
+  }
+  
   string getVariableParamsFunctionCode(const RachelTree &t, const string &code, const string &msg)
   {
     // uma soma precisa de ao menos um parâmetro
@@ -843,6 +897,35 @@ struct FunctionCallAnalyser: public RachelSemanticAnalyser::NodeAnalyser
     if (functionName == TkAnd) {
       return getVariableParamsFunctionCode(t,"and","AND precisa de ao menos dois parâmetros!");
     }
+    
+    if (functionName == TkMod) {
+      return getVariableParamsFunctionCode(t,"srem","MODULO precisa de ao menos dois parâmetros!");
+    }
+    
+    if (functionName == TkEqual) {
+      return getCompCode(t,"eq","Comparação de igualdade deve ter dois parâmetros");
+    }
+    
+    if (functionName == TkNEqual) {
+      return getCompCode(t,"neq","Comparação de desigualdade deve ter dois parâmetros");
+    }
+    
+    if (functionName == TkGThan) {
+      return getCompCode(t,"sgt","Comparação de maior deve ter dois parâmetros");
+    }
+    
+    if (functionName == TkGEThan) {
+      return getCompCode(t,"sge","Comparação de maior ou igual deve ter dois parâmetros");
+    }
+    
+    if (functionName == TkLThan) {
+      return getCompCode(t,"slt","Comparação de menor deve ter dois parâmetros");
+    }
+    
+    if (functionName == TkLEThan) {
+      return getCompCode(t,"sle","Comparação de menor ou igual deve ter dois parâmetros");
+    }   
+    
     
     return "";
   }
@@ -1352,7 +1435,7 @@ int main(int argc, char **argv)
   /* Para != */
     lexTable.addTransition(start,"!",yy2);
     lexTable.addTransition(yy2,"=",yy3);
-    lexTable.addFinalTransition(yy3,any,TkDiff);
+    lexTable.addFinalTransition(yy3,any,TkNEqual);
 
   /* Estrutura com as palavras reservadas */
   TokenHash<TokenType> reservedWords(
@@ -1370,6 +1453,9 @@ int main(int argc, char **argv)
       {"read",TkRead},
       {"write",TkWrite},
       {"writeln",TkWriteLn},
+      
+      // controle da função
+      {"return",TkReturn},
 
       /* aliases para outros símbolos */
       {"and",TkAnd},
@@ -1380,7 +1466,11 @@ int main(int argc, char **argv)
       {"sum",TkPlus},
       {"sub",TkMinus},
       {"mul",TkTimes},
-      {"div",TkDiv}
+      {"div",TkDiv},
+      
+      // bloco
+      {"begin",TkLBlock},
+      {"end",TkRBlock}
     }
   );
 
