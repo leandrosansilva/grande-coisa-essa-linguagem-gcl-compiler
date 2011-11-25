@@ -390,9 +390,9 @@ typedef Tree<TokenType,RachelGrammar::Symbol> RachelTree;
 // Uma tabela de variáveis. nome -> tipo 
 typedef map<string,string> VariableTable;
 
-// mapa string -> tupla com um nome de tipo seguido de uma lista de tipos 
+// mapa string -> tupla com um nome de tipo seguido de uma lista nome -> tipo
 // (casa parametros por posição)
-typedef map<string,tuple<string,list<string>>> FunctionTable;
+typedef map<string,tuple<string,list<tuple<string,string>>>> FunctionTable;
 
 // um mapa de tipos da linguagem para tipos do llvm
 typedef map<string,string> TypeTable;
@@ -423,6 +423,9 @@ FunctionTable functionTable;
 
 // Uma lista de variáveis, referindo-se a função corrente
 VariableTable variableTable;
+
+// uma lista que, de um parâmetro, informa qual seu local correspondente
+map<string,string> paramToLocal;
 
 // obtem um novo nome para um temporário
 class Counter
@@ -526,10 +529,11 @@ struct FunctionImplAnalyser: public RachelSemanticAnalyser::NodeAnalyser
 {
   string getCode(RachelTree &t)
   {
-    // zero as tabela
+    // zero as tabelas
     variableTable.clear();
     variablesInRegister.clear();
     while (varStack.size()) varStack.pop();
+    paramToLocal.clear();
     createNewTempName.reset();
     
     string functionName(t.getChild(0).getToken().getLexema());
@@ -560,9 +564,32 @@ struct FunctionImplAnalyser: public RachelSemanticAnalyser::NodeAnalyser
     functionTable[functionName] = {};
     get<0>(functionTable[currentFunction]) = functionType;
     
+    // código dos parâmetros
+    string paramCode(getAnalyser(t.getChild(1))->getCode(t.getChild(1)));
+    
+    // aqui copio os parâmetros para locais
+    string locals;
+    for (auto p(get<1>(functionTable[currentFunction]).begin()); 
+         p != get<1>(functionTable[currentFunction]).end(); p++) 
+    {
+      string tempName(createNewTempName());
+      paramToLocal[get<0>(*p)] = tempName;
+     
+      // crio uma entrada na tabela de variáveis para o temporário
+      variableTable[tempName] = variableTable[get<0>(*p)];
+      
+      locals += "  %" + tempName +" = alloca i32, align 4\n"
+             + "  store i32 %" + get<0>(*p) + ", i32* %" + tempName 
+             + ", align 4\n";
+    }
+    
+    // código do corpo da função
+    string bodyCode(getAnalyser(t.getChild(contentNode))->getCode(t.getChild(contentNode)));
+    
     return "define " + functionType + " @" + functionName + // nome da função
-           "(" + getAnalyser(t.getChild(1))->getCode(t.getChild(1)) + ") {\n" +  // parametros
-            getAnalyser(t.getChild(contentNode))->getCode(t.getChild(contentNode)) + // corpo
+           "(" + paramCode + ") {\n" // parametros
+             + "entry:\n"
+             + locals + bodyCode + // corpo
             "}\n\n"; // fechamento da função
   }
 };
@@ -617,7 +644,7 @@ struct ParamDefAnalyser: public RachelSemanticAnalyser::NodeAnalyser
     variableTable[varName] = typeName;
     
     // insiro o tipo na assinatura da função
-    get<1>(functionTable[currentFunction]).push_front(typeName);
+    get<1>(functionTable[currentFunction]).push_front(make_tuple(varName,typeName));
 
     return typeName + " %" + varName;
   }
@@ -638,11 +665,50 @@ struct FunctionCallAnalyser: public RachelSemanticAnalyser::NodeAnalyser
     
     return c;
   }
+
+  // de uma árvore com os parâmetros em quantidade passada, retorna os elementos da pilha em params
+  // e os retira da pilha de parâmetros
+  string getParamsCode(int paramsC, list<tuple<string,string>> &params)
+  {
+    stringstream r;
+    
+    // retiro-os da pilha, um a um, o jogo num novo temporário (instrução load)
+    // e uso este temporário para a operação
+    // %3 = load i32* %1, align 4
+    for (int i(0); i < paramsC; i++) {
+      string varName,typeName;
+     
+      // se o valor está em registrador, não preciso carregá-lo da memória
+      if (variablesInRegister.find(varStack.top()) != variablesInRegister.end()) {
+        varName = varStack.top();
+      } else {
+        // caso contrário, preciso criar um novo temporário com o que vem da memória
+        varName = createNewTempName();
+        // digo que se trata de um valor em registrador
+        variablesInRegister.insert(varName);
+        
+        r << "  %" << varName << " = " << "load " << variableTable[varStack.top()]
+          << "* " << "%" << varStack.top() << ", " << "align " << typeAlign[variableTable[varStack.top()]] << "\n";         
+      }
+      
+      typeName = variableTable[varStack.top()];
+      
+      // variavel -> tipo
+      params.push_front(make_tuple(varName,typeName));
+      
+      varStack.pop();
+    }
+   
+    return r.str();
+  }
   
   string getCode(RachelTree &t)
   {
+    // obtenho o nome da função
+    auto functionName(t.getChild(0).getChild(0).getHead());
+    
     // no caso seja uma função definida pelo usuário
-    if (t.getChild(0).getChild(0).getHead() == TkId) {
+    if (functionName == TkId) {
       
       string functionName(t.getChild(0).getChild(0).getToken().getLexema());
       auto found(functionTable.find(functionName));
@@ -670,35 +736,11 @@ struct FunctionCallAnalyser: public RachelSemanticAnalyser::NodeAnalyser
       
       // chegando neste ponto já devo ter na pilha os parâmetros que vou usar
       list<tuple<string,string>> params;
-      
+
       stringstream r;
-      
-      // retiro-os da pilha, um a um, o jogo num novo temporário (instrução load)
-      // e uso este temporário para a operação
-      // %3 = load i32* %1, align 4
-      for (int i(0); i < paramsC; i++) {
-        string varName,typeName;
-       
-        // se o valor está em registrador, não preciso carregá-lo da memória
-        if (variablesInRegister.find(varStack.top()) != variablesInRegister.end()) {
-          varName = varStack.top();
-        } else {
-          // caso contrário, preciso criar um novo temporário com o que vem da memória
-          varName = createNewTempName();
-          // digo que se trata de um valor em registrador
-          variablesInRegister.insert(varName);
-          
-          r << "  %" << varName << " = " << "load " << variableTable[varStack.top()]
-            << "* " << "%" << varStack.top() << ", " << "align " << typeAlign[variableTable[varStack.top()]] << "\n";         
-        }
-        
-        typeName = variableTable[varStack.top()];
-        
-        // variavel -> tipo
-        params.push_front(make_tuple(varName,typeName));
-        
-        varStack.pop();
-      }
+
+      // obtem o código dos parâmetros e a lista deles em params
+      r << getParamsCode(paramsC,params);
 
       // empilha o temporário que guarda o resultado da função
       string left(createNewTempName());
@@ -726,6 +768,54 @@ struct FunctionCallAnalyser: public RachelSemanticAnalyser::NodeAnalyser
       r << ")\n";
       
       // retorna a criação do código das chamadas de função mais a chamada em si
+      return s0 + r.str();
+    } 
+      
+    if (functionName == TkPlus) {
+      // uma soma precisa de ao menos um parâmetro
+      int paramCount(countParameters(t.getChild(1)));
+      
+      if (paramCount < 2) {
+        throw string("uma soma precisa de ao menos dois parâmetros!");
+      }
+      
+      // executa o corpo da função e em seguida tenha na pilha
+      // N variáveis, que são os valores dos N parâmetros
+      // Para executar, faço um laço removendo dois elementos
+      // jogando sua soma num novo temporário e em seguida empilhando-o
+      
+      // código dos parâmetros
+      string s0(getAnalyser(t.getChild(1))->getCode(t.getChild(1)));
+
+      // chegando neste ponto já devo ter na pilha os parâmetros que vou usar
+      list<tuple<string,string>> params;
+
+      stringstream r;
+
+      // obtem o código dos parâmetros e a lista deles em params
+      r << getParamsCode(paramCount,params);
+      
+      // a lista possui ao menos 2 parâmetros
+      do {
+        string op1(get<0>(params.front()));
+        params.pop_front();
+        string op2(get<0>(params.front()));
+        params.pop_front();
+        
+        string resultVar(createNewTempName());
+        
+        params.push_front(make_tuple(resultVar,"i32"));
+        
+        r << "  %" << resultVar << " = add nsw i32 %" << op1 << ", %" << op2 << "\n";
+        
+        // informo que a variável está em registrador
+        variablesInRegister.insert(resultVar);
+      } while (params.size() > 1);
+      
+      // coloco o resultado disso na pilha e na tabela de variáveis
+      varStack.push(get<0>(params.front()));
+      variableTable[get<0>(params.front())] = get<1>(params.front());
+      
       return s0 + r.str();
     }
     return "";
@@ -834,9 +924,18 @@ struct VariableAccessAnalyser: public RachelSemanticAnalyser::NodeAnalyser
       throw string("variável " + varName + " não declarada!");
     }
     
+    // se a variável for um parâmetro da função
+    // devo buscar o seu temporário correspondente
+    auto found(paramToLocal.find(varName));
+    string realName(
+      found == paramToLocal.end() 
+        ? varName
+        : found->second
+    ); 
+    
     // variável encontrada
     // Insiro-la na pilha de variáveis
-    varStack.push(varName);
+    varStack.push(realName);
     
     // não há o que retornar
     return "";
@@ -848,7 +947,6 @@ struct FunctionContentAnalyser: public RachelSemanticAnalyser::NodeAnalyser
   string getCode(RachelTree &t)
   {
     // Aloca a variável de retorno
-    string sEntry("entry:\n");
     string sp("  %__retval__ = alloca i32, align 4\n");
     
     string s0(getAnalyser(t.getChild(0))->getCode(t.getChild(0)));
@@ -867,7 +965,7 @@ struct FunctionContentAnalyser: public RachelSemanticAnalyser::NodeAnalyser
       "  ret i32 %" + returnTemp + "\n"
     );
     
-    return sEntry + sp + s0 + s1 + sr;
+    return sp + s0 + s1 + sr;
   }
 };
 
@@ -999,42 +1097,59 @@ struct IfStmAnalyser: public RachelSemanticAnalyser::NodeAnalyser
     
     // TODO: há dois tipos diferentes de if: com e sem else
     
-    string cmpVar(createNewTempName());
-    
     // possui o bloco else?
     bool hasElse(t.size() == 3);
     
     string thenLabel(createNewLabelName());
     string elseLabel;
+    
     // se possui else, cria uma nova label
-    if (hasElse) elseLabel = createNewLabelName();
+    if (hasElse) {
+      elseLabel = createNewLabelName();
+    }
     
     string ifEndLabel(createNewLabelName());
     
     stringstream r;
-    r << "  %" << cmpVar << " = icmp ne i32 %" << varStack.top() << ", 0\n";
+    
+    // a variável de comparação está em registrador?
+    auto found(variablesInRegister.find(varStack.top()));
+    
+    // obtem a variável de comparação
+    string c;
+    if (found == variablesInRegister.end()) {
+      c = createNewTempName();
+      // carrega para registrador
+      r << "  %" << c << " = load i32* %" << varStack.top() << ", align 4" << "\n";
+    } else {
+      c = varStack.top();
+    }
+    
+    varStack.pop();
+    
+    string cmpVar(createNewTempName());
+    
+    r << "  %" << cmpVar << " = icmp ne i32 %" << c << ", 0\n";
     r << "  br i1 %" << cmpVar << ", label %" << thenLabel;
     r << ", label %" << (hasElse ? elseLabel : ifEndLabel) << "\n";
     
     // pego o código gerado pelo bloco then
     string thenCode(getAnalyser(t.getChild(1))->getCode(t.getChild(1)));
     
-    r << thenLabel << ":\n";
+    r << "\n" << thenLabel << ":\n";
     r << thenCode;
     r << "  br label %" << ifEndLabel << "\n";
     
     // se possui else gero seu código
     if (hasElse) {
       string elseCode(getAnalyser(t.getChild(2))->getCode(t.getChild(2)));
-      r << elseLabel << ":\n";
+      r << "\n" << elseLabel << ":\n";
       r << elseCode;
       r << "  br label %" << ifEndLabel << "\n";
     }
     
-    r << ifEndLabel << ":\n";
+    r << "\n" << ifEndLabel << ":\n";
 
-    varStack.pop();
-    
     return s0 + r.str();
   }
 };
@@ -1050,152 +1165,168 @@ struct AttrStmAnalyser: public RachelSemanticAnalyser::NodeAnalyser
     string result(varStack.top());
     varStack.pop();
     
-    // coloco o nome da variável na pilha
+    // coloco o nome da variável na pilha da esquerda
     getAnalyser(t.getChild(0))->getCode(t.getChild(0));
     
-    string s1("  store i32 %" + result + ", i32* %" + varStack.top() + "\n");
+    // a variável referente ao resultado está em registrador?
+    auto found(variablesInRegister.find(result));
+    
+    string c;
+    
+    string sTop;
+    
+    if (found == variablesInRegister.end()) {
+      c = createNewTempName();
+      // carrega para registrador
+      sTop = "  %" + c + " = load i32* %" + result + ", align 4" + "\n";
+    } else {
+      c = result;
+    }
+   
+    // no topo da pilha está o nome da variável onde devo mover o dado
+    string s1("  store i32 %" + c + ", i32* %" + varStack.top() + ", align 4\n");
     
     varStack.pop();
     
-    return s0 + s1;
+    return sTop + s0 + s1;
   }
 };
 
 int main(int argc, char **argv)
 {
-  TransitionTable<LexState,TokenType> automata(start,invalid,final);
+  TransitionTable<LexState,TokenType> lexTable(start,invalid,final);
 
   /* Consome espaços em branco */
-  automata.addTransition(start,spaces,s);
-  automata.addTransition(s,spaces,s);
-  automata.addFinalTransition(s,any - spaces,TkSpaces);
+    lexTable.addTransition(start,spaces,s);
+    lexTable.addTransition(s,spaces,s);
+    lexTable.addFinalTransition(s,any - spaces,TkSpaces);
   
   /* Para inteiros e reais */
-  automata.addTransition(start,digits,b1);
-  automata.addTransition(b1,digits,b1);
-  automata.addFinalTransition(b1,any - digits,TkInteger);
+    lexTable.addTransition(start,digits,b1);
+    lexTable.addTransition(b1,digits,b1);
+    lexTable.addFinalTransition(b1,any - digits,TkInteger);
   
   /* Para identificador */
-  automata.addTransition(start,letters + "_",a1);
-  automata.addTransition(a1,letters + digits + "_", a1);
-  automata.addFinalTransition(a1,any - letters - digits - "_",TkId);
+    lexTable.addTransition(start,letters + "_",a1);
+    lexTable.addTransition(a1,letters + digits + "_", a1);
+    lexTable.addFinalTransition(a1,any - letters - digits - "_",TkId);
   
   /* Para [ */
-  automata.addTransition(start,"[",g1);
-  automata.addFinalTransition(g1,any,TkLBracket);
+    lexTable.addTransition(start,"[",g1);
+    lexTable.addFinalTransition(g1,any,TkLBracket);
 
   /* Para [ */
-  automata.addTransition(start,"]",l1);
-  automata.addFinalTransition(l1,any,TkRBracket);
+    lexTable.addTransition(start,"]",l1);
+    lexTable.addFinalTransition(l1,any,TkRBracket);
   
   /* Para < e <= */
-  automata.addTransition(start, "<", h1);
-  automata.addTransition(h1,"=",h2);
-  automata.addFinalTransition(h1,any,TkLThan);
-  automata.addFinalTransition(h2,any,TkLEThan);
+    lexTable.addTransition(start, "<", h1);
+    lexTable.addTransition(h1,"=",h2);
+    lexTable.addFinalTransition(h1,any,TkLThan);
+    lexTable.addFinalTransition(h2,any,TkLEThan);
   
   /* Para > e >= */
-  automata.addTransition(start, ">", i1);
-  automata.addTransition(i1,"=",i2);
-  automata.addFinalTransition(i1,any,TkGThan);
-  automata.addFinalTransition(i2,any,TkGEThan);
+    lexTable.addTransition(start, ">", i1);
+    lexTable.addTransition(i1,"=",i2);
+    lexTable.addFinalTransition(i1,any,TkGThan);
+    lexTable.addFinalTransition(i2,any,TkGEThan);
   
   /* Para parentesis */
-  automata.addTransition(start,"(",m1);
-  automata.addFinalTransition(m1,any,TkLParentesis);
-  automata.addTransition(start,")",m2);
-  automata.addFinalTransition(m2,any,TkRParentesis);
+    lexTable.addTransition(start,"(",m1);
+    lexTable.addFinalTransition(m1,any,TkLParentesis);
+    lexTable.addTransition(start,")",m2);
+    lexTable.addFinalTransition(m2,any,TkRParentesis);
   
   /* Para = e == */
-  automata.addTransition(start,"=",n1);
-  automata.addTransition(n1,"=",n2);
-  automata.addFinalTransition(n1,any - "=",TkAttr);
-  automata.addFinalTransition(n2,any,TkEqual);
+    lexTable.addTransition(start,"=",n1);
+    lexTable.addTransition(n1,"=",n2);
+    lexTable.addFinalTransition(n1,any - "=",TkAttr);
+    lexTable.addFinalTransition(n2,any,TkEqual);
   
   /* Para , */
-  automata.addTransition(start,",",o1);
-  automata.addFinalTransition(o1,any,TkComma);
+    lexTable.addTransition(start,",",o1);
+    lexTable.addFinalTransition(o1,any,TkComma);
   
   /* Para + */
-  automata.addTransition(start,"+",p1);
-  automata.addFinalTransition(p1,any,TkPlus);
+    lexTable.addTransition(start,"+",p1);
+    lexTable.addFinalTransition(p1,any,TkPlus);
   
   /* Para ~ */
-  automata.addTransition(start,"~",r1);
-  automata.addFinalTransition(r1,any,TkNot);
+    lexTable.addTransition(start,"~",r1);
+    lexTable.addFinalTransition(r1,any,TkNot);
   
   /* Para && */
-  automata.addTransition(start,"&",s1);
-  automata.addTransition(s1,"&",s2);
-  automata.addFinalTransition(s2,any,TkAnd);
+    lexTable.addTransition(start,"&",s1);
+    lexTable.addTransition(s1,"&",s2);
+    lexTable.addFinalTransition(s2,any,TkAnd);
   
   /* Para || e | */
-  automata.addTransition(start,"|",t1);
-  automata.addTransition(t1,"|",t2);
-  automata.addFinalTransition(t2,any,TkOr);
-  automata.addFinalTransition(t1,any - "|",TkReturn);
+    lexTable.addTransition(start,"|",t1);
+    lexTable.addTransition(t1,"|",t2);
+    lexTable.addFinalTransition(t2,any,TkOr);
+    lexTable.addFinalTransition(t1,any - "|",TkReturn);
   
   /* Para / */
-  automata.addTransition(start,"/",u1);
-  automata.addFinalTransition(u1,any,TkDiv);
+    lexTable.addTransition(start,"/",u1);
+    lexTable.addFinalTransition(u1,any,TkDiv);
   
   /* Para * */
-  automata.addTransition(start,"*",w1);
-  automata.addFinalTransition(w1,any,TkTimes);
+    lexTable.addTransition(start,"*",w1);
+    lexTable.addFinalTransition(w1,any,TkTimes);
   
   /* Para . */
-  automata.addTransition(start,".",f1);
-  automata.addFinalTransition(f1,any, TkDot);
+    lexTable.addTransition(start,".",f1);
+    lexTable.addFinalTransition(f1,any, TkDot);
   
   /* separador de comandos ponto e vírgula (;) */
-  automata.addTransition(start,";",k1);
-  automata.addFinalTransition(k1,any,TkEnd);
+    lexTable.addTransition(start,";",k1);
+    lexTable.addFinalTransition(k1,any,TkEnd);
 
   /* Para : */
-  automata.addTransition(start,":",x1);
-  automata.addFinalTransition(x1,any,TkTwoDots);
+    lexTable.addTransition(start,":",x1);
+    lexTable.addFinalTransition(x1,any,TkTwoDots);
 
   /* char, envonvido por aspas simples, mas só um caractere dentro */
-  automata.addTransition(start,"\'",c1);
-  automata.addTransition(c1,any - "\'",c2);
-  automata.addTransition(c2,"\'",c3);
-  automata.addFinalTransition(c3,any,TkChar);
+    lexTable.addTransition(start,"\'",c1);
+    lexTable.addTransition(c1,any - "\'",c2);
+    lexTable.addTransition(c2,"\'",c3);
+    lexTable.addFinalTransition(c3,any,TkChar);
 
   /* string com aspas duplas */
-  automata.addTransition(start,"\"",d1);
-  automata.addTransition(d1,any - "\"",d1);
-  automata.addTransition(d1,"\"",d2);
-  automata.addFinalTransition(d2,any,TkString);
+    lexTable.addTransition(start,"\"",d1);
+    lexTable.addTransition(d1,any - "\"",d1);
+    lexTable.addTransition(d1,"\"",d2);
+    lexTable.addFinalTransition(d2,any,TkString);
   
   /* Para comentário */
-  automata.addTransition(start,"#",e1);
-  automata.addTransition(e1,any - breakline,e1);
-  automata.addFinalTransition(e1,breakline,TkComment);
+    lexTable.addTransition(start,"#",e1);
+    lexTable.addTransition(e1,any - breakline,e1);
+    lexTable.addFinalTransition(e1,breakline,TkComment);
   
   /* para símbolo - (minus) */
-  automata.addTransition(start,"-",J1);
-  automata.addFinalTransition(J1,any - ">",TkMinus);
+    lexTable.addTransition(start,"-",J1);
+    lexTable.addFinalTransition(J1,any - ">",TkMinus);
   
   /* para símbolo -> */
-  automata.addTransition(J1,">",j2);
-  automata.addFinalTransition(j2,any,TkIs);
+    lexTable.addTransition(J1,">",j2);
+    lexTable.addFinalTransition(j2,any,TkIs);
 
   /* para símbolo { */
-  automata.addTransition(start,"{",q1);
-  automata.addFinalTransition(q1,any,TkLBlock);
+    lexTable.addTransition(start,"{",q1);
+    lexTable.addFinalTransition(q1,any,TkLBlock);
 
   /* para símbolo } */
-  automata.addTransition(start,"}",q2);
-  automata.addFinalTransition(q2,any,TkRBlock);
+    lexTable.addTransition(start,"}",q2);
+    lexTable.addFinalTransition(q2,any,TkRBlock);
 
   /* Para % */
-  automata.addTransition(start,"%",yy1);
-  automata.addFinalTransition(yy1,any,TkMod);
+    lexTable.addTransition(start,"%",yy1);
+    lexTable.addFinalTransition(yy1,any,TkMod);
 
   /* Para != */
-  automata.addTransition(start,"!",yy2);
-  automata.addTransition(yy2,"=",yy3);
-  automata.addFinalTransition(yy3,any,TkDiff);
+    lexTable.addTransition(start,"!",yy2);
+    lexTable.addTransition(yy2,"=",yy3);
+    lexTable.addFinalTransition(yy3,any,TkDiff);
 
   /* Estrutura com as palavras reservadas */
   TokenHash<TokenType> reservedWords(
@@ -1219,11 +1350,11 @@ int main(int argc, char **argv)
       {"or",TkOr},
       {"not",TkNot},
       {"return",TkReturn},
-      {"equal",TkReturn},
-      {"sum",TkReturn},
-      {"sub",TkReturn},
-      {"mul",TkReturn},
-      {"div",TkReturn}
+      {"equal",TkEqual},
+      {"sum",TkPlus},
+      {"sub",TkMinus},
+      {"mul",TkTimes},
+      {"div",TkDiv}
     }
   );
 
@@ -1231,7 +1362,7 @@ int main(int argc, char **argv)
   FileReader reader(argv[1]);
 
   /* Analisador léxico */
-  Lexical::Analyser<LexState,TokenType> lexer(reader,automata,reservedWords,TEOF);
+  Lexical::Analyser<LexState,TokenType> lexer(reader,lexTable,reservedWords,TEOF);
   
   // os identificadores devem ser comparados na tabela de palavras reservadas
   lexer.addTokenToCompareWithReserved({TkId});
@@ -1294,15 +1425,6 @@ int main(int argc, char **argv)
   } catch(const string &a) {
     cout << "Error: " << a << endl;
   }
-
-  // Imprime quais funções foram definidas
-  /*for (auto i(functionTable.begin()); i != functionTable.end(); i++) {
-    cout << i->first << " -> " << get<0>(i->second) << " -> ";
-    for (auto j(get<1>(i->second).begin()); j != get<1>(i->second).end(); j++) {
-      cout << *j << " ";
-    }
-    cout << endl;
-  }*/
 
   tree.dispose();
 
