@@ -926,7 +926,6 @@ struct FunctionCallAnalyser: public LanguageSemanticAnalyser::NodeAnalyser
       return getCompCode(t,"sle","Comparação de menor ou igual deve ter dois parâmetros");
     }   
     
-    
     return "";
   }
 };
@@ -1263,6 +1262,61 @@ struct IfStmAnalyser: public LanguageSemanticAnalyser::NodeAnalyser
   }
 };
 
+struct WhileStmAnalyser: public LanguageSemanticAnalyser::NodeAnalyser
+{
+  string getCode(LanguageTree &t)
+  {
+    string condLabel(createNewLabelName());
+    string whileBeginLabel(createNewLabelName());
+    string whileEndLabel(createNewLabelName());
+
+    stringstream r;
+
+    r << "  br label %" << condLabel << "\n\n";
+
+    // só para satisfazer a organização de blocos básicos do llvm
+    r << condLabel << ":\n";
+
+    // pega o código gerado pela expressão e coloca na pilha 
+    r << getAnalyser(t.getChild(0))->getCode(t.getChild(0));
+
+    // a variável de comparação está em registrador?
+    auto found(variablesInRegister.find(varStack.top()));
+    
+    // obtem a variável de comparação
+    string c;
+
+    if (found == variablesInRegister.end()) {
+      c = createNewTempName();
+      // carrega para registrador
+      r << "  %" << c << " = load i32* %" << varStack.top() << ", align 4" << "\n";
+    } else {
+      c = varStack.top();
+    }
+    
+    varStack.pop();
+    
+    string cmpVar(createNewTempName());
+    
+    r << "  %" << cmpVar << " = icmp ne i32 %" << c << ", 0\n";
+    r << "  br i1 %" << cmpVar << ", label %" << whileBeginLabel;
+    r << ", label %" << whileEndLabel << "\n";
+    
+    // pego o código gerado pelo bloco then
+    string blockCode(getAnalyser(t.getChild(1))->getCode(t.getChild(1)));
+    
+    r << "\n" << whileBeginLabel << ":\n";
+    r << blockCode;
+    // no final do bloco, pula para a label de condição
+    r << "  br label %" << condLabel << "\n";
+   
+    // a posição de saída do while 
+    r << "\n" << whileEndLabel << ":\n";
+
+    return r.str();
+  }
+};
+
 struct AttrStmAnalyser: public LanguageSemanticAnalyser::NodeAnalyser
 {
   string getCode(LanguageTree &t)
@@ -1533,6 +1587,7 @@ int main(int argc, char **argv)
     {StmListExt,new StmListAnalyser}, // usa o mesmo analisador que o StmList
     {ReturnStm,new ReturnStmAnalyser},
     {IfStm,new IfStmAnalyser},
+    {WhileStm,new WhileStmAnalyser},
     {AttrStm,new AttrStmAnalyser}
   });
 
