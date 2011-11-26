@@ -250,9 +250,9 @@ static map<NonTerminal,string> NonTerminalMap {
   {LiteralSetContentExt,"LiteralSetContentExt"}
 };
 
-typedef Grammar<NonTerminal,TokenType> RachelGrammar;
+typedef Grammar<NonTerminal,TokenType> LanguageGrammar;
 
-static string symbolToString(const RachelGrammar::Symbol &s)
+static string symbolToString(const LanguageGrammar::Symbol &s)
 {
   if (s.isTerminal()) {
     return TerminalMap[s._terminal];
@@ -266,7 +266,7 @@ static string symbolToString(const RachelGrammar::Symbol &s)
   }
 }
 
-RachelGrammar grammar(symbolToString,{
+LanguageGrammar grammar(symbolToString,{
   {EL,{{Program},{TEOF}}},
 
   {Program,{{Function},{FunctionList}}},
@@ -384,8 +384,8 @@ RachelGrammar grammar(symbolToString,{
 
 },TEOF,INVALID);
 
-typedef Semantic::Analyser<NonTerminal,TokenType,string> RachelSemanticAnalyser;
-typedef Tree<TokenType,RachelGrammar::Symbol> RachelTree;
+typedef Semantic::Analyser<NonTerminal,TokenType,string> LanguageSemanticAnalyser;
+typedef Tree<TokenType,LanguageGrammar::Symbol> LanguageTree;
 
 // Uma tabela de variáveis. nome -> tipo 
 typedef map<string,string> VariableTable;
@@ -463,9 +463,9 @@ Counter createNewLabelName([](int counter) -> string {
   return r.str();
 });
 
-struct ProgramAnalyser: public RachelSemanticAnalyser::NodeAnalyser
+struct ProgramAnalyser: public LanguageSemanticAnalyser::NodeAnalyser
 {
-  string getCode(RachelTree &t)
+  string getCode(LanguageTree &t)
   {
     string s0(getAnalyser(t.getChild(0))->getCode(t.getChild(0)));
     string s1(getAnalyser(t.getChild(1))->getCode(t.getChild(1)));
@@ -473,9 +473,9 @@ struct ProgramAnalyser: public RachelSemanticAnalyser::NodeAnalyser
   }
 };
 
-struct FunctionListAnalyser: public RachelSemanticAnalyser::NodeAnalyser
+struct FunctionListAnalyser: public LanguageSemanticAnalyser::NodeAnalyser
 {
-  string getCode(RachelTree &t)
+  string getCode(LanguageTree &t)
   {
     // se houver uma "cauda", ou seja, mais funções à frente, processa
     if (t.size()) {
@@ -487,25 +487,25 @@ struct FunctionListAnalyser: public RachelSemanticAnalyser::NodeAnalyser
   }
 };
 
-struct FunctionAnalyser: public RachelSemanticAnalyser::NodeAnalyser
+struct FunctionAnalyser: public LanguageSemanticAnalyser::NodeAnalyser
 {
-  string getCode(RachelTree &t)
+  string getCode(LanguageTree &t)
   {
     return getAnalyser(t.getChild(0))->getCode(t.getChild(0));
   }
 };
 
-struct ArrayTypeNameAnalyser: public RachelSemanticAnalyser::NodeAnalyser
+struct ArrayTypeNameAnalyser: public LanguageSemanticAnalyser::NodeAnalyser
 {
-  string getCode(RachelTree &t)
+  string getCode(LanguageTree &t)
   {
     throw string("tipo array não implementado!");
   }
 };
 
-struct BasicTypeNameAnalyser: public RachelSemanticAnalyser::NodeAnalyser
+struct BasicTypeNameAnalyser: public LanguageSemanticAnalyser::NodeAnalyser
 {
-  string getCode(RachelTree &t)
+  string getCode(LanguageTree &t)
   {
     string typeName(t.getChild(0).getToken().getLexema());
   
@@ -517,17 +517,17 @@ struct BasicTypeNameAnalyser: public RachelSemanticAnalyser::NodeAnalyser
   }
 };
 
-struct TypeNameAnalyser: public RachelSemanticAnalyser::NodeAnalyser
+struct TypeNameAnalyser: public LanguageSemanticAnalyser::NodeAnalyser
 {
-  string getCode(RachelTree &t)
+  string getCode(LanguageTree &t)
   {
     return getAnalyser(t.getChild(0))->getCode(t.getChild(0));
   }
 };
 
-struct FunctionImplAnalyser: public RachelSemanticAnalyser::NodeAnalyser
+struct FunctionImplAnalyser: public LanguageSemanticAnalyser::NodeAnalyser
 {
-  string getCode(RachelTree &t)
+  string getCode(LanguageTree &t)
   {
     // zero as tabelas
     variableTable.clear();
@@ -594,9 +594,9 @@ struct FunctionImplAnalyser: public RachelSemanticAnalyser::NodeAnalyser
   }
 };
 
-struct ListOfFormalParamsAnalyser: public RachelSemanticAnalyser::NodeAnalyser
+struct ListOfFormalParamsAnalyser: public LanguageSemanticAnalyser::NodeAnalyser
 {
-  string getCode(RachelTree &t)
+  string getCode(LanguageTree &t)
   {
     return (t.getChild(0).size() == 0) 
       ? ""
@@ -604,9 +604,9 @@ struct ListOfFormalParamsAnalyser: public RachelSemanticAnalyser::NodeAnalyser
   }
 };
 
-struct ListOfParamDefAnalyser: public RachelSemanticAnalyser::NodeAnalyser
+struct ListOfParamDefAnalyser: public LanguageSemanticAnalyser::NodeAnalyser
 {
-  string getCode(RachelTree &t)
+  string getCode(LanguageTree &t)
   {
     string s0(getAnalyser(t.getChild(0))->getCode(t.getChild(0))); 
     string s1(getAnalyser(t.getChild(1))->getCode(t.getChild(1)));
@@ -614,9 +614,9 @@ struct ListOfParamDefAnalyser: public RachelSemanticAnalyser::NodeAnalyser
   }
 };
 
-struct ListOfParamDefExtAnalyser: public RachelSemanticAnalyser::NodeAnalyser
+struct ListOfParamDefExtAnalyser: public LanguageSemanticAnalyser::NodeAnalyser
 {
-  string getCode(RachelTree &t)
+  string getCode(LanguageTree &t)
   {
     if(t.size()) {
       string s0(getAnalyser(t.getChild(0))->getCode(t.getChild(0)));
@@ -626,9 +626,9 @@ struct ListOfParamDefExtAnalyser: public RachelSemanticAnalyser::NodeAnalyser
   }
 };
 
-struct ParamDefAnalyser: public RachelSemanticAnalyser::NodeAnalyser
+struct ParamDefAnalyser: public LanguageSemanticAnalyser::NodeAnalyser
 {
-  string getCode(RachelTree &t)
+  string getCode(LanguageTree &t)
   {
     // o nome da variável
     string varName(t.getChild(1).getToken().getLexema());
@@ -650,13 +650,13 @@ struct ParamDefAnalyser: public RachelSemanticAnalyser::NodeAnalyser
   }
 };
 
-struct FunctionCallAnalyser: public RachelSemanticAnalyser::NodeAnalyser
+struct FunctionCallAnalyser: public LanguageSemanticAnalyser::NodeAnalyser
 {
-  int countParameters(RachelTree &t)
+  int countParameters(LanguageTree &t)
   {
     // obtem a quantidade de parâmetros da função
     // deve ser uma cópia de t, não uma referência
-    RachelTree paramTree(t);
+    LanguageTree paramTree(t);
     int c(0);
     while (paramTree.size()) {
       c++;
@@ -703,7 +703,7 @@ struct FunctionCallAnalyser: public RachelSemanticAnalyser::NodeAnalyser
   }
   
   // retorna código de função que encolve comparação (<, >, >=, ==, etc.)
-  string getCompCode(const RachelTree &t, const string &code, const string &msg)
+  string getCompCode(const LanguageTree &t, const string &code, const string &msg)
   {
     // uma soma precisa de ao menos um parâmetro
     int paramCount(countParameters(t.getChild(1)));
@@ -756,7 +756,7 @@ struct FunctionCallAnalyser: public RachelSemanticAnalyser::NodeAnalyser
     return s0 + r.str();
   }
   
-  string getVariableParamsFunctionCode(const RachelTree &t, const string &code, const string &msg)
+  string getVariableParamsFunctionCode(const LanguageTree &t, const string &code, const string &msg)
   {
     // uma soma precisa de ao menos um parâmetro
     int paramCount(countParameters(t.getChild(1)));
@@ -805,7 +805,7 @@ struct FunctionCallAnalyser: public RachelSemanticAnalyser::NodeAnalyser
     return s0 + r.str();   
   }
   
-  string getCode(RachelTree &t)
+  string getCode(LanguageTree &t)
   {
     // obtenho o nome da função
     auto functionName(t.getChild(0).getChild(0).getHead());
@@ -931,9 +931,9 @@ struct FunctionCallAnalyser: public RachelSemanticAnalyser::NodeAnalyser
   }
 };
 
-struct RealParametersAnalyser: public RachelSemanticAnalyser::NodeAnalyser
+struct RealParametersAnalyser: public LanguageSemanticAnalyser::NodeAnalyser
 {
-  string getCode(RachelTree& t)
+  string getCode(LanguageTree& t)
   {
     // se é o último parâmetro, não há nada
     if (t.size() == 0) {
@@ -953,17 +953,17 @@ struct RealParametersAnalyser: public RachelSemanticAnalyser::NodeAnalyser
   }
 };
 
-struct ExpressionAnalyser: public RachelSemanticAnalyser::NodeAnalyser
+struct ExpressionAnalyser: public LanguageSemanticAnalyser::NodeAnalyser
 {
-  string getCode(RachelTree &t)
+  string getCode(LanguageTree &t)
   {
     return getAnalyser(t.getChild(0))->getCode(t.getChild(0));
   }
 };
 
-struct LiteralAnalyser: public RachelSemanticAnalyser::NodeAnalyser
+struct LiteralAnalyser: public LanguageSemanticAnalyser::NodeAnalyser
 {
-  string getCode(RachelTree &t)
+  string getCode(LanguageTree &t)
   {
     // faz as checagens de coisas ainda não implementadas
     if (t.getChild(0).getHead() == LiteralSet) {
@@ -1006,17 +1006,17 @@ struct LiteralAnalyser: public RachelSemanticAnalyser::NodeAnalyser
   }
 };
 
-struct NonLiteralAnalyser: public RachelSemanticAnalyser::NodeAnalyser
+struct NonLiteralAnalyser: public LanguageSemanticAnalyser::NodeAnalyser
 {
-  string getCode(RachelTree &t)
+  string getCode(LanguageTree &t)
   {
     return getAnalyser(t.getChild(0))->getCode(t.getChild(0));
   }
 };
 
-struct VariableAccessAnalyser: public RachelSemanticAnalyser::NodeAnalyser
+struct VariableAccessAnalyser: public LanguageSemanticAnalyser::NodeAnalyser
 {
-  string getCode(RachelTree &t)
+  string getCode(LanguageTree &t)
   {
     // se estiver acessando um índice de array, 
     // é erro, pois ainda não foi implementado
@@ -1051,9 +1051,9 @@ struct VariableAccessAnalyser: public RachelSemanticAnalyser::NodeAnalyser
   }
 };
 
-struct FunctionContentAnalyser: public RachelSemanticAnalyser::NodeAnalyser
+struct FunctionContentAnalyser: public LanguageSemanticAnalyser::NodeAnalyser
 {
-  string getCode(RachelTree &t)
+  string getCode(LanguageTree &t)
   {
     // Aloca a variável de retorno
     string sp("  %__retval__ = alloca i32, align 4\n");
@@ -1078,9 +1078,9 @@ struct FunctionContentAnalyser: public RachelSemanticAnalyser::NodeAnalyser
   }
 };
 
-struct VariableDeclarationListAnalyser: public RachelSemanticAnalyser::NodeAnalyser
+struct VariableDeclarationListAnalyser: public LanguageSemanticAnalyser::NodeAnalyser
 {
-  string getCode(RachelTree &t)
+  string getCode(LanguageTree &t)
   {
     if (t.size()) {
       string s0(getAnalyser(t.getChild(0))->getCode(t.getChild(0)));
@@ -1091,9 +1091,9 @@ struct VariableDeclarationListAnalyser: public RachelSemanticAnalyser::NodeAnaly
   }
 };
 
-struct VariableInitializationAnalyser: public RachelSemanticAnalyser::NodeAnalyser
+struct VariableInitializationAnalyser: public LanguageSemanticAnalyser::NodeAnalyser
 {
-  string getCode(RachelTree &t)
+  string getCode(LanguageTree &t)
   {
     string varName(t.getChild(1).getToken().getLexema());
     string typeName(getAnalyser(t.getChild(0))->getCode(t.getChild(0)));
@@ -1129,9 +1129,9 @@ struct VariableInitializationAnalyser: public RachelSemanticAnalyser::NodeAnalys
   }
 };
 
-struct VariableInitializationListExtAnalyser: public RachelSemanticAnalyser::NodeAnalyser
+struct VariableInitializationListExtAnalyser: public LanguageSemanticAnalyser::NodeAnalyser
 {
-  string getCode(RachelTree &t)
+  string getCode(LanguageTree &t)
   {
     if (t.size()) {
       string s0(getAnalyser(t.getChild(0))->getCode(t.getChild(0)));
@@ -1143,9 +1143,9 @@ struct VariableInitializationListExtAnalyser: public RachelSemanticAnalyser::Nod
   }
 };
 
-struct StmListAnalyser: public RachelSemanticAnalyser::NodeAnalyser
+struct StmListAnalyser: public LanguageSemanticAnalyser::NodeAnalyser
 {
-  string getCode(RachelTree &t)
+  string getCode(LanguageTree &t)
   {
     if (!t.size()) { 
       // FIXME: tamanho 0, só pode passar caso a função seja void
@@ -1159,17 +1159,17 @@ struct StmListAnalyser: public RachelSemanticAnalyser::NodeAnalyser
   }
 };
 
-struct StmAnalyser: public RachelSemanticAnalyser::NodeAnalyser
+struct StmAnalyser: public LanguageSemanticAnalyser::NodeAnalyser
 {
-  string getCode(RachelTree &t)
+  string getCode(LanguageTree &t)
   {
     return getAnalyser(t.getChild(0))->getCode(t.getChild(0));
   }
 };
 
-struct ReturnStmAnalyser: public RachelSemanticAnalyser::NodeAnalyser
+struct ReturnStmAnalyser: public LanguageSemanticAnalyser::NodeAnalyser
 {
-  string getCode(RachelTree &t)
+  string getCode(LanguageTree &t)
   {
     // pega o código gerado pela expressão e coloca na pilha
     string s0(getAnalyser(t.getChild(0))->getCode(t.getChild(0)));
@@ -1197,9 +1197,9 @@ struct ReturnStmAnalyser: public RachelSemanticAnalyser::NodeAnalyser
   }
 };
 
-struct IfStmAnalyser: public RachelSemanticAnalyser::NodeAnalyser
+struct IfStmAnalyser: public LanguageSemanticAnalyser::NodeAnalyser
 {
-  string getCode(RachelTree &t)
+  string getCode(LanguageTree &t)
   {
     // pega o código gerado pela expressão e coloca na pilha 
     string s0(getAnalyser(t.getChild(0))->getCode(t.getChild(0)));
@@ -1263,9 +1263,9 @@ struct IfStmAnalyser: public RachelSemanticAnalyser::NodeAnalyser
   }
 };
 
-struct AttrStmAnalyser: public RachelSemanticAnalyser::NodeAnalyser
+struct AttrStmAnalyser: public LanguageSemanticAnalyser::NodeAnalyser
 {
-  string getCode(RachelTree &t)
+  string getCode(LanguageTree &t)
   {
     // Primeiro coloco no topo da pilha o resultado da expressão da direita
     string s0(getAnalyser(t.getChild(1))->getCode(t.getChild(1)));
@@ -1501,12 +1501,12 @@ int main(int argc, char **argv)
     return 1;
   }
 
-  RachelTree tree(parser.getTree());
+  LanguageTree tree(parser.getTree());
 
-  //cerr << tree.toString<function<string(const RachelGrammar::Symbol &)>>(symbolToString) << endl;
-  //tree.generateGraph<function<string(const RachelGrammar::Symbol &)>>(symbolToString);
+  //cerr << tree.toString<function<string(const LanguageGrammar::Symbol &)>>(symbolToString) << endl;
+  //tree.generateGraph<function<string(const LanguageGrammar::Symbol &)>>(symbolToString);
   
-  RachelSemanticAnalyser a(tree,{
+  LanguageSemanticAnalyser a(tree,{
     {Program,new ProgramAnalyser},
     {FunctionList,new FunctionListAnalyser},
     {Function,new FunctionAnalyser},

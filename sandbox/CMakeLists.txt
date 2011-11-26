@@ -19,6 +19,6 @@ target_link_libraries(list_grammar gcl-lexical)
 add_executable(ambiguous_example ambiguous_example.cpp)
 target_link_libraries(ambiguous_example gcl-lexical)
 
-add_executable(rachel_example rachel_example.cpp)
-target_link_libraries(rachel_example gcl-lexical)
+add_executable(language language.cpp)
+target_link_libraries(language gcl-lexical)
 
