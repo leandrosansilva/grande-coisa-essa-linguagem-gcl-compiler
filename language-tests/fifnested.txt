@@ -1,0 +1,1 @@
+(main->int:int i(0);if 0{if 4{i=8}else{i=12}}else{i=45};|i)

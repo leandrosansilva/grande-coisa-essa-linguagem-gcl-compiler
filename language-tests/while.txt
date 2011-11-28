@@ -1,0 +1,14 @@
+(main -> int:
+  int r(1),
+  int j(3);
+
+  while r {
+    if (> j 40) {
+      r = 0
+    };
+    
+    j = (* j 2 3)
+  };
+
+  | j
+)

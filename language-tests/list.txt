@@ -1,0 +1,7 @@
+(main:
+  int a({'a',124,"manoel",{"mongolia"}}), int b({});
+
+  c = {2,4};
+
+  b = (doSomething {1,2,3,4} {"leandro","manoel","julio","pedro"})
+)

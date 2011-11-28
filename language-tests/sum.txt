@@ -1,0 +1,11 @@
+(soma int a, int b -> int:
+  | (+ a b 10)
+)
+
+(main -> int:
+  int a(3), int b(8), int c(13), int d(6), int e(1),
+
+  int r((+ (soma a b) (soma c d) e));
+
+  | (+ 3 5 8) 
+)

@@ -1,0 +1,7 @@
+(lala int a, int b -> int:
+  | a
+)
+
+(main -> int:
+  | (lala 4 19)
+)

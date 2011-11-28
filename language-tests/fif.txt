@@ -1,0 +1,16 @@
+(m int a -> int:
+  | 3
+)
+
+(n int a -> int:
+  | 4
+)
+
+(main -> int:
+  if 67 {
+    (m 5)
+  } else {
+    (n 7)
+  };
+  | (m 2)
+)

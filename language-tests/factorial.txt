@@ -1,0 +1,14 @@
+(factorial int number -> int:
+  int r(0);
+
+  if (== number 1) {
+    r = 1
+  } else {
+    r = (* number (factorial (- number 1)))
+  };
+  | r
+)
+
+(main -> int:
+  |(factorial 4)
+)

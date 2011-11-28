@@ -1,0 +1,11 @@
+(dec int n -> int:
+  | (- n 1)
+)
+
+(inv int n -> int:
+  | (- 0 n)
+)
+
+(main -> int:
+  | (inv (inv 14))
+)

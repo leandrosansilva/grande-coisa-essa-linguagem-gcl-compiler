@@ -1,0 +1,3 @@
+(main -> int:
+  | (equal (sum 3 4) 8)
+)

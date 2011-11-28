@@ -1,0 +1,9 @@
+(lala int a -> int:
+  | 65
+)
+
+(main -> int:
+  int i(42);
+  i = (lala i);
+  | i
+)

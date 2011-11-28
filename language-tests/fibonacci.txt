@@ -1,0 +1,15 @@
+(fibo int number -> int:
+  int r(0);
+
+  if (< number 2) {
+    r = 1
+  } else {
+    r = (+ (fibo (- number 2)) (fibo (- number 1)))
+  };
+
+  return r
+)
+
+(main -> int:
+  | (fibo 7)
+)
