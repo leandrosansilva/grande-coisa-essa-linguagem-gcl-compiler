@@ -945,7 +945,6 @@ struct RealParametersAnalyser: public LanguageSemanticAnalyser::NodeAnalyser
     // neste momento tenho no topo da pilha o temporário 
     // que guarda o valor do parâmetro
      
-    
     string s1(getAnalyser(t.getChild(1))->getCode(t.getChild(1)));
     
     return s0 + s1;
@@ -1064,9 +1063,6 @@ struct FunctionContentAnalyser: public LanguageSemanticAnalyser::NodeAnalyser
     string returnTemp(createNewTempName());
     
     string sr(
-      // FIXME: nem sempre! 
-      //"  ret i32 42\n"
-      
       // e a label de saída da função
       "return:\n"
       "  %" + returnTemp + " = load i32* %__retval__\n"
@@ -1357,6 +1353,14 @@ struct AttrStmAnalyser: public LanguageSemanticAnalyser::NodeAnalyser
 
 int main(int argc, char **argv)
 {
+  if (argc < 2) {
+    cerr << "Uso: " << argv[0] << " file.txt" << endl;
+    return 1;
+  }
+
+  /* um cara que lê um arquivo do disco */
+  FileReader reader(argv[1]);
+
   TransitionTable<LexState,TokenType> lexTable(start,invalid,final);
 
   /* Consome espaços em branco */
@@ -1364,7 +1368,7 @@ int main(int argc, char **argv)
     lexTable.addTransition(s,spaces,s);
     lexTable.addFinalTransition(s,any - spaces,TkSpaces);
   
-  /* Para inteiros e reais */
+  /* Para inteiros */
     lexTable.addTransition(start,digits,b1);
     lexTable.addTransition(b1,digits,b1);
     lexTable.addFinalTransition(b1,any - digits,TkInteger);
@@ -1528,8 +1532,6 @@ int main(int argc, char **argv)
     }
   );
 
-  /* um cara que lê um arquivo do disco */
-  FileReader reader(argv[1]);
 
   /* Analisador léxico */
   Lexical::Analyser<LexState,TokenType> lexer(reader,lexTable,reservedWords,TEOF);
@@ -1595,6 +1597,7 @@ int main(int argc, char **argv)
     cout << a.getCode() << endl;
   } catch(const string &a) {
     cout << "Error: " << a << endl;
+    return 2;
   }
 
   tree.dispose();

@@ -1,0 +1,60 @@
+int a((+ 2 3 4 10));
+
+%a is int32
+%t1 = sum 2 3
+%t2 = sum %t1 4
+%t3 = sum %t2 10
+%a = %t3
+
+int a((+ (+ 2 3 56 78) (* 3 4 5) (funcao 3 (funcao2 456 87 'c') 5)));
+
+%a is int32
+
+%t1 = sum 2 3
+%t2 = sum %t1 56
+%t3 = sum %t2 78
+
+
+%t4 = mul 3 4
+%t5 = mul %t4 5
+
+%t6 = call funcao2 456 87 'c'
+
+%t7 = call funcao 3 %t6 5
+
+%t8 = sum %t3 %t5
+%t9 = sum %t8 %t6
+%a = %t9
+
+if (< 2 (+ 3 5)) {
+  do1()
+} else {
+  do2()
+}
+
+%t10 = sum 3 5
+%t11 = cmp 2 %t10
+
+cjump %t11 $label1 $label2
+
+label $label1
+call do1()
+jump #final
+
+label $label2
+
+call do2()
+jump #final
+
+label #final
+ret 2
+
+a = (funcao 2 3)
+// coloca os parâmetros numa pilha
+
+pilha (últimos parametros no fim)
+%a
+%p2
+%p1
+
+%a = call funcao %p1 %p2

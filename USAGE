@@ -1,0 +1,21 @@
+Para usar este compilador, primeiro compile-o:
+$ ./compile.sh
+
+O executável do compilador está em build/sandbox
+Por exemplo, para compilar um arquivo chamado factorial.txt:
+
+$ build/experiments/language factorial.txt
+
+Isto imprimirá o código intermediário LLVM na saída padrão.
+Para enviar para um arquivo:
+$ build/experiments/language factorial.txt > factorial.ll
+
+Ou, caso queira interpretá-lo:
+
+$ build/experiments/language factorial.txt | llvm-as -f | lli
+
+Ou, caso queira gerar o código assembly:
+
+$ build/experiments/language factorial.txt | llvm-as -f | llc > factorial.S
+
+E isso é tudo!

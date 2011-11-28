@@ -1,4 +1,4 @@
-#include <sandbox/mygrammar.h>
+#include <experiments/mygrammar.h>
 
 bool TEST(const bool ret, const string &msg)
 {
@@ -159,7 +159,6 @@ void testItem2()
 
   cout << g.itemToString(item) << endl;
 }
-
 
 int main(int argc, char **argv)
 {

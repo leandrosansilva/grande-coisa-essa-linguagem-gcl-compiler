@@ -1,2 +1,2 @@
-pra interpretar com o llvm:
+to interpret with llvm:
 $ cat teste.ll | llvm-as -f -o - | lli
