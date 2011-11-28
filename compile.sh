@@ -7,4 +7,4 @@ mkdir -p build
 cd build
 cmake .. -DCMAKE_BUILD_TYPE=Debug && make
 
-echo O compilador se encontra em build/experiments/language
+echo O compilador é  build/experiments/language
